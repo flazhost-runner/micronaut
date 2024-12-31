@@ -199,7 +199,18 @@ public class UriTemplate implements Comparable<UriTemplate> {
             .reduce(Integer::sum)
             .orElse(0);
     }
-
+    /**
+     * Gets the raw unencoded path component from a URI.
+     *
+     * @param uri The URI string
+     * @return The raw path component, preserving encoding of special characters
+     */
+    public static String getRawPathComponent(String uri) {
+        int queryIndex = uri.indexOf('?');
+        String pathOnly = queryIndex >= 0 ? uri.substring(0, queryIndex) : uri;
+        int lastSlash = pathOnly.lastIndexOf('/');
+        return lastSlash >= 0 ? pathOnly.substring(lastSlash + 1) : pathOnly;
+    }
     /**
      * Nests another URI template with this template.
      *
