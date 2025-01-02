@@ -211,6 +211,7 @@ public class UriTemplate implements Comparable<UriTemplate> {
         int lastSlash = pathOnly.lastIndexOf('/');
         return lastSlash >= 0 ? pathOnly.substring(lastSlash + 1) : pathOnly;
     }
+
     /**
      * Nests another URI template with this template.
      *
