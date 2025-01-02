@@ -204,6 +204,7 @@ public class UriTemplate implements Comparable<UriTemplate> {
      *
      * @param uri The URI string
      * @return The raw path component, preserving encoding of special characters
+     * @since 4.8.0
      */
     public static String getRawPathComponent(String uri) {
         int queryIndex = uri.indexOf('?');
