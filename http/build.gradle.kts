@@ -26,6 +26,8 @@ dependencies {
     testImplementation(libs.micronaut.test.junit5) {
         exclude(group= "io.micronaut")
     }
+    testImplementation("io.micronaut:micronaut-http-client")
+    testImplementation("io.micronaut:micronaut-http-server-netty")
 }
 
 tasks {
