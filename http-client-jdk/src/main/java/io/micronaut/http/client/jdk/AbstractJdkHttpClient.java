@@ -51,6 +51,7 @@ import io.micronaut.http.filter.HttpFilterResolver;
 import io.micronaut.http.reactive.execution.ReactiveExecutionFlow;
 import io.micronaut.http.ssl.ClientAuthentication;
 import io.micronaut.http.ssl.ClientSslConfiguration;
+import io.micronaut.http.uri.UrlEncodingKind;
 import io.micronaut.http.util.HttpHeadersUtil;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
@@ -107,6 +108,7 @@ abstract class AbstractJdkHttpClient {
     protected final HttpClientFilterResolver<ClientFilterResolutionContext> filterResolver;
     protected final List<HttpFilterResolver.FilterEntry> clientFilterEntries;
     protected final CookieDecoder cookieDecoder;
+    protected final UrlEncodingKind urlEncodingKind;
     protected MediaTypeCodecRegistry mediaTypeCodecRegistry;
     protected MessageBodyHandlerRegistry messageBodyHandlerRegistry;
 
@@ -127,6 +129,7 @@ abstract class AbstractJdkHttpClient {
         this.cookieDecoder = prototype.cookieDecoder;
         this.mediaTypeCodecRegistry = prototype.mediaTypeCodecRegistry;
         this.messageBodyHandlerRegistry = prototype.messageBodyHandlerRegistry;
+        this.urlEncodingKind = prototype.urlEncodingKind;
     }
 
     /**
@@ -157,8 +160,10 @@ abstract class AbstractJdkHttpClient {
         String clientId,
         ConversionService conversionService,
         JdkClientSslBuilder sslBuilder,
-        CookieDecoder cookieDecoder
+        CookieDecoder cookieDecoder,
+        UrlEncodingKind urlEncodingKind
     ) {
+        this.urlEncodingKind = urlEncodingKind != null ? urlEncodingKind : configuration.getUrlEncodingKind();
         this.cookieDecoder = cookieDecoder;
         this.log = configuration.getLoggerName().map(LoggerFactory::getLogger).orElse(log);
         this.loadBalancer = loadBalancer;
@@ -232,7 +237,6 @@ abstract class AbstractJdkHttpClient {
 
         this.client = builder.build();
     }
-
 
     @NonNull
     private static List<HttpFilterResolver.FilterEntry> clientFilterEntries(@Nullable HttpClientFilterResolver<ClientFilterResolutionContext> filterResolver,

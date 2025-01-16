@@ -40,6 +40,7 @@ import io.micronaut.http.client.jdk.cookie.DefaultCookieDecoder;
 import io.micronaut.http.codec.MediaTypeCodecRegistry;
 import io.micronaut.http.filter.HttpClientFilterResolver;
 import io.micronaut.http.filter.HttpFilterResolver;
+import io.micronaut.http.uri.UrlEncodingKind;
 import io.micronaut.json.JsonMapper;
 import io.micronaut.json.codec.JsonMediaTypeCodec;
 import io.micronaut.json.codec.JsonStreamMediaTypeCodec;
@@ -73,7 +74,8 @@ public class DefaultJdkHttpClient extends AbstractJdkHttpClient implements JdkHt
         String clientId,
         ConversionService conversionService,
         JdkClientSslBuilder sslBuilder,
-        CookieDecoder cookieDecoder
+        CookieDecoder cookieDecoder,
+        UrlEncodingKind urlEncodingKind
     ) {
         super(
             configuration.getLoggerName().map(LoggerFactory::getLogger).orElseGet(() -> LoggerFactory.getLogger(DefaultJdkHttpClient.class)),
@@ -89,7 +91,8 @@ public class DefaultJdkHttpClient extends AbstractJdkHttpClient implements JdkHt
             clientId,
             conversionService,
             sslBuilder,
-            cookieDecoder
+            cookieDecoder,
+            urlEncodingKind
         );
     }
 
@@ -107,7 +110,8 @@ public class DefaultJdkHttpClient extends AbstractJdkHttpClient implements JdkHt
             null,
             conversionService,
             new JdkClientSslBuilder(new ResourceResolver()),
-            new CompositeCookieDecoder(List.of(new DefaultCookieDecoder()))
+            new CompositeCookieDecoder(List.of(new DefaultCookieDecoder())),
+            null
         );
     }
 
@@ -131,7 +135,8 @@ public class DefaultJdkHttpClient extends AbstractJdkHttpClient implements JdkHt
             null,
             conversionService,
             new JdkClientSslBuilder(new ResourceResolver()),
-            new CompositeCookieDecoder(List.of(new DefaultCookieDecoder()))
+            new CompositeCookieDecoder(List.of(new DefaultCookieDecoder())),
+            null
         );
     }
 
@@ -145,8 +150,8 @@ public class DefaultJdkHttpClient extends AbstractJdkHttpClient implements JdkHt
     }
 
     @Override
-    public Optional<HttpClientConfiguration> getConfiguration() {
-        return Optional.ofNullable(configuration);
+    public Optional<UrlEncodingKind> getUrlEncodingKind() {
+        return JdkHttpClient.super.getUrlEncodingKind();
     }
 
     @Override
@@ -164,7 +169,8 @@ public class DefaultJdkHttpClient extends AbstractJdkHttpClient implements JdkHt
             clientId,
             conversionService,
             sslBuilder,
-            cookieDecoder
+            cookieDecoder,
+            urlEncodingKind
         );
     }
 
