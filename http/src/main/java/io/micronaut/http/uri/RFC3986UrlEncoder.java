@@ -47,10 +47,16 @@ final class RFC3986UrlEncoder {
         var unreserved = new BitSet('z' + 1);
         unreserved.set('-');
         unreserved.set('.');
-        for (int c = '0'; c <= '9'; ++c) unreserved.set(c);
-        for (int c = 'A'; c <= 'Z'; ++c) unreserved.set(c);
+        for (int c = '0'; c <= '9'; ++c) {
+            unreserved.set(c);
+        }
+        for (int c = 'A'; c <= 'Z'; ++c) {
+            unreserved.set(c);
+        }
         unreserved.set('_');
-        for (int c = 'a'; c <= 'z'; ++c) unreserved.set(c);
+        for (int c = 'a'; c <= 'z'; ++c) {
+            unreserved.set(c);
+        }
         UNRESERVED_URI_CHARS = unreserved;
     }
 
