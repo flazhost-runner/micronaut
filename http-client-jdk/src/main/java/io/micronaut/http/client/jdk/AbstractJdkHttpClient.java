@@ -233,6 +233,7 @@ abstract class AbstractJdkHttpClient {
         this.client = builder.build();
     }
 
+
     @NonNull
     private static List<HttpFilterResolver.FilterEntry> clientFilterEntries(@Nullable HttpClientFilterResolver<ClientFilterResolutionContext> filterResolver,
                                                                             @Nullable List<HttpFilterResolver.FilterEntry> clientFilterEntries) {

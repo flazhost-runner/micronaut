@@ -23,7 +23,7 @@ class UriBuilderSpec extends Specification {
 
     void "test uri builder expand"() {
         given:
-        def builder = UriBuilder.of("/person/{name}")
+        def builder = UriBuilder.of("/person/{name}", UrlEncodingKind.RFC_3986)
 
         when:
         builder.path("/features/{feature}")
@@ -44,14 +44,14 @@ class UriBuilderSpec extends Specification {
         result = builder.expand(name:"Fred Flintstone", feature:"age", hash: "val")
 
         then:
-        result.toString() == '/person/Fred%20Flintstone/features/age?q=hello+world#val'
+        result.toString() == '/person/Fred%20Flintstone/features/age?q=hello%20world#val'
 
         when:
         builder.queryParam("a", "b")
         result = builder.expand(name:"Fred Flintstone", feature:"age", hash: "val")
 
         then:
-        result.toString() == '/person/Fred%20Flintstone/features/age?q=hello+world&a=b#val'
+        result.toString() == '/person/Fred%20Flintstone/features/age?q=hello%20world&a=b#val'
 
         when:
         builder.host("myhost")
@@ -61,7 +61,7 @@ class UriBuilderSpec extends Specification {
         result = builder.expand(name:"Fred Flintstone", feature:"age", hash: "val")
 
         then:
-        result.toString() == 'http://username:p%40s%24w0rd@myhost:9090/person/Fred%20Flintstone/features/age?q=hello+world&a=b#val'
+        result.toString() == 'http://username:p%40s%24w0rd@myhost:9090/person/Fred%20Flintstone/features/age?q=hello%20world&a=b#val'
     }
 
     void "test query param order"() {
@@ -125,7 +125,7 @@ class UriBuilderSpec extends Specification {
     @Unroll
     void "test queryParam method for uri #uri"() {
         given:
-        def builder = UriBuilder.of(uri)
+        def builder = UriBuilder.of(uri, UrlEncodingKind.RFC_3986)
         for (p in params) {
             if (p.value instanceof List) {
                 builder.queryParam(p.key, *p.value)
@@ -141,7 +141,7 @@ class UriBuilderSpec extends Specification {
         uri                  | params                              | expected
         '/foo?existing=true' | ['foo': 'bar']                      | '/foo?existing=true&foo=bar'
         '/foo'               | ['foo': 'bar']                      | '/foo?foo=bar'
-        '/foo'               | ['foo': 'hello world']              | '/foo?foo=hello+world'
+        '/foo'               | ['foo': 'hello world']              | '/foo?foo=hello%20world'
         '/foo'               | ['foo': ['bar', 'baz']]             | '/foo?foo=bar&foo=baz'
         '/foo'               | ['foo': null, 'bar': 'baz']         | '/foo?bar=baz'
         '/foo'               | ['foo': [null, null], 'bar': 'baz'] | '/foo?bar=baz'
@@ -183,7 +183,7 @@ class UriBuilderSpec extends Specification {
         expect:
         uri == 'myurl?%24top=10&%24filter=xyz'
     }
-    
+
     @Issue("https://github.com/micronaut-projects/micronaut-core/issues/6246")
     void "test uri build parse query param"() {
         given:
@@ -195,5 +195,18 @@ class UriBuilderSpec extends Specification {
 
         then:
         builder.build().toString() == "https://google.com/search?q1=v1&q2=v2"
+    }
+
+    // spaces must encoded as %20 by https://www.rfc-editor.org/rfc/rfc3986
+    void "test space encoding in query parameters"() {
+        given:
+        def builder = UriBuilder.of("/parameters-test", UrlEncodingKind.RFC_3986)
+        builder.queryParam("test", "hello world")
+
+        when:
+        def result = builder.build()
+
+        then:
+        result.toString() == '/parameters-test?test=hello%20world'
     }
 }

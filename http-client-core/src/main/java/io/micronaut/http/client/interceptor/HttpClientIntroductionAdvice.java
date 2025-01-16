@@ -69,6 +69,7 @@ import io.micronaut.http.client.sse.SseClient;
 import io.micronaut.http.sse.Event;
 import io.micronaut.http.uri.UriBuilder;
 import io.micronaut.http.uri.UriMatchTemplate;
+import io.micronaut.http.uri.UrlEncodingKind;
 import io.micronaut.json.codec.JsonMediaTypeCodec;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
@@ -216,7 +217,15 @@ public class HttpClientIntroductionAdvice implements MethodInterceptor<Object, O
 
         Class<?> javaReturnType = returnType.getType();
         BlockingHttpClient blockingHttpClient = httpClient.toBlocking();
-        RequestBinderResult binderResult = bindRequest(context, httpMethod, httpMethodName, uriToBind, interceptedMethod, annotationMetadata);
+        RequestBinderResult binderResult = bindRequest(
+            context,
+            httpMethod,
+            httpMethodName,
+            uriToBind,
+            interceptedMethod,
+            annotationMetadata,
+            httpClient
+        );
         String clientName = declaringType.getName();
 
         if (binderResult.isError()) {
@@ -258,7 +267,7 @@ public class HttpClientIntroductionAdvice implements MethodInterceptor<Object, O
                                          Class<?> declaringType) {
 
         Publisher<RequestBinderResult> csRequestPublisher = Mono.fromCallable(() ->
-            bindRequest(context, httpMethod, httpMethodName, uriToBind, interceptedMethod, annotationMetadata));
+            bindRequest(context, httpMethod, httpMethodName, uriToBind, interceptedMethod, annotationMetadata, httpClient));
         Publisher<?> csPublisher = httpClientResponsePublisher(httpClient, csRequestPublisher, returnType, errorType, valueType);
         CompletableFuture<Object> future = new CompletableFuture<>();
         csPublisher.subscribe(new CompletionAwareSubscriber<Object>() {
@@ -330,7 +339,7 @@ public class HttpClientIntroductionAdvice implements MethodInterceptor<Object, O
                 HttpStatus.class == reactiveValueType;
 
         Publisher<RequestBinderResult> requestPublisher = Mono.fromCallable(() ->
-            bindRequest(context, httpMethod, httpMethodName, uriToBind, interceptedMethod, annotationMetadata));
+            bindRequest(context, httpMethod, httpMethodName, uriToBind, interceptedMethod, annotationMetadata, httpClient));
         Publisher<?> publisher;
         if (!isSingle && httpClient instanceof StreamingHttpClient client) {
             publisher = httpClientResponseStreamingPublisher(client, context, requestPublisher, errorType, valueType);
@@ -357,9 +366,10 @@ public class HttpClientIntroductionAdvice implements MethodInterceptor<Object, O
                                             String httpMethodName,
                                             String uri,
                                             InterceptedMethod interceptedMethod,
-                                            AnnotationMetadata annotationMetadata) {
+                                            AnnotationMetadata annotationMetadata,
+                                            HttpClient httpClient) {
         MutableHttpRequest<?> request = HttpRequest.create(httpMethod, "", httpMethodName);
-
+        UrlEncodingKind urlEncodingKind = httpClient.getUrlEncodingKind().orElse(null);
         UriMatchTemplate uriTemplate = UriMatchTemplate.of("");
         if (!(uri.length() == 1 && uri.charAt(0) == '/')) {
             uriTemplate = uriTemplate.nest(uri);
@@ -402,14 +412,14 @@ public class HttpClientIntroductionAdvice implements MethodInterceptor<Object, O
             body = null;
         }
 
-        uri = uriTemplate.expand(pathParams);
+        uri = uriTemplate.expand(pathParams, urlEncodingKind);
         // Remove all the pathParams that have already been used.
         // Other path parameters are added to query
         uriVariables.forEach(pathParams::remove);
         addParametersToQuery(pathParams, uriContext);
 
         // The original query can be added by getting it from the request.getUri() and appending
-        request.uri(URI.create(appendQuery(uri, uriContext.getQueryParameters())));
+        request.uri(URI.create(appendQuery(uri, uriContext.getQueryParameters(), urlEncodingKind)));
 
         final MediaType[] acceptTypes;
         Collection<MediaType> accept = request.accept();
@@ -692,9 +702,9 @@ public class HttpClientIntroductionAdvice implements MethodInterceptor<Object, O
         }
     }
 
-    private String appendQuery(String uri, Map<String, List<String>> queryParams) {
+    private String appendQuery(String uri, Map<String, List<String>> queryParams, UrlEncodingKind urlEncodingKind) {
         if (!queryParams.isEmpty()) {
-            final UriBuilder builder = UriBuilder.of(uri);
+            final UriBuilder builder = UriBuilder.of(uri, urlEncodingKind);
             for (Map.Entry<String, List<String>> entry : queryParams.entrySet()) {
                 builder.queryParam(entry.getKey(), entry.getValue().toArray());
             }

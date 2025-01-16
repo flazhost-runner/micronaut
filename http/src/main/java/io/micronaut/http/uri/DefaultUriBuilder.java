@@ -68,6 +68,7 @@ class DefaultUriBuilder implements UriBuilder {
     private int port = -1;
     private StringBuilder path = new StringBuilder();
     private String fragment;
+    private final UrlEncodingKind encodingMethod;
 
     /**
      * Constructor to create from a URI.
@@ -75,6 +76,16 @@ class DefaultUriBuilder implements UriBuilder {
      */
     @SuppressWarnings("unchecked")
     DefaultUriBuilder(URI uri) {
+        this(uri, UrlEncodingKind.FORM_URLENCODED);
+    }
+
+    /**
+     * Constructor to create from a URI.
+     * @param uri The URI
+     * @param encodingMethod  The encoding method
+     */
+    @SuppressWarnings("unchecked")
+    DefaultUriBuilder(URI uri, UrlEncodingKind encodingMethod) {
         this.scheme = uri.getScheme();
         this.userInfo = uri.getRawUserInfo();
         this.authority = uri.getRawAuthority();
@@ -93,6 +104,7 @@ class DefaultUriBuilder implements UriBuilder {
         } else {
             this.queryParams = new MutableConvertibleMultiValuesMap<>();
         }
+        this.encodingMethod = encodingMethod;
     }
 
     /**
@@ -101,6 +113,19 @@ class DefaultUriBuilder implements UriBuilder {
      * @param uri The URI
      */
     DefaultUriBuilder(CharSequence uri) {
+        this(uri, UrlEncodingKind.FORM_URLENCODED);
+    }
+
+    /**
+     * Constructor for char sequence.
+     *
+     * @param uri The URI
+     * @param encodingMethod The encoding method
+     */
+    DefaultUriBuilder(
+        CharSequence uri,
+        UrlEncodingKind encodingMethod) {
+        this.encodingMethod = encodingMethod;
         if (PATTERN_SCHEME.matcher(uri).matches()) {
             Matcher matcher = PATTERN_FULL_URI.matcher(uri);
 
@@ -415,6 +440,10 @@ class DefaultUriBuilder implements UriBuilder {
     }
 
     private String encode(String userInfo) {
-        return URLEncoder.encode(userInfo, StandardCharsets.UTF_8);
+        if (encodingMethod == UrlEncodingKind.RFC_3986) {
+            return RFC3986UrlEncoder.encode(userInfo);
+        } else {
+            return URLEncoder.encode(userInfo, StandardCharsets.UTF_8);
+        }
     }
 }

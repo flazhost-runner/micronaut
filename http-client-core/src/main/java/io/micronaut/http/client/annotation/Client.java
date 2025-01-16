@@ -25,6 +25,7 @@ import io.micronaut.http.annotation.Produces;
 import io.micronaut.http.client.HttpClientConfiguration;
 import io.micronaut.http.client.HttpVersionSelection;
 import io.micronaut.http.hateoas.JsonError;
+import io.micronaut.http.uri.UrlEncodingKind;
 import jakarta.inject.Singleton;
 
 import java.lang.annotation.Documented;
@@ -134,6 +135,19 @@ public @interface Client {
         HttpVersionSelection.ALPN_HTTP_2,
         HttpVersionSelection.ALPN_HTTP_1
     };
+
+    /**
+     * The kind of URI encoding to apply.
+     *
+     * <p>Defaults to {@link UrlEncodingKind#FORM_URLENCODED}.</p>
+     *
+     * <p>Can be overridden here or via configuration globally.</p>
+     *
+     * @return The URL encoding kind.
+     * @since 4.8.0
+     * @see HttpClientConfiguration#setUrlEncodingKind(UrlEncodingKind)
+     */
+    UrlEncodingKind uriEncoding() default UrlEncodingKind.FORM_URLENCODED;
 
     /**
      * The interface definition type.

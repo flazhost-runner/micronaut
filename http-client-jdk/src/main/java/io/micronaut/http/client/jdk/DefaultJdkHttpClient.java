@@ -44,6 +44,7 @@ import io.micronaut.json.JsonMapper;
 import io.micronaut.json.codec.JsonMediaTypeCodec;
 import io.micronaut.json.codec.JsonStreamMediaTypeCodec;
 import io.micronaut.runtime.ApplicationConfiguration;
+import java.util.Optional;
 import org.reactivestreams.Publisher;
 import org.slf4j.LoggerFactory;
 
@@ -141,6 +142,11 @@ public class DefaultJdkHttpClient extends AbstractJdkHttpClient implements JdkHt
             new JsonMediaTypeCodec(mapper, configuration, null),
             new JsonStreamMediaTypeCodec(mapper, configuration, null)
         );
+    }
+
+    @Override
+    public Optional<HttpClientConfiguration> getConfiguration() {
+        return Optional.ofNullable(configuration);
     }
 
     @Override

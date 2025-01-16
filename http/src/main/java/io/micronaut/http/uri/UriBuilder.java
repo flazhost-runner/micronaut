@@ -136,10 +136,36 @@ public interface UriBuilder {
      * Create a {@link UriBuilder} with the given base URI as a starting point.
      *
      * @param uri The URI
+     * @param encodingMethod The encoding method
+     * @return The builder
+     * @since 4.8.0
+     */
+    static @NonNull UriBuilder of(@NonNull URI uri, @Nullable UrlEncodingKind encodingMethod) {
+        ArgumentUtils.requireNonNull("uri", uri);
+        return new DefaultUriBuilder(uri, encodingMethod == null ? UrlEncodingKind.FORM_URLENCODED : encodingMethod);
+    }
+
+    /**
+     * Create a {@link UriBuilder} with the given base URI as a starting point.
+     *
+     * @param uri The URI
      * @return The builder
      */
     static @NonNull UriBuilder of(@NonNull CharSequence uri) {
         ArgumentUtils.requireNonNull("uri", uri);
         return new DefaultUriBuilder(uri);
+    }
+
+    /**
+     * Create a {@link UriBuilder} with the given base URI as a starting point.
+     *
+     * @param uri The URI
+     * @param encodingMethod The encoding method
+     * @return The builder
+     * @since 4.8.0
+     */
+    static @NonNull UriBuilder of(@NonNull CharSequence uri, @Nullable UrlEncodingKind encodingMethod) {
+        ArgumentUtils.requireNonNull("uri", uri);
+        return new DefaultUriBuilder(uri, encodingMethod == null ? UrlEncodingKind.FORM_URLENCODED : encodingMethod);
     }
 }
