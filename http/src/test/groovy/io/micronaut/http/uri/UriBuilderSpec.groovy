@@ -23,7 +23,7 @@ class UriBuilderSpec extends Specification {
 
     void "test uri builder expand"() {
         given:
-        def builder = UriBuilder.of("/person/{name}", URLEncodingKind.RFC_3986)
+        def builder = UriBuilder.of("/person/{name}")
 
         when:
         builder.path("/features/{feature}")
@@ -44,14 +44,14 @@ class UriBuilderSpec extends Specification {
         result = builder.expand(name:"Fred Flintstone", feature:"age", hash: "val")
 
         then:
-        result.toString() == '/person/Fred%20Flintstone/features/age?q=hello%20world#val'
+        result.toString() == '/person/Fred%20Flintstone/features/age?q=hello+world#val'
 
         when:
         builder.queryParam("a", "b")
         result = builder.expand(name:"Fred Flintstone", feature:"age", hash: "val")
 
         then:
-        result.toString() == '/person/Fred%20Flintstone/features/age?q=hello%20world&a=b#val'
+        result.toString() == '/person/Fred%20Flintstone/features/age?q=hello+world&a=b#val'
 
         when:
         builder.host("myhost")
@@ -61,7 +61,7 @@ class UriBuilderSpec extends Specification {
         result = builder.expand(name:"Fred Flintstone", feature:"age", hash: "val")
 
         then:
-        result.toString() == 'http://username:p%40s%24w0rd@myhost:9090/person/Fred%20Flintstone/features/age?q=hello%20world&a=b#val'
+        result.toString() == 'http://username:p%40s%24w0rd@myhost:9090/person/Fred%20Flintstone/features/age?q=hello+world&a=b#val'
     }
 
     void "test query param order"() {
@@ -125,7 +125,7 @@ class UriBuilderSpec extends Specification {
     @Unroll
     void "test queryParam method for uri #uri"() {
         given:
-        def builder = UriBuilder.of(uri, URLEncodingKind.RFC_3986)
+        def builder = UriBuilder.of(uri)
         for (p in params) {
             if (p.value instanceof List) {
                 builder.queryParam(p.key, *p.value)
@@ -141,7 +141,7 @@ class UriBuilderSpec extends Specification {
         uri                  | params                              | expected
         '/foo?existing=true' | ['foo': 'bar']                      | '/foo?existing=true&foo=bar'
         '/foo'               | ['foo': 'bar']                      | '/foo?foo=bar'
-        '/foo'               | ['foo': 'hello world']              | '/foo?foo=hello%20world'
+        '/foo'               | ['foo': 'hello world']              | '/foo?foo=hello+world'
         '/foo'               | ['foo': ['bar', 'baz']]             | '/foo?foo=bar&foo=baz'
         '/foo'               | ['foo': null, 'bar': 'baz']         | '/foo?bar=baz'
         '/foo'               | ['foo': [null, null], 'bar': 'baz'] | '/foo?bar=baz'
