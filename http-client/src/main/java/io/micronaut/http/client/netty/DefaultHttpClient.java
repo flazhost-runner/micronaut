@@ -110,7 +110,7 @@ import io.micronaut.http.reactive.execution.ReactiveExecutionFlow;
 import io.micronaut.http.sse.Event;
 import io.micronaut.http.uri.UriBuilder;
 import io.micronaut.http.uri.UriTemplate;
-import io.micronaut.http.uri.UrlEncodingKind;
+import io.micronaut.http.uri.URLEncodingKind;
 import io.micronaut.http.util.HttpHeadersUtil;
 import io.micronaut.json.JsonMapper;
 import io.micronaut.json.codec.JsonMediaTypeCodec;
@@ -255,7 +255,7 @@ public class DefaultHttpClient implements
     private MessageBodyHandlerRegistry handlerRegistry;
     private final List<HttpFilterResolver.FilterEntry> clientFilterEntries;
     private final LoadBalancer loadBalancer;
-    private final @Nullable UrlEncodingKind urlEncodingKind;
+    private final @Nullable URLEncodingKind urlEncodingKind;
     private final HttpClientConfiguration configuration;
     private final String contextPath;
     private final Charset defaultCharset;
@@ -506,7 +506,7 @@ public class DefaultHttpClient implements
     }
 
     @Override
-    public Optional<UrlEncodingKind> getUrlEncodingKind() {
+    public Optional<URLEncodingKind> getUrlEncodingKind() {
         return Optional.ofNullable(urlEncodingKind);
     }
 
@@ -1047,7 +1047,7 @@ public class DefaultHttpClient implements
             .map(m -> m.intValue(OnMessage.class, "maxPayloadLength")
                 .orElse(65536)).orElse(65536);
         String subprotocol = webSocketBean.getBeanDefinition().stringValue(ClientWebSocket.class, "subprotocol").orElse(StringUtils.EMPTY_STRING);
-        URI webSocketURL = UriBuilder.of(uri, configuration.getUrlEncodingKind())
+        URI webSocketURL = UriBuilder.of(uri, configuration.getUrlEncoding())
             .scheme(!requestKey.isSecure() ? "ws" : "wss")
             .host(requestKey.getHost())
             .port(requestKey.getPort())

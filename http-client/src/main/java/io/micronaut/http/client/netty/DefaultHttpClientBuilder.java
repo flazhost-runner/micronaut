@@ -33,7 +33,7 @@ import io.micronaut.http.codec.MediaTypeCodecRegistry;
 import io.micronaut.http.filter.HttpClientFilter;
 import io.micronaut.http.filter.HttpClientFilterResolver;
 import io.micronaut.http.filter.HttpFilterResolver;
-import io.micronaut.http.uri.UrlEncodingKind;
+import io.micronaut.http.uri.URLEncodingKind;
 import io.micronaut.websocket.context.WebSocketBeanRegistry;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFactory;
@@ -95,7 +95,7 @@ public final class DefaultHttpClientBuilder {
     @Nullable
     ExecutorService blockingExecutor = null;
     @Nullable
-    UrlEncodingKind urlEncodingKind = null;
+    URLEncodingKind urlEncodingKind = null;
 
     DefaultHttpClientBuilder() {
     }
@@ -124,7 +124,7 @@ public final class DefaultHttpClientBuilder {
      * @return This builder
      */
     @NonNull
-    public DefaultHttpClientBuilder urlEncodingKind(@Nullable UrlEncodingKind kind) {
+    public DefaultHttpClientBuilder urlEncodingKind(@Nullable URLEncodingKind kind) {
         if (kind != null) {
             this.urlEncodingKind = kind;
         }

@@ -228,7 +228,7 @@ public class UriTemplate implements Comparable<UriTemplate> {
      * @param encodingKind  The encoding kind. Can be null.
      * @return The expanded URI
      */
-    public String expand(Map<String, Object> parameters, @Nullable UrlEncodingKind encodingKind) {
+    public String expand(Map<String, Object> parameters, @Nullable URLEncodingKind encodingKind) {
         StringBuilder builder = new StringBuilder(templateString.length());
         boolean anyPreviousHasContent = false;
         boolean anyPreviousHasOperator = false;
@@ -605,7 +605,7 @@ public class UriTemplate implements Comparable<UriTemplate> {
          * @param encodingKind The URL encoding kind. Can be null.
          * @return The expanded string
          */
-        String expand(Map<String, Object> parameters, boolean previousHasContent, boolean anyPreviousHasOperator, UrlEncodingKind encodingKind);
+        String expand(Map<String, Object> parameters, boolean previousHasContent, boolean anyPreviousHasOperator, URLEncodingKind encodingKind);
     }
 
     /**
@@ -844,7 +844,7 @@ public class UriTemplate implements Comparable<UriTemplate> {
             }
 
             @Override
-            public String expand(Map<String, Object> parameters, boolean previousHasContent, boolean anyPreviousHasOperator, UrlEncodingKind encodingKind) {
+            public String expand(Map<String, Object> parameters, boolean previousHasContent, boolean anyPreviousHasOperator, URLEncodingKind encodingKind) {
                 return value;
             }
 
@@ -940,7 +940,7 @@ public class UriTemplate implements Comparable<UriTemplate> {
             }
 
             @Override
-            public String expand(Map<String, Object> parameters, boolean previousHasContent, boolean anyPreviousHasOperator, UrlEncodingKind encodingKind) {
+            public String expand(Map<String, Object> parameters, boolean previousHasContent, boolean anyPreviousHasOperator, URLEncodingKind encodingKind) {
                 Object found = parameters.get(variable);
                 boolean isOptional = found instanceof Optional;
                 if (found != null && !(isOptional && ((Optional<?>) found).isEmpty())) {
@@ -1075,7 +1075,7 @@ public class UriTemplate implements Comparable<UriTemplate> {
                 return result;
             }
 
-            private String encode(String str, boolean query, @Nullable UrlEncodingKind encodingKind) {
+            private String encode(String str, boolean query, @Nullable URLEncodingKind encodingKind) {
                 if (encodingKind != null) {
                     return encodingKind.encode(str);
                 } else {

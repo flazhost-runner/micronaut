@@ -69,7 +69,7 @@ import io.micronaut.http.client.sse.SseClient;
 import io.micronaut.http.sse.Event;
 import io.micronaut.http.uri.UriBuilder;
 import io.micronaut.http.uri.UriMatchTemplate;
-import io.micronaut.http.uri.UrlEncodingKind;
+import io.micronaut.http.uri.URLEncodingKind;
 import io.micronaut.json.codec.JsonMediaTypeCodec;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
@@ -369,7 +369,7 @@ public class HttpClientIntroductionAdvice implements MethodInterceptor<Object, O
                                             AnnotationMetadata annotationMetadata,
                                             HttpClient httpClient) {
         MutableHttpRequest<?> request = HttpRequest.create(httpMethod, "", httpMethodName);
-        UrlEncodingKind urlEncodingKind = httpClient.getUrlEncodingKind().orElse(null);
+        URLEncodingKind urlEncodingKind = httpClient.getUrlEncodingKind().orElse(null);
         UriMatchTemplate uriTemplate = UriMatchTemplate.of("");
         if (!(uri.length() == 1 && uri.charAt(0) == '/')) {
             uriTemplate = uriTemplate.nest(uri);
@@ -702,7 +702,7 @@ public class HttpClientIntroductionAdvice implements MethodInterceptor<Object, O
         }
     }
 
-    private String appendQuery(String uri, Map<String, List<String>> queryParams, UrlEncodingKind urlEncodingKind) {
+    private String appendQuery(String uri, Map<String, List<String>> queryParams, URLEncodingKind urlEncodingKind) {
         if (!queryParams.isEmpty()) {
             final UriBuilder builder = UriBuilder.of(uri, urlEncodingKind);
             for (Map.Entry<String, List<String>> entry : queryParams.entrySet()) {

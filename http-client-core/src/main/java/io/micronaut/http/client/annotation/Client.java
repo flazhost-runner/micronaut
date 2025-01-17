@@ -18,6 +18,7 @@ package io.micronaut.http.client.annotation;
 import io.micronaut.aop.Introduction;
 import io.micronaut.context.annotation.AliasFor;
 import io.micronaut.core.annotation.Experimental;
+import io.micronaut.core.annotation.NextMajorVersion;
 import io.micronaut.core.annotation.NonNull;
 import io.micronaut.http.HttpVersion;
 import io.micronaut.http.annotation.Consumes;
@@ -25,7 +26,7 @@ import io.micronaut.http.annotation.Produces;
 import io.micronaut.http.client.HttpClientConfiguration;
 import io.micronaut.http.client.HttpVersionSelection;
 import io.micronaut.http.hateoas.JsonError;
-import io.micronaut.http.uri.UrlEncodingKind;
+import io.micronaut.http.uri.URLEncodingKind;
 import jakarta.inject.Singleton;
 
 import java.lang.annotation.Documented;
@@ -139,15 +140,16 @@ public @interface Client {
     /**
      * The kind of URI encoding to apply.
      *
-     * <p>Defaults to {@link UrlEncodingKind#FORM_URLENCODED}.</p>
+     * <p>Defaults to {@link URLEncodingKind#RFC_1866}.</p>
      *
      * <p>Can be overridden here or via configuration globally.</p>
      *
      * @return The URL encoding kind.
      * @since 4.8.0
-     * @see HttpClientConfiguration#setUrlEncodingKind(UrlEncodingKind)
+     * @see HttpClientConfiguration#setUrlEncoding(URLEncodingKind)
      */
-    UrlEncodingKind uriEncoding() default UrlEncodingKind.FORM_URLENCODED;
+    @NextMajorVersion("Change default to RFC_3986")
+    URLEncodingKind urlEncoding() default URLEncodingKind.RFC_1866;
 
     /**
      * The interface definition type.

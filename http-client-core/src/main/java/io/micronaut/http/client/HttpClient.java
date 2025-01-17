@@ -25,7 +25,7 @@ import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpStatus;
 import io.micronaut.http.client.exceptions.HttpClientResponseException;
 import io.micronaut.http.hateoas.JsonError;
-import io.micronaut.http.uri.UrlEncodingKind;
+import io.micronaut.http.uri.URLEncodingKind;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 
@@ -77,7 +77,7 @@ public interface HttpClient extends Closeable, LifeCycle<HttpClient> {
      * @return The configuration used to define this client.
      * @since 4.8.0
      */
-    default Optional<UrlEncodingKind> getUrlEncodingKind() {
+    default Optional<URLEncodingKind> getUrlEncodingKind() {
         return Optional.empty();
     }
 

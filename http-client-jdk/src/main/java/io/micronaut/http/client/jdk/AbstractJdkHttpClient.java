@@ -51,7 +51,7 @@ import io.micronaut.http.filter.HttpFilterResolver;
 import io.micronaut.http.reactive.execution.ReactiveExecutionFlow;
 import io.micronaut.http.ssl.ClientAuthentication;
 import io.micronaut.http.ssl.ClientSslConfiguration;
-import io.micronaut.http.uri.UrlEncodingKind;
+import io.micronaut.http.uri.URLEncodingKind;
 import io.micronaut.http.util.HttpHeadersUtil;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
@@ -108,7 +108,7 @@ abstract class AbstractJdkHttpClient {
     protected final HttpClientFilterResolver<ClientFilterResolutionContext> filterResolver;
     protected final List<HttpFilterResolver.FilterEntry> clientFilterEntries;
     protected final CookieDecoder cookieDecoder;
-    protected final UrlEncodingKind urlEncodingKind;
+    protected final URLEncodingKind urlEncodingKind;
     protected MediaTypeCodecRegistry mediaTypeCodecRegistry;
     protected MessageBodyHandlerRegistry messageBodyHandlerRegistry;
 
@@ -161,9 +161,9 @@ abstract class AbstractJdkHttpClient {
         ConversionService conversionService,
         JdkClientSslBuilder sslBuilder,
         CookieDecoder cookieDecoder,
-        UrlEncodingKind urlEncodingKind
+        URLEncodingKind urlEncodingKind
     ) {
-        this.urlEncodingKind = urlEncodingKind != null ? urlEncodingKind : configuration.getUrlEncodingKind();
+        this.urlEncodingKind = urlEncodingKind != null ? urlEncodingKind : configuration.getUrlEncoding();
         this.cookieDecoder = cookieDecoder;
         this.log = configuration.getLoggerName().map(LoggerFactory::getLogger).orElse(log);
         this.loadBalancer = loadBalancer;

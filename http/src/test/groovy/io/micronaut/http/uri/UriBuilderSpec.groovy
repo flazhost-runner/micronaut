@@ -23,7 +23,7 @@ class UriBuilderSpec extends Specification {
 
     void "test uri builder expand"() {
         given:
-        def builder = UriBuilder.of("/person/{name}", UrlEncodingKind.RFC_3986)
+        def builder = UriBuilder.of("/person/{name}", URLEncodingKind.RFC_3986)
 
         when:
         builder.path("/features/{feature}")
@@ -125,7 +125,7 @@ class UriBuilderSpec extends Specification {
     @Unroll
     void "test queryParam method for uri #uri"() {
         given:
-        def builder = UriBuilder.of(uri, UrlEncodingKind.RFC_3986)
+        def builder = UriBuilder.of(uri, URLEncodingKind.RFC_3986)
         for (p in params) {
             if (p.value instanceof List) {
                 builder.queryParam(p.key, *p.value)
@@ -200,7 +200,7 @@ class UriBuilderSpec extends Specification {
     // spaces must encoded as %20 by https://www.rfc-editor.org/rfc/rfc3986
     void "test space encoding in query parameters"() {
         given:
-        def builder = UriBuilder.of("/parameters-test", UrlEncodingKind.RFC_3986)
+        def builder = UriBuilder.of("/parameters-test", URLEncodingKind.RFC_3986)
         builder.queryParam("test", "hello world")
 
         when:

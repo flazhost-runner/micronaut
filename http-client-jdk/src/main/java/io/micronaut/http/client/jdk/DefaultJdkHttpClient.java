@@ -40,7 +40,7 @@ import io.micronaut.http.client.jdk.cookie.DefaultCookieDecoder;
 import io.micronaut.http.codec.MediaTypeCodecRegistry;
 import io.micronaut.http.filter.HttpClientFilterResolver;
 import io.micronaut.http.filter.HttpFilterResolver;
-import io.micronaut.http.uri.UrlEncodingKind;
+import io.micronaut.http.uri.URLEncodingKind;
 import io.micronaut.json.JsonMapper;
 import io.micronaut.json.codec.JsonMediaTypeCodec;
 import io.micronaut.json.codec.JsonStreamMediaTypeCodec;
@@ -75,7 +75,7 @@ public class DefaultJdkHttpClient extends AbstractJdkHttpClient implements JdkHt
         ConversionService conversionService,
         JdkClientSslBuilder sslBuilder,
         CookieDecoder cookieDecoder,
-        UrlEncodingKind urlEncodingKind
+        URLEncodingKind urlEncodingKind
     ) {
         super(
             configuration.getLoggerName().map(LoggerFactory::getLogger).orElseGet(() -> LoggerFactory.getLogger(DefaultJdkHttpClient.class)),
@@ -150,7 +150,7 @@ public class DefaultJdkHttpClient extends AbstractJdkHttpClient implements JdkHt
     }
 
     @Override
-    public Optional<UrlEncodingKind> getUrlEncodingKind() {
+    public Optional<URLEncodingKind> getUrlEncodingKind() {
         return JdkHttpClient.super.getUrlEncodingKind();
     }
 

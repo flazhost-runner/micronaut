@@ -65,12 +65,106 @@ final class RFC3986UrlEncoder {
     }
 
     /**
+     * Transforms a provided <code>String</code> URL into a new string,
+     * containing decoded URL characters in the UTF-8 encoding.
+     *
+     * @param source The string URL that has to be decoded
+     * @return The decoded <code>String</code> object.
+     * @see #encode(String, String)
+     * @since 1.0
+     */
+    public static String decode(String source) {
+        return decode(source, false);
+    }
+
+    /**
+     * Transforms a provided <code>String</code> URL into a new string,
+     * containing decoded URL characters in the UTF-8 encoding.
+     *
+     * @param source      The string URL that has to be decoded
+     * @param plusToSpace Convert any {@code +} to space.
+     * @return The decoded <code>String</code> object.
+     * @see #encode(String, String)
+     * @since 1.0
+     */
+    public static String decode(String source, boolean plusToSpace) {
+        if (source == null || source.isEmpty()) {
+            return source;
+        }
+
+        var length = source.length();
+        StringBuilder out = null;
+        char ch;
+        byte[] bytesBuffer = null;
+        var bytesPos = 0;
+        var i = 0;
+        while (i < length) {
+            ch = source.charAt(i);
+
+            if (ch == '%') {
+                out = startConstructingIfNeeded(out, source, i);
+
+                if (bytesBuffer == null) {
+                    // the remaining characters divided by the length
+                    // of the encoding format %xx, is the maximum number of
+                    // bytes that can be extracted
+                    bytesBuffer = new byte[(length - i) / 3];
+                }
+
+                i += 1;
+                if (length < i + 2) {
+                    throw new IllegalArgumentException("Illegal escape sequence");
+                }
+                try {
+                    var v = Integer.parseInt(source, i, i + 2, 16);
+                    if (v < 0 || v > 0xFF) {
+                        throw new IllegalArgumentException("Illegal escape value");
+                    }
+
+                    bytesBuffer[bytesPos++] = (byte) v;
+
+                    i += 2;
+                } catch (NumberFormatException e) {
+                    throw new IllegalArgumentException("Illegal characters in escape sequence: " + e.getMessage(), e);
+                }
+            } else {
+                if (bytesBuffer != null) {
+                    out.append(new String(bytesBuffer, 0, bytesPos, StandardCharsets.UTF_8));
+
+                    bytesBuffer = null;
+                    bytesPos = 0;
+                }
+
+                if (plusToSpace && ch == '+') {
+                    out = startConstructingIfNeeded(out, source, i);
+                    out.append(" ");
+                } else if (out != null) {
+                    out.append(ch);
+                }
+
+                i += 1;
+            }
+        }
+
+        if (out == null) {
+            return source;
+        }
+
+        if (bytesBuffer != null) {
+            out.append(new String(bytesBuffer, 0, bytesPos, StandardCharsets.UTF_8));
+        }
+
+        return out.toString();
+    }
+
+    /**
      * Transforms a provided <code>String</code> object into a new string,
      * containing only valid URL characters in the UTF-8 encoding.
      *
      * @param source The string that has to be transformed into a valid URL
      *               string.
      * @return The encoded <code>String</code> object.
+     * @see #decode(String)
      * @since 1.0
      */
     static String encode(String source) {
@@ -85,6 +179,7 @@ final class RFC3986UrlEncoder {
      *               string.
      * @param allow  Additional characters to allow.
      * @return The encoded <code>String</code> object.
+     * @see #decode(String)
      * @since 1.0
      */
     static String encode(String source, String allow) {
@@ -99,6 +194,7 @@ final class RFC3986UrlEncoder {
      *                    string.
      * @param spaceToPlus Convert any space to {@code +}.
      * @return The encoded <code>String</code> object.
+     * @see #decode(String)
      * @since 1.0
      */
     static String encode(String source, boolean spaceToPlus) {
@@ -114,6 +210,7 @@ final class RFC3986UrlEncoder {
      * @param allow       Additional characters to allow.
      * @param spaceToPlus Convert any space to {@code +}.
      * @return The encoded <code>String</code> object.
+     * @see #decode(String)
      * @since 1.0
      */
     static String encode(String source, String allow, boolean spaceToPlus) {
