@@ -16,7 +16,6 @@ public class HostnameVerificationTest {
     @Property(name = "micronaut.http.client.ssl.disable-hostname-verification", value = "true")
     void testSslConfigurationWithHostnameVerificationDisabled() {
         ClientSslConfiguration sslConfig = beanContext.getBean(ClientSslConfiguration.class);
-        System.out.println("disable-hostname-verification = " + sslConfig.isDisableHostnameVerification());
         assertTrue(sslConfig.isDisableHostnameVerification(),
             "Expected hostname verification to be disabled");
     }
@@ -25,7 +24,6 @@ public class HostnameVerificationTest {
     @Property(name = "micronaut.http.client.ssl.disable-hostname-verification", value = "false")
     void testSslConfigurationWithHostnameVerificationEnabled() {
         ClientSslConfiguration sslConfig = beanContext.getBean(ClientSslConfiguration.class);
-        System.out.println("disable-hostname-verification = " + sslConfig.isDisableHostnameVerification());
         assertFalse(sslConfig.isDisableHostnameVerification(),
             "Expected hostname verification to be enabled");
     }

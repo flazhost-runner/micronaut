@@ -65,10 +65,35 @@ public class ClientSslConfiguration extends AbstractClientSslConfiguration {
         setEnabled(true);
     }
 
+    /**
+     * Returns whether hostname verification is disabled for SSL connections.
+     * <p>
+     * When this setting is enabled, the client will skip the verification that the SSL certificate matches
+     * the expected hostname. Disabling this feature exposes the application to security risks,
+     * as it no longer verifies that the server's certificate matches the expected hostname.
+     * <b>Important:</b> Only disable hostname verification in trusted environments, such as internal
+     * testing or during debugging. In production environments, hostname verification should be enabled
+     * to protect the integrity and confidentiality of communications.
+     *
+     * @since 4.8.0
+     */
+
     public boolean isDisableHostnameVerification() {
         return disableHostnameVerification;
     }
 
+    /**
+     * Sets whether to disable hostname verification for SSL connections.
+     * <p>
+     * This setting controls the verification of the hostname during SSL handshake. Disabling it prevents
+     * the client from verifying that the SSL certificate matches the hostname it connects to.
+     * This may expose the application to security risks, where
+     * an attacker could intercept or modify the data exchanged between the client and the server.
+     * <b>Warning:</b> This setting should only be used in trusted environments, such as internal testing,
+     * and should not be used in production systems.
+     *
+     * @since 4.8.0
+     */
     public void setDisableHostnameVerification(boolean disableHostnameVerification) {
         this.disableHostnameVerification = disableHostnameVerification;
     }
