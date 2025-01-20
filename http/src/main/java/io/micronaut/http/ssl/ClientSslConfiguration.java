@@ -77,7 +77,6 @@ public class ClientSslConfiguration extends AbstractClientSslConfiguration {
      *
      * @since 4.8.0
      */
-
     public boolean isDisableHostnameVerification() {
         return disableHostnameVerification;
     }
