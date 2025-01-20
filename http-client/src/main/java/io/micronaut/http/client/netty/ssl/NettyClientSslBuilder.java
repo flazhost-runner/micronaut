@@ -89,7 +89,6 @@ public class NettyClientSslBuilder extends SslBuilder<SslContext> implements Cli
             .keyManager(getKeyManagerFactory(ssl))
             .trustManager(getTrustManagerFactory(ssl))
             .sslProvider(NettyTlsUtils.sslProvider(ssl));
-
         Optional<String[]> protocols = ssl.getProtocols();
         if (protocols.isPresent()) {
             sslBuilder.protocols(protocols.get());
