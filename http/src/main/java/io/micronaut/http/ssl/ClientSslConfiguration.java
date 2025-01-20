@@ -36,6 +36,10 @@ public class ClientSslConfiguration extends AbstractClientSslConfiguration {
      */
     public static final String PREFIX = "micronaut.http.client.ssl";
 
+    private boolean disableHostnameVerification;
+
+
+
     /**
      * Overrides the default constructor and sets {@link #isEnabled()} to true.
      *
@@ -61,6 +65,13 @@ public class ClientSslConfiguration extends AbstractClientSslConfiguration {
         setEnabled(true);
     }
 
+    public boolean isDisableHostnameVerification() {
+        return disableHostnameVerification;
+    }
+
+    public void setDisableHostnameVerification(boolean disableHostnameVerification) {
+        this.disableHostnameVerification = disableHostnameVerification;
+    }
     /**
      * Sets the key configuration.
      *

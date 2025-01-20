@@ -22,11 +22,7 @@ import io.micronaut.core.io.ResourceResolver;
 import io.micronaut.http.HttpVersion;
 import io.micronaut.http.client.HttpVersionSelection;
 import io.micronaut.http.netty.NettyTlsUtils;
-import io.micronaut.http.ssl.AbstractClientSslConfiguration;
-import io.micronaut.http.ssl.ClientAuthentication;
-import io.micronaut.http.ssl.SslBuilder;
-import io.micronaut.http.ssl.SslConfiguration;
-import io.micronaut.http.ssl.SslConfigurationException;
+import io.micronaut.http.ssl.*;
 import io.netty.handler.codec.http2.Http2SecurityUtil;
 import io.netty.handler.ssl.ApplicationProtocolConfig;
 import io.netty.handler.ssl.ClientAuth;
@@ -93,6 +89,7 @@ public class NettyClientSslBuilder extends SslBuilder<SslContext> implements Cli
             .keyManager(getKeyManagerFactory(ssl))
             .trustManager(getTrustManagerFactory(ssl))
             .sslProvider(NettyTlsUtils.sslProvider(ssl));
+
         Optional<String[]> protocols = ssl.getProtocols();
         if (protocols.isPresent()) {
             sslBuilder.protocols(protocols.get());
@@ -122,7 +119,11 @@ public class NettyClientSslBuilder extends SslBuilder<SslContext> implements Cli
                 versionSelection.getAlpnSupportedProtocols()
             ));
         }
-
+        if (ssl instanceof ClientSslConfiguration clientSsl) {
+            if (clientSsl.isDisableHostnameVerification()) {
+                sslBuilder.endpointIdentificationAlgorithm(null);
+            }
+        }
         try {
             return sslBuilder.build();
         } catch (SSLException ex) {
