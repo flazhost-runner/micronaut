@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 @MicronautTest(startApplication = false)
-public class HostnameVerificationTest {
+class HostnameVerificationTest {
     @Inject
     BeanContext beanContext;
     @Test
