@@ -118,10 +118,8 @@ public class NettyClientSslBuilder extends SslBuilder<SslContext> implements Cli
                 versionSelection.getAlpnSupportedProtocols()
             ));
         }
-        if (ssl instanceof ClientSslConfiguration clientSsl) {
-            if (clientSsl.isDisableHostnameVerification()) {
-                sslBuilder.endpointIdentificationAlgorithm(null);
-            }
+        if (ssl instanceof ClientSslConfiguration clientSsl && clientSsl.isDisableHostnameVerification()) {
+            sslBuilder.endpointIdentificationAlgorithm(null);
         }
         try {
             return sslBuilder.build();
