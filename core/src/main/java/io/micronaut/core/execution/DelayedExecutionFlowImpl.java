@@ -32,7 +32,7 @@ final class DelayedExecutionFlowImpl<T> implements DelayedExecutionFlow<T> {
     /**
      * The head of the linked list of steps in this flow.
      */
-    private Step head = new Head();
+    private Head head = new Head();
     /**
      * The tail of the linked list of steps in this flow.
      */
