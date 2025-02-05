@@ -27,6 +27,7 @@ dependencies {
     testImplementation(libs.micronaut.test.junit5) {
         exclude(group= "io.micronaut")
     }
+    testImplementation(libs.icu4j)
 }
 
 tasks {

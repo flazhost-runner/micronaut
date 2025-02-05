@@ -64,6 +64,7 @@ vertx = "4.5.12"
 wiremock = "2.33.2"
 mimepull = "1.10.0"
 micronaut-sourcegen = "1.6.2"
+icu4j = "76.1"
 
 #
 # Versions which start with managed- are managed by Micronaut in the sense
@@ -201,6 +202,8 @@ hibernate = { module = "org.hibernate:hibernate-core", version.ref = "hibernate"
 
 htmlunit = { module = "net.sourceforge.htmlunit:htmlunit", version.ref = "htmlunit" }
 htmlsanitycheck = { module = "org.aim42:htmlSanityCheck", version.ref = "htmlsanitycheck"}
+
+icu4j = { module = "com.ibm.icu:icu4j", version.ref = "icu4j" }
 
 jakarta-inject-api = { module = "jakarta.inject:jakarta.inject-api", version.ref = "jakarta-inject-api" }
 jakarta-inject-tck = { module = "jakarta.inject:jakarta.inject-tck", version.ref = "jakarta-inject-tck" }
