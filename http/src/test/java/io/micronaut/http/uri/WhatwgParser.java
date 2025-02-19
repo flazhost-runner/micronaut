@@ -1163,7 +1163,7 @@ final class WhatwgParser {
     private static void percentEncodeAfterEncoding(StringBuilder dest, Charset charset, CharSequence input, PercentEncoder percentEncoder, boolean spaceAsPlus) {
         CharsetEncoder encoder = charset.newEncoder();
         CharBuffer inputBuffer = CharBuffer.wrap(input);
-        ByteBuffer outputBuffer = ByteBuffer.allocate(16);
+        ByteBuffer outputBuffer = ByteBuffer.allocate(1024);
         while (true) {
             CoderResult result = encoder.encode(inputBuffer, outputBuffer, true);
             outputBuffer.flip();

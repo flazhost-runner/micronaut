@@ -1,5 +1,7 @@
 package io.micronaut.http.uri;
 
+import io.micronaut.core.annotation.NonNull;
+
 import java.net.URI;
 
 public final class UriUtil {
@@ -45,7 +47,101 @@ public final class UriUtil {
         return sb.toString();
     }
 
+    /**
+     * Check whether the given HTTP request target is a valid RFC 3986 relative URI (path + query)
+     * that will be parsed without complaint by {@link URI}. If this is true, we can skip the
+     * expensive parsing until necessary.
+     *
+     * @param requestTarget The HTTP request line
+     * @return {@code true} iff this is a valid relative URI
+     */
+    public static boolean isValidPath(@NonNull String requestTarget) {
+        if (requestTarget.isEmpty() || requestTarget.charAt(0) != '/') {
+            return false;
+        }
+        for (int i = 0; i < requestTarget.length(); i++) {
+            char c = requestTarget.charAt(i);
+            if (c == '%' || c > 0x7f || !PercentEncoder.RFC3986_QUERY_CHAR.keep((byte) c)) {
+                return false;
+            }
+            if (c == '/' && i < requestTarget.length() - 1) {
+                char next = requestTarget.charAt(i + 1);
+                if (next == '/') {
+                    return false;
+                }
+                if (next == '.') {
+                    if (i >= requestTarget.length() - 2) {
+                        return false;
+                    }
+                    char nextNext = requestTarget.charAt(i + 2);
+                    if (nextNext == '.' || nextNext == '/' || nextNext == '?' || nextNext == '#') {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
 
+    /**
+     * Determine whether the given HTTP request target is a relative URI (path+query) appropriate
+     * for {@link #toValidPath(String)}. The invariants are:
+     *
+     * <ul>
+     *     <li>This method returns {@code true} exactly when, according to the whatwg URL spec, this
+     *     URL has no scheme</li>
+     *     <li>If the input is a valid URI, this method is equal to the inverse of
+     *     {@link URI#isAbsolute()}</li>
+     *     <li>If this method returns {@code true}, and the input is a valid URI after going
+     *     through {@link #toValidPath(String)}, {@link URI#isAbsolute()} is {@code false}</li>
+     * </ul>
+     *
+     * @param requestTarget The HTTP request target
+     * @return {@code true} if this URL is relative
+     */
+    public static boolean isRelative(@NonNull String requestTarget) {
+        // yes this code is weird. There's a fuzz test that checks it against the whatwg spec
+        boolean start = true;
+        for (int i = 0; i < requestTarget.length(); i++) {
+            char c = requestTarget.charAt(i);
+            if (c == '\t' || c == '\n' || c == '\r') {
+                // newline and tab is ignored anywhere.
+                continue;
+            }
+            if (isAsciiLowerAlpha(c) || isAsciiUpperAlpha(c)) {
+                start = false;
+                continue;
+            }
+            if (!start) {
+                if (c == ':') {
+                    return false;
+                }
+                if (isAsciiDigit(c) || c == '+' || c == '-' || c == '.') {
+                    continue;
+                }
+                if (isC0OrSpace(c)) {
+                    // c0 and space are trimmed at start and end, so we are either invalid or at
+                    // the end
+                    break;
+                }
+            } else {
+                if (isC0OrSpace(c)) {
+                    // c0 and space are trimmed at start and end.
+                    continue;
+                }
+            }
+            break;
+        }
+        return true;
+    }
+
+    private static boolean isC0(int c) {
+        return c <= 0x1f;
+    }
+
+    private static boolean isC0OrSpace(char c) {
+        return isC0(c) || c == ' ';
+    }
 
     private static boolean isAsciiDigit(int c) {
         return c >= '0' && c <= '9';
@@ -61,5 +157,13 @@ public final class UriUtil {
 
     private static boolean isAsciiHexDigit(int c) {
         return isAsciiLowerHexDigit(c) || isAsciiUpperHexDigit(c);
+    }
+
+    private static boolean isAsciiUpperAlpha(int c) {
+        return c >= 'A' && c <= 'Z';
+    }
+
+    private static boolean isAsciiLowerAlpha(int c) {
+        return c >= 'a' && c <= 'z';
     }
 }

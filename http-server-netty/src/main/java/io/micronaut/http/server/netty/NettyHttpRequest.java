@@ -197,7 +197,7 @@ public final class NettyHttpRequest<T> extends AbstractNettyHttpRequest<T> imple
                             ChannelHandlerContext ctx,
                             ConversionService environment,
                             HttpServerConfiguration serverConfiguration) throws IllegalArgumentException {
-        super(nettyRequest, environment);
+        super(nettyRequest, environment, serverConfiguration.isEscapeHtmlUrl());
         Objects.requireNonNull(nettyRequest, "Netty request cannot be null");
         Objects.requireNonNull(ctx, "ChannelHandlerContext cannot be null");
         Objects.requireNonNull(environment, "Environment cannot be null");

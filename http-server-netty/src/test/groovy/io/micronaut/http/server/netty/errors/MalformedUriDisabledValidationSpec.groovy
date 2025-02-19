@@ -28,7 +28,7 @@ class MalformedUriDisabledValidationSpec extends Specification {
 
     @Shared @AutoCleanup EmbeddedServer embeddedServer = ApplicationContext.run(EmbeddedServer, [
             'spec.name': 'MalformedUriDisabledValidationSpec',
-            'micronaut.server.validate-url': 'false'
+            'micronaut.server.escape-html-url': 'true'
     ])
     @Shared @AutoCleanup HttpClient client = embeddedServer.applicationContext.createBean(HttpClient, embeddedServer.getURL())
 

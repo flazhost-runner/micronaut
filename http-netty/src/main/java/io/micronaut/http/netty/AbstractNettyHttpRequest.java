@@ -24,6 +24,7 @@ import io.micronaut.http.HttpParameters;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.netty.stream.DefaultStreamedHttpRequest;
 import io.micronaut.http.netty.stream.StreamedHttpRequest;
+import io.micronaut.http.uri.UriUtil;
 import io.netty.handler.codec.http.DefaultFullHttpRequest;
 import io.netty.handler.codec.http.DefaultLastHttpContent;
 import io.netty.handler.codec.http.HttpConstants;
@@ -51,19 +52,27 @@ public abstract class AbstractNettyHttpRequest<B> extends DefaultAttributeMap im
     protected final String unvalidatedUrl;
     protected final String httpMethodName;
 
-    private URI uri;
-    private NettyHttpParameters httpParameters;
-    private Charset charset;
-    private String path;
+    private volatile URI uri;
+    private volatile NettyHttpParameters httpParameters;
+    private volatile Charset charset;
+    private volatile String path;
 
     /**
      * @param nettyRequest      The Http netty request
      * @param conversionService The conversion service
+     * @param escapeHtmlUrl
      */
-    public AbstractNettyHttpRequest(io.netty.handler.codec.http.HttpRequest nettyRequest, ConversionService conversionService) {
+    public AbstractNettyHttpRequest(io.netty.handler.codec.http.HttpRequest nettyRequest, ConversionService conversionService, boolean escapeHtmlUrl) {
         this.nettyRequest = nettyRequest;
         this.conversionService = conversionService;
-        this.unvalidatedUrl = nettyRequest.uri();
+        String uri = nettyRequest.uri();
+        if (!UriUtil.isValidPath(uri)) {
+            if (escapeHtmlUrl && UriUtil.isRelative(uri)) {
+                uri = UriUtil.toValidPath(uri);
+            }
+            this.uri = createURI(uri);
+        }
+        this.unvalidatedUrl = uri;
         this.httpMethodName = nettyRequest.method().name();
         this.httpMethod = HttpMethod.parse(httpMethodName);
     }
@@ -160,13 +169,8 @@ public abstract class AbstractNettyHttpRequest<B> extends DefaultAttributeMap im
     public URI getUri() {
         URI u = this.uri;
         if (u == null) {
-            synchronized (this) { // double check
-                u = this.uri;
-                if (u == null) {
-                    u = createURI(unvalidatedUrl);
-                    this.uri = u;
-                }
-            }
+            u = createURI(unvalidatedUrl);
+            this.uri = u;
         }
         return u;
     }
@@ -175,13 +179,8 @@ public abstract class AbstractNettyHttpRequest<B> extends DefaultAttributeMap im
     public String getPath() {
         String p = this.path;
         if (p == null) {
-            synchronized (this) { // double check
-                p = this.path;
-                if (p == null) {
-                    p = parsePath(unvalidatedUrl);
-                    this.path = p;
-                }
-            }
+            p = parsePath(unvalidatedUrl);
+            this.path = p;
         }
         return p;
     }
