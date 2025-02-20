@@ -351,11 +351,6 @@ public final class UriTemplateMatcher implements UriMatcher, Comparable<UriTempl
         switch (c) {
             case '/':
             case '?':
-            case '{':
-            case '}':
-            case '&':
-            case ';':
-            case '+':
                 return true;
             case '#':
                 if (i + 1 < input.length()) {
