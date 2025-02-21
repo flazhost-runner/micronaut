@@ -1,4 +1,4 @@
-package io.micronaut.http.uri;
+package io.micronaut.web.router.uri;
 
 import io.micronaut.core.annotation.Nullable;
 

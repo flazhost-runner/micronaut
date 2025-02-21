@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.http.netty;
+package io.micronaut.http.server.netty;
 
 import io.micronaut.core.annotation.Internal;
 import io.micronaut.core.annotation.NonNull;
@@ -22,9 +22,12 @@ import io.micronaut.core.convert.ConversionService;
 import io.micronaut.http.HttpMethod;
 import io.micronaut.http.HttpParameters;
 import io.micronaut.http.HttpRequest;
+import io.micronaut.http.netty.NettyHttpParameters;
+import io.micronaut.http.netty.NettyHttpRequestBuilder;
 import io.micronaut.http.netty.stream.DefaultStreamedHttpRequest;
 import io.micronaut.http.netty.stream.StreamedHttpRequest;
-import io.micronaut.http.uri.UriUtil;
+import io.micronaut.http.server.HttpServerConfiguration;
+import io.micronaut.web.router.uri.UriUtil;
 import io.netty.handler.codec.http.DefaultFullHttpRequest;
 import io.netty.handler.codec.http.DefaultLastHttpContent;
 import io.netty.handler.codec.http.HttpConstants;
@@ -60,7 +63,7 @@ public abstract class AbstractNettyHttpRequest<B> extends DefaultAttributeMap im
     /**
      * @param nettyRequest      The Http netty request
      * @param conversionService The conversion service
-     * @param escapeHtmlUrl
+     * @param escapeHtmlUrl     {@link HttpServerConfiguration#isEscapeHtmlUrl()}
      */
     public AbstractNettyHttpRequest(io.netty.handler.codec.http.HttpRequest nettyRequest, ConversionService conversionService, boolean escapeHtmlUrl) {
         this.nettyRequest = nettyRequest;
