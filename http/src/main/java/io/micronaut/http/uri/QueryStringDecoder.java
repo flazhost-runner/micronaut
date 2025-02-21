@@ -388,7 +388,7 @@ final class QueryStringDecoder {
         return true;
     }
 
-    public static String decodeComponent(String s, int from, int toExcluded, Charset charset, boolean isPath) {
+    private static String decodeComponent(String s, int from, int toExcluded, Charset charset, boolean isPath) {
         int len = toExcluded - from;
         if (len <= 0) {
             return EMPTY_STRING;

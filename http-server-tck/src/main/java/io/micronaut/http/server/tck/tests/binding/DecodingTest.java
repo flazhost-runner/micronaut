@@ -44,6 +44,26 @@ public class DecodingTest {
                 .build()));
     }
 
+    @Test
+    void queryVarWithPercentIsDecoded() throws IOException {
+        asserts(SPEC_NAME,
+            HttpRequest.GET("/decoding/query?queryVar=foo%20bar"),
+            (server, request) -> AssertionUtils.assertDoesNotThrow(server, request, HttpResponseAssertion.builder()
+                .status(HttpStatus.OK)
+                .body(BodyAssertion.builder().body("foo bar").equals())
+                .build()));
+    }
+
+    @Test
+    void queryVarWithPlusIsDecoded() throws IOException {
+        asserts(SPEC_NAME,
+            HttpRequest.GET("/decoding/query?queryVar=foo+bar"),
+            (server, request) -> AssertionUtils.assertDoesNotThrow(server, request, HttpResponseAssertion.builder()
+                .status(HttpStatus.OK)
+                .body(BodyAssertion.builder().body("foo bar").equals())
+                .build()));
+    }
+
     @Requires(property = "spec.name", value = SPEC_NAME)
     @Controller("/decoding")
     static class Ctrl {

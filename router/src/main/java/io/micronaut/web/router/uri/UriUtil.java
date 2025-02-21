@@ -15,9 +15,19 @@
  */
 package io.micronaut.web.router.uri;
 
+import io.micronaut.core.annotation.Internal;
 import io.micronaut.core.annotation.NonNull;
 
 import java.net.URI;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CoderResult;
+
+import static io.micronaut.core.util.StringUtils.EMPTY_STRING;
+import static io.micronaut.core.util.StringUtils.SPACE;
 
 /**
  * Utilities for converting URI formats.
@@ -186,5 +196,94 @@ public final class UriUtil {
 
     private static boolean isAsciiLowerAlpha(int c) {
         return c >= 'a' && c <= 'z';
+    }
+
+    @Internal
+    public static String decodeComponent(String s, int from, int toExcluded, Charset charset, boolean isPath) {
+        int len = toExcluded - from;
+        if (len <= 0) {
+            return EMPTY_STRING;
+        }
+        int firstEscaped = -1;
+        for (int i = from; i < toExcluded; i++) {
+            char c = s.charAt(i);
+            if (c == '%' || c == '+' && !isPath) {
+                firstEscaped = i;
+                break;
+            }
+        }
+        if (firstEscaped == -1) {
+            return s.substring(from, toExcluded);
+        }
+
+        CharsetDecoder decoder = charset.newDecoder();
+
+        // Each encoded byte takes 3 characters (e.g. "%20")
+        int decodedCapacity = (toExcluded - firstEscaped) / 3;
+        ByteBuffer byteBuf = ByteBuffer.allocate(decodedCapacity);
+        CharBuffer charBuf = CharBuffer.allocate(decodedCapacity);
+
+        var strBuf = new StringBuilder(len);
+        strBuf.append(s, from, firstEscaped);
+
+        for (int i = firstEscaped; i < toExcluded; i++) {
+            char c = s.charAt(i);
+            if (c != '%') {
+                strBuf.append(c != '+' || isPath ? c : SPACE);
+                continue;
+            }
+
+            byteBuf.clear();
+            do {
+                if (i + 3 > toExcluded) {
+                    throw new IllegalArgumentException("unterminated escape sequence at index " + i + " of: " + s);
+                }
+                byteBuf.put(decodeHexByte(s, i + 1));
+                i += 3;
+            } while (i < toExcluded && s.charAt(i) == '%');
+            i--;
+
+            byteBuf.flip();
+            charBuf.clear();
+            CoderResult result = decoder.reset().decode(byteBuf, charBuf, true);
+            try {
+                if (!result.isUnderflow()) {
+                    result.throwException();
+                }
+                result = decoder.flush(charBuf);
+                if (!result.isUnderflow()) {
+                    result.throwException();
+                }
+            } catch (CharacterCodingException ex) {
+                throw new IllegalStateException(ex);
+            }
+            strBuf.append(charBuf.flip());
+        }
+        return strBuf.toString();
+    }
+
+    private static byte decodeHexByte(CharSequence s, int pos) {
+        int hi = decodeHexNibble(s.charAt(pos));
+        int lo = decodeHexNibble(s.charAt(pos + 1));
+        if (hi == -1 || lo == -1) {
+            throw new IllegalArgumentException(
+                "invalid hex byte '%s' at index %d of '%s'".formatted(s.subSequence(pos, pos + 2), pos, s));
+        }
+        return (byte) ((hi << 4) + lo);
+    }
+
+    private static int decodeHexNibble(final char c) {
+        // Character.digit() is not used here, as it addresses a larger
+        // set of characters (both ASCII and full-width latin letters).
+        if (c >= '0' && c <= '9') {
+            return c - '0';
+        }
+        if (c >= 'A' && c <= 'F') {
+            return c - ('A' - 0xA);
+        }
+        if (c >= 'a' && c <= 'f') {
+            return c - ('a' - 0xA);
+        }
+        return -1;
     }
 }
