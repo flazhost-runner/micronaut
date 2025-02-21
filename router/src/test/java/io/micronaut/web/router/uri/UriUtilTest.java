@@ -1,4 +1,4 @@
-package io.micronaut.http.uri;
+package io.micronaut.web.router.uri;
 
 import com.code_intelligence.jazzer.api.FuzzedDataProvider;
 import com.code_intelligence.jazzer.junit.FuzzTest;

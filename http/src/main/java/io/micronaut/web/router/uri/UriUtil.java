@@ -13,12 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.http.uri;
+package io.micronaut.web.router.uri;
 
 import io.micronaut.core.annotation.NonNull;
 
 import java.net.URI;
 
+/**
+ * Utilities for converting URI formats.
+ *
+ * @author Jonas Konrad
+ * @since 4.9.0
+ */
 public final class UriUtil {
     private UriUtil() {
     }

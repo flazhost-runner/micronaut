@@ -13,11 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.http.uri;
+package io.micronaut.web.router.uri;
+
+import io.micronaut.core.annotation.Internal;
 
 import java.util.BitSet;
 import java.util.Locale;
 
+@Internal
 final class PercentEncoder {
     static final PercentEncoder C0 = new PercentEncoder(new BitSet());
 

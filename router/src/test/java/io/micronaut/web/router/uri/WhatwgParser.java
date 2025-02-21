@@ -1,4 +1,4 @@
-package io.micronaut.http.uri;
+package io.micronaut.web.router.uri;
 
 import com.ibm.icu.text.IDNA;
 import io.micronaut.core.annotation.NonNull;
@@ -724,18 +724,18 @@ final class WhatwgParser {
         if (info.hasErrors()) {
             for (IDNA.Error error : info.getErrors()) {
                 switch (error) {
-                    case LEADING_HYPHEN, TRAILING_HYPHEN, HYPHEN_3_4, LABEL_TOO_LONG,
-                         DOMAIN_NAME_TOO_LONG -> {
+                    case Error.LEADING_HYPHEN, Error.TRAILING_HYPHEN, Error.HYPHEN_3_4, Error.LABEL_TOO_LONG,
+                         Error.DOMAIN_NAME_TOO_LONG -> {
                         if (beStrict) {
                             throw fatalValidationError(ValidationError.DOMAIN_TO_ASCII);
                         }
                     }
-                    case BIDI, CONTEXTJ, PUNYCODE, LABEL_HAS_DOT, LEADING_COMBINING_MARK,
-                         DISALLOWED, INVALID_ACE_LABEL ->
+                    case Error.BIDI, Error.CONTEXTJ, Error.PUNYCODE, Error.LABEL_HAS_DOT, Error.LEADING_COMBINING_MARK,
+                         Error.DISALLOWED, Error.INVALID_ACE_LABEL ->
                         throw fatalValidationError(ValidationError.DOMAIN_TO_ASCII);
-                    case CONTEXTO_PUNCTUATION, CONTEXTO_DIGITS ->
+                    case Error.CONTEXTO_PUNCTUATION, Error.CONTEXTO_DIGITS ->
                         throw new AssertionError("ContextO checking should not be enabled");
-                    case EMPTY_LABEL -> {
+                    case Error.EMPTY_LABEL -> {
                     }
                 }
             }
