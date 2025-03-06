@@ -859,8 +859,8 @@ class Test<T : Test<T>>
     }
 
     void "test recursive generic method return"() {
-        given:
-            ClassElement ce = buildClassElementTransformed('test.MyFactory', '''\
+        expect:
+            buildClassElement('test.MyFactory', '''\
 package test
 
 import org.hibernate.SessionFactory
@@ -876,22 +876,18 @@ class MyFactory {
 ''') {
                 def sessionFactoryMethod = it.findMethod("sessionFactory").get()
                 def withOptionsMethod = sessionFactoryMethod.getReturnType().findMethod("withOptions").get()
-                withOptionsMethod.getReturnType().getTypeArguments()
-                return it
+                assert withOptionsMethod.getReturnType().getTypeArguments()
+                def typeArguments = withOptionsMethod.getReturnType().getTypeArguments()
+                assert typeArguments.size() == 1
+                def typeArgument = typeArguments.get("T")
+                assert typeArgument.name == "org.hibernate.SessionBuilder"
+                def nextTypeArguments = typeArgument.getTypeArguments()
+                def nextTypeArgument = nextTypeArguments.get("T")
+                assert nextTypeArgument.name == "org.hibernate.SessionBuilder"
+                def nextNextTypeArguments = nextTypeArgument.getTypeArguments()
+                def nextNextTypeArgument = nextNextTypeArguments.get("T")
+                assert nextNextTypeArgument.name == "java.lang.Object"
             }
-        expect:
-            def sessionFactoryMethod = ce.findMethod("sessionFactory").get()
-            def withOptionsMethod = sessionFactoryMethod.getReturnType().findMethod("withOptions").get()
-            def typeArguments = withOptionsMethod.getReturnType().getTypeArguments()
-            typeArguments.size() == 1
-            def typeArgument = typeArguments.get("T")
-            typeArgument.name == "org.hibernate.SessionBuilder"
-            def nextTypeArguments = typeArgument.getTypeArguments()
-            def nextTypeArgument = nextTypeArguments.get("T")
-            nextTypeArgument.name == "org.hibernate.SessionBuilder"
-            def nextNextTypeArguments = nextTypeArgument.getTypeArguments()
-            def nextNextTypeArgument = nextNextTypeArguments.get("T")
-            nextNextTypeArgument.name == "java.lang.Object"
     }
 
     void "test recursive generic method return 2"() {

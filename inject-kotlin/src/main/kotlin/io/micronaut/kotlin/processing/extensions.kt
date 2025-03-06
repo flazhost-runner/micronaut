@@ -52,6 +52,9 @@ internal fun KSDeclaration.getBinaryName(resolver: Resolver, visitorContext: Kot
             return Type.getType(signature).className
         }
     }
+    if (declaration is KSTypeAlias) {
+        return declaration.name.asString()
+    }
     return if (declaration.origin != Origin.SYNTHETIC) {
         computeName(declaration)
     } else {

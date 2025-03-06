@@ -74,7 +74,7 @@ managed-jakarta-annotation-api = "2.1.1"
 managed-jackson = "2.18.2"
 #@NextMajorVersion @Deprecated Delete in Micronaut Framework 5.
 managed-jackson-databind = "2.18.2"
-managed-kotlin = "1.9.25"
+managed-kotlin = "2.1.10"
 managed-kotlin-coroutines = "1.8.1"
 managed-methvin-directory-watcher = "0.18.0"
 managed-netty = "4.1.118.Final"
@@ -86,7 +86,7 @@ managed-reactive-streams = "1.0.4"
 managed-reactor = "3.7.2"
 managed-snakeyaml = "2.3"
 managed-java-parser-core = "3.26.3"
-managed-ksp = "1.9.25-1.0.20"
+managed-ksp = "2.1.10-1.0.31"
 sonatype-scan = "3.0.0"
 micronaut-docs = "2.0.0"
 
@@ -300,6 +300,9 @@ httpcomponents-mime = { module = "org.apache.httpcomponents:httpmime", version.r
 mimepull = { module = "org.jvnet.mimepull:mimepull", version.ref = "mimepull" }
 
 wiremock = { module = "com.github.tomakehurst:wiremock-jre8", version.ref = "wiremock" }
+
+ksp-commonDeps = { module = "com.google.devtools.ksp:symbol-processing-common-deps", version.ref = "managed-ksp" }
+ksp-aaEmbeddable = { module = "com.google.devtools.ksp:symbol-processing-aa-embeddable", version.ref = "managed-ksp" }
 
 [plugins]
 managed-kotlin-allopen = { id = "org.jetbrains.kotlin.plugin.allopen", version.ref = "managed-kotlin" }

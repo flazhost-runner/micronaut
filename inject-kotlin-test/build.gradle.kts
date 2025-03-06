@@ -12,6 +12,8 @@ dependencies {
     api(libs.managed.ksp.api)
     api(libs.managed.ksp)
     implementation(libs.managed.kotlin.compiler.embeddable)
+    implementation(libs.ksp.commonDeps)
+    implementation(libs.ksp.aaEmbeddable)
     implementation(libs.okio)
     implementation(libs.classgraph)
     testImplementation(libs.javax.persistence)

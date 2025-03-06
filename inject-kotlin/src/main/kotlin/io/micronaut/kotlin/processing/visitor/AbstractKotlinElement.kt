@@ -465,7 +465,10 @@ internal abstract class AbstractKotlinElement<T : KotlinNativeElement>(
         stripTypeArguments: Boolean = false
     ): ClassElement {
         val type = typeArgument.type
-        val resolvedType = type!!.resolve()
+        if (type == null) {
+            return visitorContext.getClassElement("kotlin.Any").get()
+        }
+        val resolvedType = type.resolve()
         val stripTypeArguments2 = stripTypeArguments || !visitedTypes.add(type)
 
         val resolved = newTypeArgument(

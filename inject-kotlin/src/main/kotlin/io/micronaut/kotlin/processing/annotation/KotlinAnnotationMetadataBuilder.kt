@@ -31,6 +31,7 @@ import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.google.devtools.ksp.symbol.KSPropertyGetter
 import com.google.devtools.ksp.symbol.KSPropertySetter
 import com.google.devtools.ksp.symbol.KSType
+import com.google.devtools.ksp.symbol.KSTypeAlias
 import com.google.devtools.ksp.symbol.KSTypeReference
 import com.google.devtools.ksp.symbol.KSValueParameter
 import com.google.devtools.ksp.symbol.KSVisitor
@@ -38,7 +39,6 @@ import com.google.devtools.ksp.symbol.Location
 import com.google.devtools.ksp.symbol.Origin
 import io.micronaut.context.annotation.Property
 import io.micronaut.core.annotation.AnnotationClassValue
-import io.micronaut.core.annotation.AnnotationMetadata
 import io.micronaut.core.annotation.AnnotationUtil
 import io.micronaut.core.annotation.AnnotationValue
 import io.micronaut.core.reflect.ClassUtils
@@ -613,26 +613,43 @@ internal class KotlinAnnotationMetadataBuilder(
     private fun readAnnotationValue(originatingElement: KSAnnotated, value: Any?): Any? {
         if (value == null) {
             return null
-        }// (originatingElement as KSPropertyDeclaration).type
+        }
         if (value is KSType) {
-            val declaration = value.declaration
-            if (declaration is KSClassDeclaration) {
-                if (declaration.classKind == ClassKind.ENUM_ENTRY) {
-                    return declaration.qualifiedName?.getShortName()
-                }
-                if (declaration.classKind == ClassKind.CLASS ||
-                    declaration.classKind == ClassKind.INTERFACE ||
-                    declaration.classKind == ClassKind.ENUM_CLASS ||
-                    declaration.classKind == ClassKind.ANNOTATION_CLASS) {
-                    return AnnotationClassValue<Any>(declaration.getBinaryName(resolver, visitorContext))
-                }
-            }
+            return readKSType(value)
+        }
+        if (value is KSClassDeclaration) {
+            return readKSClassDeclaration(value)
         }
         if (value is KSAnnotation) {
             return readNestedAnnotationValue(originatingElement, value)
         }
+        return value
+    }
 
-         return value
+    private fun readKSType(value: KSType): CharSequence? {
+        val declaration = value.declaration
+        if (declaration is KSClassDeclaration) {
+            return readKSClassDeclaration(declaration)
+        }
+        if (declaration is KSTypeAlias) {
+            return readKSType(declaration.type.resolve())
+        }
+        throw IllegalStateException("Unknown annotation element: $value $declaration " + declaration.javaClass)
+    }
+
+    private fun readKSClassDeclaration(declaration: KSClassDeclaration): CharSequence? {
+        if (declaration.classKind == ClassKind.ENUM_ENTRY) {
+            return declaration.qualifiedName?.getShortName()
+        }
+        if (declaration.classKind == ClassKind.CLASS ||
+            declaration.classKind == ClassKind.OBJECT ||
+            declaration.classKind == ClassKind.INTERFACE ||
+            declaration.classKind == ClassKind.ENUM_CLASS ||
+            declaration.classKind == ClassKind.ANNOTATION_CLASS
+        ) {
+            return AnnotationClassValue<Any>(declaration.getBinaryName(resolver, visitorContext))
+        }
+        throw IllegalStateException("Unknown KSClassDeclaration annotation element: $declaration ${declaration.classKind}")
     }
 
     private data class KotlinAnnotationType(
