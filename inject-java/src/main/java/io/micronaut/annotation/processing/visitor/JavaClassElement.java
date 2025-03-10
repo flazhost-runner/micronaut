@@ -643,6 +643,9 @@ public class JavaClassElement extends AbstractJavaElement implements ArrayableCl
     @NonNull
     @Override
     public List<ClassElement> getBoundGenericTypes() {
+        if (resolvedTypeArguments != null) {
+            return List.copyOf(resolvedTypeArguments.values());
+        }
         if (typeArguments == null) {
             return Collections.emptyList();
         }

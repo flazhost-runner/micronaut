@@ -14,6 +14,23 @@ import spock.lang.Unroll
  * {@link ClassElement}s returned by various methods look like.
  */
 class JavaReconstructionSpec extends AbstractTypeElementSpec {
+    def 'test with type arguments'() {
+        given:
+        def element = buildClassElement("""
+package example;
+
+import java.util.*;
+
+class Test<T> {
+}
+""").withTypeArguments(List.of(ClassElement.of(String)))
+
+        expect:
+        element.getBoundGenericTypes()[0].name == String.name
+        element.getTypeArguments().get("T").name == String.name
+    }
+
+
     @Unroll("field type is #fieldType")
     def 'field type'() {
         given:
