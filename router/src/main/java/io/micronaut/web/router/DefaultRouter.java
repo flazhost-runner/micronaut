@@ -27,6 +27,7 @@ import io.micronaut.http.HttpStatus;
 import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.Filter;
 import io.micronaut.http.annotation.FilterMatcher;
+import io.micronaut.http.annotation.ResponseFilter;
 import io.micronaut.http.filter.FilterPatternStyle;
 import io.micronaut.http.filter.FilterRunner;
 import io.micronaut.http.filter.GenericHttpFilter;
@@ -134,13 +135,17 @@ public class DefaultRouter implements Router, HttpServerFilterResolver<RouteMatc
                 errorRoutes.add(routeInfo);
             }
             for (FilterRoute filterRoute : builder.getFilterRoutes()) {
-                if (filterRoute.isPreMatching()) {
+                if (filterRoute.isPreMatching() || filterRoute.getAnnotationMetadata().hasAnnotation(ResponseFilter.class)) {
                     if (isMatchesAll(filterRoute)) {
                         preMatchingAlwaysMatchesFilterRoutes.add(filterRoute);
                     } else {
                         preMatchingPreconditionFilterRoutes.add(filterRoute);
                     }
-                } else if (isMatchesAll(filterRoute)) {
+                    if (filterRoute.isPreMatching()) {
+                        continue;
+                    }
+                }
+                if (isMatchesAll(filterRoute)) {
                     alwaysMatchesFilterRoutes.add(filterRoute);
                 } else {
                     preconditionFilterRoutes.add(filterRoute);
