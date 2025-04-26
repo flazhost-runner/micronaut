@@ -16,11 +16,16 @@
 package io.micronaut.http.bind.binders;
 
 import io.micronaut.core.annotation.AnnotationMetadata;
+import io.micronaut.core.beans.BeanIntrospection;
+import io.micronaut.core.beans.BeanIntrospector;
+import io.micronaut.core.beans.BeanProperty;
 import io.micronaut.core.bind.annotation.AbstractArgumentBinder;
+import io.micronaut.core.bind.annotation.Bindable;
 import io.micronaut.core.convert.ArgumentConversionContext;
 import io.micronaut.core.convert.ConversionService;
 import io.micronaut.core.convert.format.Format;
 import io.micronaut.core.convert.value.ConvertibleMultiValues;
+import io.micronaut.core.convert.value.ConvertibleValues;
 import io.micronaut.core.type.Argument;
 import io.micronaut.http.BasicHttpAttributes;
 import io.micronaut.http.HttpRequest;
@@ -28,6 +33,8 @@ import io.micronaut.http.annotation.QueryValue;
 import io.micronaut.http.uri.UriMatchVariable;
 
 import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -91,6 +98,23 @@ public class QueryValueArgumentBinder<T> extends AbstractArgumentBinder<T> imple
             return BindingResult.unsatisfied();
         }
 
+        return isSimple(argument) ? bindSimple(context, source, annotationMetadata, parameters, argument)
+            : bindPojo(context, source, annotationMetadata, parameters, argument);
+    }
+
+    private Boolean isSimple(Argument<?> argument) {
+        Class<?> type = argument.getType();
+        return type.isPrimitive() ||
+            CharSequence.class.isAssignableFrom(type) ||
+            Number.class.isAssignableFrom(type) ||
+            Boolean.class.isAssignableFrom(type);
+    }
+
+    private BindingResult<T> bindSimple(ArgumentConversionContext<T> context,
+                                        HttpRequest<?> source,
+                                        AnnotationMetadata annotationMetadata,
+                                        ConvertibleMultiValues<String> parameters,
+                                        Argument<T> argument) {
         // First try converting from the ConvertibleMultiValues type and if conversion is successful, return it.
         // Otherwise, use the given uri template to deduce what to do with the variable
         Optional<T> multiValueConversion;
@@ -128,6 +152,54 @@ public class QueryValueArgumentBinder<T> extends AbstractArgumentBinder<T> imple
             return doConvert(value, context);
         }
         return doBind(context, parameters, BindingResult.unsatisfied());
+    }
+
+    private BindingResult<T> bindPojo(ArgumentConversionContext<T> context,
+                                      HttpRequest<?> source,
+                                      AnnotationMetadata annotationMetadata,
+                                      ConvertibleMultiValues<String> parameters,
+                                      Argument<T> argument) {
+        Optional<BeanIntrospection<T>> introspectionOpt = BeanIntrospector.SHARED.findIntrospection(argument.getType());
+        if (introspectionOpt.isEmpty()) {
+            return BindingResult.unsatisfied();
+        }
+
+        BeanIntrospection<T> introspection = introspectionOpt.get();
+        T instance;
+        try {
+            instance = introspection.instantiate();
+        } catch (Exception e) {
+            return BindingResult.unsatisfied();
+        }
+
+        Map<String, Object> values = new LinkedHashMap<>();
+
+        for (BeanProperty<T, Object> property : introspection.getBeanProperties()) {
+            String name = property.getName();
+            Optional<String> value = parameters.getFirst(name);
+
+            if (value.isEmpty()) {
+                value = property.asArgument()
+                    .getAnnotationMetadata()
+                    .stringValue(Bindable.class, "defaultValue");
+            }
+
+            if (value.isPresent()) {
+                Optional<Object> converted = conversionService.convert(value.get(), context.with(property.asArgument()));
+                if (converted.isPresent()) {
+                    try {
+                        property.set(instance, converted.get());
+                        values.put(name, converted.get());
+                    } catch (Exception e) {
+                        return BindingResult.unsatisfied();
+                    }
+                }
+            }
+        }
+
+        ConvertibleValues<Object> paramsAsMap = ConvertibleValues.of(values);
+
+        return doBind(context, paramsAsMap, BindingResult.unsatisfied());
     }
 
     @Override
