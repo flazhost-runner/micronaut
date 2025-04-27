@@ -91,7 +91,7 @@ class ParameterBindingSpec extends AbstractMicronautSpec {
         HttpMethod.POST | '/parameter/query?name=Fr%20ed'                 | "Parameter Value: Fr ed"    | HttpStatus.OK
         HttpMethod.GET  | '/parameter/arrayStyle?param[]=a&param[]=b&param[]=c' | "Parameter Value: [a, b, c]"    | HttpStatus.OK
 
-        HttpMethod.GET  | '/parameter/query-object?age=30%20title=JavaBook%20JavaAuthor' | "Parameter Value: 30 JavaBook JavaAuthor" | HttpStatus.OK
+        HttpMethod.GET  | '/parameter/query-object?age=30&title=JavaBook&author=JavaAuthor' | "Parameter Value: 30 JavaBook JavaAuthor" | HttpStatus.OK
     }
 
     void "test list to single error"() {

@@ -98,16 +98,11 @@ public class QueryValueArgumentBinder<T> extends AbstractArgumentBinder<T> imple
             return BindingResult.unsatisfied();
         }
 
-        return isSimple(argument) ? bindSimple(context, source, annotationMetadata, parameters, argument)
-            : bindPojo(context, source, annotationMetadata, parameters, argument);
-    }
-
-    private Boolean isSimple(Argument<?> argument) {
-        Class<?> type = argument.getType();
-        return type.isPrimitive() ||
-            CharSequence.class.isAssignableFrom(type) ||
-            Number.class.isAssignableFrom(type) ||
-            Boolean.class.isAssignableFrom(type);
+        BindingResult<T> bindSimpleResult = bindSimple(context, source, annotationMetadata, parameters, argument);
+        if (bindSimpleResult.isSatisfied()) {
+            return bindSimpleResult;
+        }
+        return bindPojo(context, source, annotationMetadata, parameters, argument);
     }
 
     private BindingResult<T> bindSimple(ArgumentConversionContext<T> context,
