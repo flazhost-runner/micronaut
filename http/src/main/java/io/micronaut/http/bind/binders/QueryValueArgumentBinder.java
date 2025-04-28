@@ -167,8 +167,6 @@ public class QueryValueArgumentBinder<T> extends AbstractArgumentBinder<T> imple
             return BindingResult.unsatisfied();
         }
 
-        Map<String, Object> values = new LinkedHashMap<>();
-
         for (BeanProperty<T, Object> property : introspection.getBeanProperties()) {
             String name = property.getName();
             Optional<String> value = parameters.getFirst(name);
@@ -184,7 +182,6 @@ public class QueryValueArgumentBinder<T> extends AbstractArgumentBinder<T> imple
                 if (converted.isPresent()) {
                     try {
                         property.set(instance, converted.get());
-                        values.put(name, converted.get());
                     } catch (Exception e) {
                         return BindingResult.unsatisfied();
                     }
@@ -192,9 +189,7 @@ public class QueryValueArgumentBinder<T> extends AbstractArgumentBinder<T> imple
             }
         }
 
-        ConvertibleValues<Object> paramsAsMap = ConvertibleValues.of(values);
-
-        return doBind(context, paramsAsMap, BindingResult.unsatisfied());
+        return () -> Optional.of(instance);
     }
 
     @Override
