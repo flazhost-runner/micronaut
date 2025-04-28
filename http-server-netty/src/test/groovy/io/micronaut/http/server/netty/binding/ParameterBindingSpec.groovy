@@ -244,6 +244,8 @@ class ParameterBindingSpec extends AbstractMicronautSpec {
             private String author
             private int age
 
+            Book() {}
+
             Book(String title, Integer age, @Nullable String author) {
                 this.age = age
                 this.title = title
@@ -258,6 +260,17 @@ class ParameterBindingSpec extends AbstractMicronautSpec {
                 return age
             }
 
+            void setTitle(String title) {
+                this.title = title
+            }
+
+            void setAuthor(String author) {
+                this.author = author
+            }
+
+            void setAge(int age) {
+                this.age = age
+            }
         }
     }
 }
