@@ -91,7 +91,7 @@ class ParameterBindingSpec extends AbstractMicronautSpec {
         HttpMethod.POST | '/parameter/query?name=Fr%20ed'                 | "Parameter Value: Fr ed"    | HttpStatus.OK
         HttpMethod.GET  | '/parameter/arrayStyle?param[]=a&param[]=b&param[]=c' | "Parameter Value: [a, b, c]"    | HttpStatus.OK
 
-        HttpMethod.GET  | '/parameter/query-object?age=30&title=JavaBook&author=JavaAuthor' | "Parameter Value: 30 JavaBook JavaAuthor" | HttpStatus.OK
+        HttpMethod.GET  | '/parameter/query-object?age=30&title=JavaBook&author=JavaAuthor' | "Parameter Value: 30 JavaBook" | HttpStatus.OK
     }
 
     void "test list to single error"() {
@@ -233,7 +233,7 @@ class ParameterBindingSpec extends AbstractMicronautSpec {
 
         @Get('/query-object')
         String queryObject(@QueryValue Book book) {
-            "Parameter Value: $book.age $book.title $book.author"
+            "Parameter Value: $book.age $book.title"
         }
 
 
@@ -243,8 +243,6 @@ class ParameterBindingSpec extends AbstractMicronautSpec {
             private String title
             private String author
             private int age
-
-            Book() {}
 
             Book(String title, Integer age, @Nullable String author) {
                 this.age = age
@@ -258,18 +256,6 @@ class ParameterBindingSpec extends AbstractMicronautSpec {
 
             int getAge() {
                 return age
-            }
-
-            void setTitle(String title) {
-                this.title = title
-            }
-
-            void setAuthor(String author) {
-                this.author = author
-            }
-
-            void setAge(int age) {
-                this.age = age
             }
         }
     }

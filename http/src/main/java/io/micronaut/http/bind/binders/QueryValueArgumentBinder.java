@@ -157,16 +157,11 @@ public class QueryValueArgumentBinder<T> extends AbstractArgumentBinder<T> imple
         }
 
         BeanIntrospection<T> introspection = introspectionOpt.get();
-        T instance;
-        try {
-            instance = introspection.instantiate();
-        } catch (Exception e) {
-            return BindingResult.unsatisfied();
-        }
+        BeanIntrospection.Builder<T> introspectionBuilder = introspection.builder();
 
         for (BeanProperty<T, Object> property : introspection.getBeanProperties()) {
-            String name = property.getName();
-            Optional<String> value = parameters.getFirst(name);
+            String propertyName = property.getName();
+            Optional<String> value = parameters.getFirst(propertyName);
 
             if (value.isEmpty()) {
                 value = property.asArgument()
@@ -178,15 +173,22 @@ public class QueryValueArgumentBinder<T> extends AbstractArgumentBinder<T> imple
                 Optional<Object> converted = conversionService.convert(value.get(), context.with(property.asArgument()));
                 if (converted.isPresent()) {
                     try {
-                        property.set(instance, converted.get());
+                        introspectionBuilder.with(propertyName, converted.get());
                     } catch (Exception e) {
+                        context.reject(property.asArgument(), e);
                         return BindingResult.unsatisfied();
                     }
                 }
             }
         }
 
-        return () -> Optional.of(instance);
+        try {
+            T instance = introspectionBuilder.build();
+            return () -> Optional.of(instance);
+        } catch (Exception e) {
+            context.reject(argument, e);
+            return BindingResult.unsatisfied();
+        }
     }
 
     @Override
