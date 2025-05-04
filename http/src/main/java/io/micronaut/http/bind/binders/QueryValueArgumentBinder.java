@@ -158,24 +158,28 @@ public class QueryValueArgumentBinder<T> extends AbstractArgumentBinder<T> imple
 
         BeanIntrospection<T> introspection = introspectionOpt.get();
         BeanIntrospection.Builder<T> introspectionBuilder = introspection.builder();
+        Argument<?>[] builderArguments = introspectionBuilder.getBuilderArguments();
 
-        for (BeanProperty<T, Object> property : introspection.getBeanProperties()) {
-            String propertyName = property.getName();
+        for (int index = 0; index < builderArguments.length; index++) {
+            Argument<?> builderArg = builderArguments[index];
+            String propertyName = builderArg.getName();
             Optional<String> value = parameters.getFirst(propertyName);
 
             if (value.isEmpty()) {
-                value = property.asArgument()
+                value = builderArg
                     .getAnnotationMetadata()
                     .stringValue(Bindable.class, "defaultValue");
             }
 
             if (value.isPresent()) {
-                Optional<Object> converted = conversionService.convert(value.get(), context.with(property.asArgument()));
+                Optional<?> converted = conversionService.convert(value.get(), context.with(builderArg));
                 if (converted.isPresent()) {
                     try {
-                        introspectionBuilder.with(propertyName, converted.get());
+                        @SuppressWarnings({"unchecked"})
+                        Argument<Object> rawArg = (Argument<Object>) builderArg;
+                        introspectionBuilder.with(index, rawArg, converted.get());
                     } catch (Exception e) {
-                        context.reject(property.asArgument(), e);
+                        context.reject(builderArg, e);
                         return BindingResult.unsatisfied();
                     }
                 }
