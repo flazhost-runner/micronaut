@@ -16,9 +16,9 @@
 package io.micronaut.http.bind.binders;
 
 import io.micronaut.core.annotation.AnnotationMetadata;
+import io.micronaut.core.annotation.Nullable;
 import io.micronaut.core.beans.BeanIntrospection;
 import io.micronaut.core.beans.BeanIntrospector;
-import io.micronaut.core.beans.BeanProperty;
 import io.micronaut.core.bind.annotation.AbstractArgumentBinder;
 import io.micronaut.core.bind.annotation.Bindable;
 import io.micronaut.core.convert.ArgumentConversionContext;
@@ -32,6 +32,7 @@ import io.micronaut.http.annotation.QueryValue;
 import io.micronaut.http.uri.UriMatchVariable;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -57,7 +58,7 @@ public class QueryValueArgumentBinder<T> extends AbstractArgumentBinder<T> imple
      * Constructor.
      *
      * @param conversionService conversion service
-     * @param argument The argument
+     * @param argument          The argument
      */
     public QueryValueArgumentBinder(ConversionService conversionService, Argument<T> argument) {
         super(conversionService, argument);
@@ -99,7 +100,7 @@ public class QueryValueArgumentBinder<T> extends AbstractArgumentBinder<T> imple
         if (bindSimpleResult.isSatisfied()) {
             return bindSimpleResult;
         }
-        return bindPojo(context, source, annotationMetadata, parameters, argument);
+        return bindPojo(context, parameters, argument);
     }
 
     private BindingResult<T> bindSimple(ArgumentConversionContext<T> context,
@@ -147,8 +148,6 @@ public class QueryValueArgumentBinder<T> extends AbstractArgumentBinder<T> imple
     }
 
     private BindingResult<T> bindPojo(ArgumentConversionContext<T> context,
-                                      HttpRequest<?> source,
-                                      AnnotationMetadata annotationMetadata,
                                       ConvertibleMultiValues<String> parameters,
                                       Argument<T> argument) {
         Optional<BeanIntrospection<T>> introspectionOpt = BeanIntrospector.SHARED.findIntrospection(argument.getType());
@@ -163,25 +162,22 @@ public class QueryValueArgumentBinder<T> extends AbstractArgumentBinder<T> imple
         for (int index = 0; index < builderArguments.length; index++) {
             Argument<?> builderArg = builderArguments[index];
             String propertyName = builderArg.getName();
-            Optional<String> value = parameters.getFirst(propertyName);
+            List<String> values = parameters.getAll(propertyName);
+            boolean hasNoValue = values.isEmpty();
+            @Nullable String defaultValue = hasNoValue ? builderArg
+                .getAnnotationMetadata()
+                .stringValue(Bindable.class, "defaultValue").orElse(null) : null;
 
-            if (value.isEmpty()) {
-                value = builderArg
-                    .getAnnotationMetadata()
-                    .stringValue(Bindable.class, "defaultValue");
-            }
-
-            if (value.isPresent()) {
-                Optional<?> converted = conversionService.convert(value.get(), context.with(builderArg));
-                if (converted.isPresent()) {
-                    try {
-                        @SuppressWarnings({"unchecked"})
-                        Argument<Object> rawArg = (Argument<Object>) builderArg;
-                        introspectionBuilder.with(index, rawArg, converted.get());
-                    } catch (Exception e) {
-                        context.reject(builderArg, e);
-                        return BindingResult.unsatisfied();
-                    }
+            ArgumentConversionContext<?> conversionContext = context.with(builderArg);
+            Optional<?> converted = hasNoValue ? conversionService.convert(defaultValue, conversionContext) :conversionService.convert(values, conversionContext);
+            if (converted.isPresent()) {
+                try {
+                    @SuppressWarnings({"unchecked"})
+                    Argument<Object> rawArg = (Argument<Object>) builderArg;
+                    introspectionBuilder.with(index, rawArg, converted.get());
+                } catch (Exception e) {
+                    context.reject(builderArg, e);
+                    return BindingResult.unsatisfied();
                 }
             }
         }

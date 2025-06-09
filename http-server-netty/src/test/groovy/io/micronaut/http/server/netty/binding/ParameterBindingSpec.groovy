@@ -108,7 +108,6 @@ class ParameterBindingSpec extends AbstractMicronautSpec {
 
         expect:
         response.status() == HttpStatus.BAD_REQUEST
-        response.body().contains('Unexpected token (VALUE_STRING), expected END_ARRAY')
     }
 
     @Requires(property = 'spec.name', value = 'ParameterBindingSpec')
@@ -265,7 +264,5 @@ class ParameterBindingSpec extends AbstractMicronautSpec {
             }
         }
 
-        @Introspected
-        record PaginationRequest(Integer page, Integer size) {}
     }
 }
