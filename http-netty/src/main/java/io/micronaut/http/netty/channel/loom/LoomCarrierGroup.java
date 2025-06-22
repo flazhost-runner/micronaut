@@ -102,6 +102,7 @@ public final class LoomCarrierGroup extends MultiThreadIoEventLoopGroup {
         IoHandler backingHandler;
         Thread carrier;
 
+        Thread ioThread;
         /**
          * The continuation of the virtual thread responsible for running the event loop.
          */
@@ -186,8 +187,7 @@ public final class LoomCarrierGroup extends MultiThreadIoEventLoopGroup {
                         }
 
                         // we don't need to wake up if we're running on a vthread carried by this event loop.
-                        Thread thread = Thread.currentThread();
-                        if (isOnRunner(thread)) {
+                        if (isOnRunner(Thread.currentThread())) {
                             if (!throughputMode) {
                                 expediteWrite = true;
                                 Thread.yield();
@@ -210,7 +210,14 @@ public final class LoomCarrierGroup extends MultiThreadIoEventLoopGroup {
         }
 
         private boolean isOnRunner(Thread thread) {
-            return LoomSupport.isVirtual(thread) && PrivateLoomSupport.getScheduler(thread) == Runner.this;
+            if (!LoomSupport.isVirtual(thread)) {
+                return false;
+            }
+            if (LoomPrototypeSupport.isSupported()) {
+                return LoomPrototypeSupport.getCurrentThreadAttachment() == Runner.this;
+            } else {
+                return PrivateLoomSupport.getScheduler(thread) == Runner.this;
+            }
         }
 
         /**
@@ -227,7 +234,11 @@ public final class LoomCarrierGroup extends MultiThreadIoEventLoopGroup {
             return LoomSupport.unstarted("loom-on-netty-" + id + "-" + Long.toHexString(ThreadLocalRandom.current().nextLong()), b -> {
                 if (warmupTasks > 0) {
                     warmupTasks--;
-                    PrivateLoomSupport.setScheduler(b, PrivateLoomSupport.getDefaultScheduler());
+                    if (LoomPrototypeSupport.isSupported()) {
+                        LoomPrototypeSupport.setScheduler(b, PrivateLoomSupport.getDefaultScheduler());
+                    } else {
+                        PrivateLoomSupport.setScheduler(b, PrivateLoomSupport.getDefaultScheduler());
+                    }
                     return;
                 }
 
@@ -243,7 +254,11 @@ public final class LoomCarrierGroup extends MultiThreadIoEventLoopGroup {
                         }
                     }
                 }
-                PrivateLoomSupport.setScheduler(b, new StickyScheduler(dst));
+                if (LoomPrototypeSupport.isSupported()) {
+                    LoomPrototypeSupport.setScheduler(b, new StickyScheduler(dst));
+                } else {
+                    PrivateLoomSupport.setScheduler(b, new StickyScheduler(dst));
+                }
             }, r);
         }
 
@@ -251,11 +266,18 @@ public final class LoomCarrierGroup extends MultiThreadIoEventLoopGroup {
         public void run() {
             carrier = Thread.currentThread();
 
-            LoomSupport.unstarted(
+            ioThread = LoomSupport.unstarted(
                 "loom-on-netty-" + id + "-io",
-                b -> PrivateLoomSupport.setScheduler(b, this::executeIo),
+                b -> {
+                    if (LoomPrototypeSupport.isSupported()) {
+                        LoomPrototypeSupport.setScheduler(b, this::executeIo);
+                    } else {
+                        PrivateLoomSupport.setScheduler(b, this::executeIo);
+                    }
+                },
                 () -> FastThreadLocalThread.runWithFastThreadLocal(this::runIo)
-            ).start();
+            );
+            ioThread.start();
             assert ioContinuationScheduled;
 
             while (!delegate.isTerminated()) {
@@ -382,12 +404,19 @@ public final class LoomCarrierGroup extends MultiThreadIoEventLoopGroup {
 
         private void executeIo(Runnable command) {
             // special handling for the continuation of the IO thread.
-            Runnable ioContinuation = this.ioContinuation;
-            if (ioContinuation == null) {
-                ioContinuation = command;
-                this.ioContinuation = command;
+            boolean isIo;
+            if (LoomPrototypeSupport.isSupported()) {
+                isIo = LoomPrototypeSupport.getThread(command) == ioThread;
+            } else {
+                Runnable ioContinuation = this.ioContinuation;
+                if (ioContinuation == null) {
+                    ioContinuation = command;
+                    this.ioContinuation = command;
+                }
+                isIo = ioContinuation == command;
             }
-            if (ioContinuation == command) {
+
+            if (isIo) {
                 Thread t = Thread.currentThread();
                 ioContinuationScheduled = true;
                 if (t != carrier && !isOnRunner(t)) {
