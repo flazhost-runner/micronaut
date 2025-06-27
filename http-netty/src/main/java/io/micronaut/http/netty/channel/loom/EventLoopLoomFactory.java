@@ -24,7 +24,6 @@ import io.micronaut.scheduling.LoomSupport;
 import io.micronaut.scheduling.TaskExecutors;
 import io.micronaut.scheduling.executor.ExecutorConfiguration;
 import io.micronaut.scheduling.executor.ExecutorFactory;
-import io.netty.util.concurrent.FastThreadLocal;
 import jakarta.inject.Named;
 import jakarta.inject.Singleton;
 
@@ -43,8 +42,6 @@ import java.util.concurrent.ThreadFactory;
 @Requires(condition = LoomSupport.LoomCondition.class)
 @Requires(condition = PrivateLoomSupport.PrivateLoomCondition.class)
 final class EventLoopLoomFactory {
-    final FastThreadLocal<ThreadFactory> targetScheduler = new FastThreadLocal<>();
-
     @Named(TaskExecutors.VIRTUAL)
     @Singleton
     @Replaces(value = ThreadFactory.class, factory = ExecutorFactory.class, named = TaskExecutors.VIRTUAL)
@@ -55,11 +52,11 @@ final class EventLoopLoomFactory {
 
         ThreadFactory delegate = LoomSupport.newVirtualThreadFactory("virtual-executor-");
         return r -> {
-            ThreadFactory targetScheduler = EventLoopLoomFactory.this.targetScheduler.get();
-            if (targetScheduler == null) {
+            CarriedVThreadAttachment attachment = CarriedVThreadAttachment.forCurrentThread();
+            if (attachment == null) {
                 return delegate.newThread(r);
             } else {
-                return targetScheduler.newThread(r);
+                return attachment.createVirtualThread(null, r);
             }
         };
     }
