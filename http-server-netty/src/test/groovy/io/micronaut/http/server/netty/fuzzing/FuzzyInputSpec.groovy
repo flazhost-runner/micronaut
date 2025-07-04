@@ -1,13 +1,19 @@
 package io.micronaut.http.server.netty.fuzzing
 
 import io.micronaut.context.ApplicationContext
+import io.micronaut.context.BeanProvider
+import io.micronaut.context.annotation.Replaces
 import io.micronaut.context.annotation.Requires
+import io.micronaut.core.annotation.Nullable
+import io.micronaut.http.annotation.Body
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
 import io.micronaut.http.annotation.Post
 import io.micronaut.http.netty.channel.EventLoopGroupConfiguration
 import io.micronaut.http.netty.channel.EventLoopGroupRegistry
+import io.micronaut.http.server.HttpServerConfiguration
 import io.micronaut.http.server.netty.NettyHttpServer
+import io.micronaut.http.server.util.DefaultHttpHostResolver
 import io.micronaut.runtime.server.EmbeddedServer
 import io.netty.bootstrap.Bootstrap
 import io.netty.buffer.Unpooled
@@ -21,6 +27,7 @@ import io.netty.util.ReferenceCountUtil
 import jakarta.inject.Singleton
 import org.reactivestreams.Publisher
 import spock.lang.Specification
+
 /**
  * HTTP inputs generated from fuzzing.
  */
@@ -84,8 +91,10 @@ class FuzzyInputSpec extends Specification {
         when:
         def embeddedChannel = embeddedServer.buildEmbeddedChannel(false)
 
-        embeddedChannel.writeInbound(Unpooled.wrappedBuffer(input));
-        embeddedChannel.runPendingTasks();
+        def b = embeddedChannel.alloc().buffer(input.length)
+        b.writeBytes(input)
+        embeddedChannel.writeInbound(b)
+        embeddedChannel.runPendingTasks()
 
         embeddedChannel.releaseOutbound()
         // don't release inbound, that doesn't happen normally either
@@ -109,6 +118,8 @@ class FuzzyInputSpec extends Specification {
                 Base64.decoder.decode("UE9TVCAvIEhUVFAvMS40NApBY2NlcHQ6IGFwcNTU1NTU1NTU1NTU1NTU0NTU////////////////////////////////Z2dnZy4xCkhvc3Q6IDQKQWNjZXB0OiAqLyoKdC5ldToyNDQ0CkFjY2VwdDogYXBwbGljYXRQT1NUIC8g///////////U1NTU1NTU1NTU1NTU1NTU0NTU////////////////////////////////////////Z2dnZy4xCkhvc3Q6IDQKQWNjZXB0OiAqLyoKdC5ldToyNDQ0CkFjY2VwdDogYXBwbGljYXRQT1NUIEdFVCAvIC8g/////////////////////yT/YXBw1NTU1NTU1NTU1NTU1NTQ1NT///////////////////////////////9nZ2dnLjEKSG9zdDogNApBY2NlcHQ6ICovKgp0LmV1OjI0NDQKQUhvc3Q6IDQKQWNjZXB0OiAqL3B0OiBhcHDU1NTU1NTU1NTU1NTU1NDU1P///////////////////////////////2dnZ2cuMQpIb3N0OiA0CkFjY2VwdDogKi8qCnQuZXU6MjQ0NApBY2NlcHQ6IGFwcGxpY2F0UE9TVCAvIP//////////1NTU1NTU1NTU1NTU1NTU1NDU1P///////////////////////////////////////2dnZ2cuMQpIb3N0OiA0CkFjY2VwdDogKi8qCnQuZXU6MjQ0NApBY2NlcHQ6IGFwcGxpY2F0UE9TVCBHRVQgLyAvIP////////////////////8k/2FwcNTU1NTU1NTU1NTU1NTU0NTU////////////////////////////////Z2dnZy4xCkhvc3Q6IDQKQWNjZXB0OiAqLyoKdC5ldToyNDQ0CkFIb3N0OiA0CkFjY2VwdDogKi8qCnQuZXU6MjQ0NApBY2NlcHQ6IGFwcGxpY2F0UE9TVCAvIP////////////////////8k/////////////////////////9TU1E9QVP//////////////Z2dnZy4xCkhvc3Q6IDQKQWNjZXB0OiAqVCAvIP///////yoKdC5ldToyNDQ0CkFjY2VwdDogYXBwbGljYXRQT1NUIC8g/////////////////////yT/////////////////////////1NTUT1BU//////////////9nZ2dnLjEKSG9zdDogNApBY2NlcHQ6ICovKgp0LmV1OjI0NDQKQWNjZXB0OiBldToyNDQ0CkFjY2VwdDogYXAscGxpY2F0UE9TVCAvIP////////////////////8k/////////////////////////9TU1E9QVElPTsQz1NTU1C8qCnQuZXU6MjQ0NApBY2NlcHQ6IGFwcGxpY2F0UE9TVCAvIP//MQpIb3N0OiA0CkFjY2VwdDogKi8qCnQuZXU6MjQ0NApBY2NlcHQ6IGFwLHBsaWNhdFBPU1QgLyD/////////////////////JP/////////////////////////U1NRPUFRJT07EM9TU1NTU1NTU1GFwaS5iZS1wcm9qZWN0LmV1OjQ0MwpBY2NlcHQ6IGFwcGxpY2F0UE9TVCgvIP//Ki8qCnQuZXU6MjQ0NApBY2NlcHQ6IGH////////////////////////U1NRPUFT//////////////2dnZ2cuMQpIb3N0OiA0CkFjY2VwdDogKi8qCnQuZXU6MjQ0NApBY2NlcHQ6IGFwcGxpY2F0UE9TVCAvIP//MQpIb3N0OiA0CkFjY2VwdDogKi8qCnQuZXU6MjQ0NApBY2NlcHQ6IGFwcGxpY2F0UCD/////////////////////JP/////////////////////////U1NRPUFT//////////////2dnZ2cuMQpIb3N0OiA0CkFjY2VwdDogKi8qCnQuZXU6MjQ0NApBY2NlcHQ6IGFwcGxpY2F0UE9TVCAvIP//MQpIb3N0OiA0CkFjY2VwdDogKi8qCnQuZXU6MjQ0NApBY2NlcHQ6IGFwLHBsaWNhdFBPU1QgLyD/////////////////////JP/////////////////////////U1NRPUFRJT07EM9TU1NTU1NTU1GFwaS5iZS1wcm9qZWN0LmV1OjQ0MwpBY2NlcHQ6IGFwcGxpY2F0UE9TVCgvIP//Ki8qCnQuZXU6MjQ0NApBY2NlcHQ6IGH////////////////////////U1NRPUFT//////////////2dnZ2cuMQpIb3N0OiA0CkFjY2VwdDogKi8qCnQuZXU6MjQ0NApBY2NlcHQ6IGFwcGxpY2F0UE9TVCAvIP//MQpIb3N0OiA0CkFjY2VwdDogKi8qCnQuZXU6MjT///9nZ2dnLjEKSG9zdDogNApBY2NlcHQ6ICovKgp0LmV1OjI0NDQKQWNjZXB0OiBhcHBsaWNhdFBPU1QgLyD//////////9TU1NTU1NTU1NTU1NTU1NTQ1NT//////////w=="),
                 Base64.decoder.decode("VCB4dCBQLzUuMQoKUDIg/CBIUFRQLzEuMgotdHlwZTo3ClRyYX5zZmVyLUVuRVRUbmc6ZGVmbGF0ZQoKL7lFUDIg/CBIUFRQLzEuMQotdHlwZTotdHlwZTo3ClRyYW5zZmVyeXBlOjf///////////////////////////////////////////////////////////////////////////////////////////8KVHJhbnNmZXItRW5jb2Rpbmc6ZGVmbGF0ZQpjb250ZW50LWxlbmd0aDo4CgoNSU9OUyAvILiqVFAvCgovuUVQMkdHR0d3AC07biE="),
                 Base64.decoder.decode("UyAvIFAvMC4xMQpjb250ZW50LWxlbmd0aDo0ClRyYW5zZmVyLUVuY29kaW5nOmRlZmxhdGUKCi+5RVAyIPwgSC8xLjEK"),
+                Base64.decoder.decode("cA1ACUhUVFAvOC4wCkhvc3Q6OgpPcmlnaW46Cgo="),
+                Base64.decoder.decode("SEVDc3QNQP/9P/8JSFRUUC8wLjEKZXB0OgoKcG9zdA1A/T/9Oi8v/y9lY2hvLXB1Ymxpc2hlcglIVFRQLzAuMQp0OgpDb250ZW50LUxlbmd0aDo1Cgr/"),
                 Base64.decoder.decode("UEFUQ0gLDQ0jLzovL9s6Ly8NAEhUVFAvMi4wCm8uVjpEIcAvJwpBY2NlcHQ6LHRleHQvaHRtbAoK" +
                         "RU1UDUD///8JSFRUUC8wLjEKQWNjZXB0Oglpby7///////9lcHQ6LGVwdDosZXB0Oix0ZXh0L2h0" +
                         "bWwsZS5ObgoKdA1A/////T/9Oi8v////CUhUVFAvMC4xCkFjY2VwdDoJaW9hbmdlOix0ZXh0L2h0" +
@@ -134,6 +145,7 @@ class FuzzyInputSpec extends Specification {
                         "LCwsSWYtTWF0L3JjdGg6LTAKQ29udGVudC1MZW5ndGg6NDMKCv/+LgAIdGlyZW5jZUNvdW50VXRp" +
                         "bM3ac3NXaG5nWVlZWVkJ/wAAAABSZWZlbXQCCf9sYXQLSFRUUC8yLjAKVHJhbnNmZXItRW5jb2Rp" +
                         "bmc6c25hcHB5LCw6LTAKQ29udGVudC1MZW5ndGg6NDQKCv/+LgAIdGlyZUhUVDosdA01Cg=="),
+                Base64.decoder.decode("cG9zdA0vZWNoby1hcnJheQtIVFRQLzIuMApDb250ZW50LUxlbmd0aDo5Ck9yaWdpbjoKCg=="),
         ]
     }
 
@@ -149,6 +161,32 @@ class FuzzyInputSpec extends Specification {
         @Post
         public Publisher<String> index(Publisher<String> foo) {
             return foo
+        }
+
+        @Post("/echo-array")
+        public byte[] echo(@Body byte[] foo) {
+            return foo;
+        }
+
+        @Post("/echo-publisher")
+        public Publisher<byte[]> echo(@Body Publisher<byte[]> foo) {
+            return foo;
+        }
+    }
+
+    @Singleton
+    @Replaces(DefaultHttpHostResolver.class)
+    @Requires(property = "spec.name", value = "FuzzyInputSpec")
+    public static class StableHttpHostResolver extends DefaultHttpHostResolver {
+        private static final boolean LOCAL = false;
+
+        public StableHttpHostResolver(HttpServerConfiguration serverConfiguration, @Nullable BeanProvider<EmbeddedServer> embeddedServer) {
+            super(serverConfiguration, embeddedServer);
+        }
+
+        @Override
+        protected String getEmbeddedHost() {
+            return LOCAL ? "http://localhost:8080" : "http://example.com:8080";
         }
     }
 }
