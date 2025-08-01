@@ -16,10 +16,18 @@
 package io.micronaut.core.annotation;
 
 import io.micronaut.core.type.Argument;
+import io.micronaut.core.util.memo.MemoizedFlag;
+import io.micronaut.core.util.memo.MemoizedReference;
 import io.micronaut.core.value.OptionalValues;
 
 import java.lang.annotation.Annotation;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.OptionalDouble;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
+import java.util.Set;
 
 /**
  * An interface that can be implemented by other classes that delegate the resolution of the {@link AnnotationMetadata}
@@ -674,5 +682,15 @@ public interface AnnotationMetadataDelegate extends AnnotationMetadataProvider, 
     @Override
     default AnnotationMetadata getTargetAnnotationMetadata() {
         return getAnnotationMetadata().getTargetAnnotationMetadata();
+    }
+
+    @Override
+    default boolean getMemoized(@NonNull MemoizedFlag<AnnotationMetadata> flag) {
+        return getAnnotationMetadata().getMemoized(flag);
+    }
+
+    @Override
+    default <R> R getMemoized(@NonNull MemoizedReference<AnnotationMetadata, R> reference) {
+        return getAnnotationMetadata().getMemoized(reference);
     }
 }
