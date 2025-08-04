@@ -22,9 +22,9 @@ class MemoizedTest {
 
         MyClass cl = new MyClass("bar");
         assertEquals(0, cl.getCount);
-        assertEquals("bar", cl.getMemoized(ref));
+        assertEquals("bar", ref.get(cl));
         assertEquals(1, cl.getCount);
-        assertEquals("bar", cl.getMemoized(ref));
+        assertEquals("bar", ref.get(cl));
         assertEquals(1, cl.getCount);
     }
 

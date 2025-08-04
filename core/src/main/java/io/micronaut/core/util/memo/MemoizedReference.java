@@ -15,7 +15,7 @@
  */
 package io.micronaut.core.util.memo;
 
-import io.micronaut.core.annotation.AnnotationMetadataDelegate;
+import io.micronaut.core.annotation.NonNull;
 
 import java.util.function.Function;
 
@@ -38,12 +38,19 @@ public final class MemoizedReference<M extends Memoizer<M>, R> {
         this.index = index;
     }
 
+    /**
+     * Get a memoized reference value.
+     *
+     * @param memoizer The memoizer to load this field from
+     * @return The memoized value
+     * @implNote The default implementation does no storage and computes the memoized value each time.
+     */
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public R get(M memoizer) {
+    public R get(@NonNull M memoizer) {
         if (memoizer instanceof AbstractMemoizer am) {
             return (R) am.getMemoized(this);
-        } else if (memoizer instanceof AnnotationMetadataDelegate amd) {
-            return get((M) amd.getAnnotationMetadata());
+        } else if (memoizer instanceof MemoizerDelegate<?> md) {
+            return get((M) md.getMemoizerDelegate());
         } else {
             return compute.apply(memoizer);
         }

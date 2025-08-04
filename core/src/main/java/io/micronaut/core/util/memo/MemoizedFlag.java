@@ -15,7 +15,7 @@
  */
 package io.micronaut.core.util.memo;
 
-import io.micronaut.core.annotation.AnnotationMetadataDelegate;
+import io.micronaut.core.annotation.NonNull;
 
 import java.util.function.Predicate;
 
@@ -33,12 +33,19 @@ public abstract sealed class MemoizedFlag<M extends Memoizer<M>> {
 
     abstract boolean compute(M memoizer);
 
+    /**
+     * Get the memoized boolean value.
+     *
+     * @param memoizer The memoizer to load or compute this field from
+     * @return The memoized value
+     * @implNote The default implementation does no storage and computes the memoized value each time.
+     */
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public boolean get(M memoizer) {
+    public boolean get(@NonNull M memoizer) {
         if (memoizer instanceof AbstractMemoizer am) {
             return am.getMemoized(this);
-        } else if (memoizer instanceof AnnotationMetadataDelegate amd) {
-            return get((M) amd.getAnnotationMetadata());
+        } else if (memoizer instanceof MemoizerDelegate<?> md) {
+            return get((M) md.getMemoizerDelegate());
         } else {
             return compute(memoizer);
         }

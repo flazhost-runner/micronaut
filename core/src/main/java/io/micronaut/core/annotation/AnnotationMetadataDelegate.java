@@ -16,8 +16,7 @@
 package io.micronaut.core.annotation;
 
 import io.micronaut.core.type.Argument;
-import io.micronaut.core.util.memo.MemoizedFlag;
-import io.micronaut.core.util.memo.MemoizedReference;
+import io.micronaut.core.util.memo.MemoizerDelegate;
 import io.micronaut.core.value.OptionalValues;
 
 import java.lang.annotation.Annotation;
@@ -36,7 +35,7 @@ import java.util.Set;
  * @author Graeme Rocher
  * @since 1.0
  */
-public interface AnnotationMetadataDelegate extends AnnotationMetadataProvider, AnnotationMetadata {
+public interface AnnotationMetadataDelegate extends AnnotationMetadataProvider, AnnotationMetadata, MemoizerDelegate<AnnotationMetadata> {
 
     @Override
     default Set<String> getStereotypeAnnotationNames() {
@@ -685,12 +684,8 @@ public interface AnnotationMetadataDelegate extends AnnotationMetadataProvider, 
     }
 
     @Override
-    default boolean getMemoized(@NonNull MemoizedFlag<AnnotationMetadata> flag) {
-        return getAnnotationMetadata().getMemoized(flag);
-    }
-
-    @Override
-    default <R> R getMemoized(@NonNull MemoizedReference<AnnotationMetadata, R> reference) {
-        return getAnnotationMetadata().getMemoized(reference);
+    @Internal
+    default AnnotationMetadata getMemoizerDelegate() {
+        return getAnnotationMetadata();
     }
 }

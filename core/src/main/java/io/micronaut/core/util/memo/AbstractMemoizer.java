@@ -68,9 +68,8 @@ public abstract class AbstractMemoizer<M extends Memoizer<M>> implements Memoize
         flags = 0;
     }
 
-    @Override
     @SuppressWarnings("unchecked")
-    public final <R> R getMemoized(MemoizedReference<M, R> reference) {
+    final <R> R getMemoized(MemoizedReference<M, R> reference) {
         Object[] items = (Object[]) ITEMS_FIELD.getAcquire(this);
         int index = reference.index;
         if (index >= items.length) {
@@ -105,8 +104,7 @@ public abstract class AbstractMemoizer<M extends Memoizer<M>> implements Memoize
         return item;
     }
 
-    @Override
-    public final boolean getMemoized(@NonNull MemoizedFlag<M> flag) {
+    final boolean getMemoized(@NonNull MemoizedFlag<M> flag) {
         if (!(flag instanceof MemoizedFlag.InBitmask<M> ib)) {
             return getMemoizedViaReference(flag);
         }

@@ -59,12 +59,12 @@ public class MemoBenchmark {
 
     @Benchmark
     public boolean memoized() {
-        return property.getMemoized(ANNOTATED_FLAG);
+        return ANNOTATED_FLAG.get(property);
     }
 
     @Benchmark
     public boolean memoizedFallback() {
-        // this is the default implementation of Memoizer.getMemoized
+        // this is the default implementation of get()
         return ANNOTATED_FLAG.compute(property);
     }
 

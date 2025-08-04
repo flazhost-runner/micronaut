@@ -16,11 +16,10 @@
 package io.micronaut.core.util.memo;
 
 import io.micronaut.core.annotation.Experimental;
-import io.micronaut.core.annotation.NonNull;
 
 /**
  * An object that can optionally store additional caller-customizable memoized data. Essentially,
- * a memoizer contains a {@code Map<MemoizedReference, T>}, and {@link #getMemoized} does a
+ * a memoizer contains a {@code Map<MemoizedReference, T>}, and {@link MemoizedReference#get(Memoizer)} does a
  * {@code computeIfAbsent} on that map.
  *
  * <p>Each {@link Memoizer} <i>type</i> is associated with a {@link MemoizerNamespace}. The
@@ -30,34 +29,14 @@ import io.micronaut.core.annotation.NonNull;
  * <p>The namespace allows for the {@link Memoizer} implementation to be more efficient than a
  * simple {@link java.util.Map}, e.g. by storing booleans as a bit field.
  *
- * @param <SELF> The type the memoization functions use
+ * <p>To avoid interface calls, the actual accessor methods are on {@link MemoizedReference} and {@link MemoizedFlag},
+ * and not part of this interface.
+ *
+ * @param <SELF> The type of the memoization namespace
  * @since 4.10.0
  * @author Jonas Konrad
  */
+@SuppressWarnings("unused")
 @Experimental
 public interface Memoizer<SELF extends Memoizer<SELF>> {
-    /**
-     * Get a memoized reference value.
-     *
-     * @param reference The memoized field to load or compute
-     * @param <R>       The memoized value type
-     * @return The memoized value
-     * @implNote The default implementation does no storage and computes the memoized value each time.
-     */
-    @SuppressWarnings("unchecked")
-    default <R> R getMemoized(@NonNull MemoizedReference<SELF, R> reference) {
-        return reference.compute.apply((SELF) this);
-    }
-
-    /**
-     * Get a memoized boolean value.
-     *
-     * @param flag The memoized flag to load or compute
-     * @return The memoized value
-     * @implNote The default implementation does no storage and computes the memoized value each time.
-     */
-    @SuppressWarnings("unchecked")
-    default boolean getMemoized(@NonNull MemoizedFlag<SELF> flag) {
-        return flag.compute((SELF) this);
-    }
 }
