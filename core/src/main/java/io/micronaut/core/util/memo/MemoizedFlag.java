@@ -15,6 +15,8 @@
  */
 package io.micronaut.core.util.memo;
 
+import io.micronaut.core.annotation.AnnotationMetadataDelegate;
+
 import java.util.function.Predicate;
 
 /**
@@ -30,6 +32,17 @@ public abstract sealed class MemoizedFlag<M extends Memoizer<M>> {
     }
 
     abstract boolean compute(M memoizer);
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    public boolean get(M memoizer) {
+        if (memoizer instanceof AbstractMemoizer am) {
+            return am.getMemoized(this);
+        } else if (memoizer instanceof AnnotationMetadataDelegate amd) {
+            return get((M) amd.getAnnotationMetadata());
+        } else {
+            return compute(memoizer);
+        }
+    }
 
     /**
      * Implementation that stores in the {@code long} bitmask.

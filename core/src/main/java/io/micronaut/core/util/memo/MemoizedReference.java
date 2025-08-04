@@ -15,6 +15,8 @@
  */
 package io.micronaut.core.util.memo;
 
+import io.micronaut.core.annotation.AnnotationMetadataDelegate;
+
 import java.util.function.Function;
 
 /**
@@ -34,5 +36,16 @@ public final class MemoizedReference<M extends Memoizer<M>, R> {
         this.namespace = namespace;
         this.compute = compute;
         this.index = index;
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    public R get(M memoizer) {
+        if (memoizer instanceof AbstractMemoizer am) {
+            return (R) am.getMemoized(this);
+        } else if (memoizer instanceof AnnotationMetadataDelegate amd) {
+            return get((M) amd.getAnnotationMetadata());
+        } else {
+            return compute.apply(memoizer);
+        }
     }
 }
