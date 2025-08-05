@@ -49,7 +49,14 @@ public final class MemoizedReference<M extends Memoizer<M>, R> {
     public R get(@NonNull M memoizer) {
         if (memoizer instanceof AbstractMemoizer am) {
             return (R) am.getMemoized(this);
-        } else if (memoizer instanceof MemoizerDelegate<?> md) {
+        } else {
+            return fallback(memoizer);
+        }
+    }
+
+    @SuppressWarnings({"unchecked"})
+    private R fallback(@NonNull M memoizer) {
+        if (memoizer instanceof MemoizerDelegate<?> md) {
             return get((M) md.getMemoizerDelegate());
         } else {
             return compute.apply(memoizer);

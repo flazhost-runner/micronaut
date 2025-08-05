@@ -44,7 +44,14 @@ public abstract sealed class MemoizedFlag<M extends Memoizer<M>> {
     public boolean get(@NonNull M memoizer) {
         if (memoizer instanceof AbstractMemoizer am) {
             return am.getMemoized(this);
-        } else if (memoizer instanceof MemoizerDelegate<?> md) {
+        } else {
+            return fallback(memoizer);
+        }
+    }
+
+    @SuppressWarnings({"unchecked"})
+    private boolean fallback(@NonNull M memoizer) {
+        if (memoizer instanceof MemoizerDelegate<?> md) {
             return get((M) md.getMemoizerDelegate());
         } else {
             return compute(memoizer);

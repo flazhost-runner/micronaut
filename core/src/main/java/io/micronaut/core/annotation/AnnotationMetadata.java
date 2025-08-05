@@ -63,6 +63,9 @@ public interface AnnotationMetadata extends AnnotationSource, Memoizer<Annotatio
      */
     AnnotationMetadata EMPTY_METADATA = new EmptyAnnotationMetadata();
 
+    /**
+     * Namespace to use for memoized field access. See {@link Memoizer}.
+     */
     MemoizerNamespace<AnnotationMetadata> MEMOIZER_NAMESPACE = MemoizerNamespace.create();
 
     /**
