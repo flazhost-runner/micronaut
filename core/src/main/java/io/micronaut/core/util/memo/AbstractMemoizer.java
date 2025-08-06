@@ -21,7 +21,6 @@ import io.micronaut.core.util.ArrayUtils;
 
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
-import java.util.Arrays;
 
 /**
  * Implementation of {@link Memoizer} with backing storage.
@@ -76,9 +75,12 @@ public abstract class AbstractMemoizer<M extends Memoizer<M>> implements Memoize
     }
 
     private Object[] ensureCapacity(Object[] items, int accessedIndex) {
-        items = Arrays.copyOf(items, accessedIndex + 1);
-        this.items = items;
-        return items;
+        Object[] newItems = new Object[accessedIndex + 1];
+        for (int i = 0; i < items.length; i++) {
+            ITEMS_ENTRY.setRelease(newItems, i, ITEMS_ENTRY.getAcquire(items, i));
+        }
+        this.items = newItems;
+        return newItems;
     }
 
     @SuppressWarnings("unchecked")
