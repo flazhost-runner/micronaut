@@ -33,20 +33,10 @@ import java.util.Arrays;
 @Internal
 public abstract class AbstractMemoizer<M extends Memoizer<M>> implements Memoizer<M> {
     private static final Object NULL_SENTINEL = new Object();
-    private static final VarHandle ITEMS_FIELD;
     private static final VarHandle ITEMS_ENTRY = MethodHandles.arrayElementVarHandle(Object[].class);
 
-    @SuppressWarnings({"FieldMayBeFinal", "FieldCanBeLocal"})
     private Object[] items = ArrayUtils.EMPTY_OBJECT_ARRAY;
     private long flags;
-
-    static {
-        try {
-            ITEMS_FIELD = MethodHandles.lookup().findVarHandle(AbstractMemoizer.class, "items", Object[].class);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new AssertionError(e);
-        }
-    }
 
     /**
      * Get the namespace that should be used for this memoizer. This is a method instead of a field
@@ -70,7 +60,7 @@ public abstract class AbstractMemoizer<M extends Memoizer<M>> implements Memoize
 
     @SuppressWarnings("unchecked")
     final <R> R getMemoized(MemoizedReference<M, R> reference) {
-        Object[] items = (Object[]) ITEMS_FIELD.getAcquire(this);
+        Object[] items = this.items;
         int index = reference.index;
         if (index >= items.length) {
             items = ensureCapacity(items, index);
@@ -87,7 +77,7 @@ public abstract class AbstractMemoizer<M extends Memoizer<M>> implements Memoize
 
     private Object[] ensureCapacity(Object[] items, int accessedIndex) {
         items = Arrays.copyOf(items, accessedIndex + 1);
-        ITEMS_FIELD.setRelease(this, items);
+        this.items = items;
         return items;
     }
 
