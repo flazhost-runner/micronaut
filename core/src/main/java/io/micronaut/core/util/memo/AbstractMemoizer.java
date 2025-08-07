@@ -32,7 +32,7 @@ import java.lang.invoke.VarHandle;
 @Internal
 public abstract class AbstractMemoizer<M extends Memoizer<M>> implements Memoizer<M> {
     private static final Object NULL_SENTINEL = new Object();
-    private static final VarHandle ITEMS_ENTRY = MethodHandles.arrayElementVarHandle(Object[].class);
+    private static final VarHandle ITEMS_ENTRY = MethodHandles.arrayElementVarHandle(Object[].class).withInvokeExactBehavior();
 
     private Object[] items = ArrayUtils.EMPTY_OBJECT_ARRAY;
     private long flags;
