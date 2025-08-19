@@ -186,8 +186,7 @@ class NettyHttpServerConfigurationSpec extends Specification {
         given:
         ApplicationContext beanContext = new DefaultApplicationContext("test")
         beanContext.environment.addPropertySource(PropertySource.of("test",
-              ['micronaut.server.netty.use-native-transport': true,
-               'micronaut.server.netty.childOptions.tcpQuickack': true]
+              ['micronaut.server.netty.childOptions.tcpQuickack': true]
 
         ))
         beanContext.start()
@@ -196,7 +195,6 @@ class NettyHttpServerConfigurationSpec extends Specification {
         NettyHttpServerConfiguration config = beanContext.getBean(NettyHttpServerConfiguration)
 
         then:
-        config.useNativeTransport
         config.childOptions.size() == 1
 
         when:
@@ -230,7 +228,6 @@ class NettyHttpServerConfigurationSpec extends Specification {
         EventLoopGroupFactory eventLoopGroupFactory = beanContext.getBean(EventLoopGroupFactory)
 
         then:
-        config.useNativeTransport
         config.childOptions.size() == 1
 
         when:
@@ -284,7 +281,6 @@ class NettyHttpServerConfigurationSpec extends Specification {
         NettyHttpServerConfiguration config = beanContext.getBean(NettyHttpServerConfiguration)
 
         then:
-        !config.useNativeTransport
         config.maxRequestSize == 2097152
         config.multipart.maxFileSize == 2048
         config.childOptions.size() == 2

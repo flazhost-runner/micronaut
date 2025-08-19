@@ -195,7 +195,6 @@ public class NettyHttpServerConfiguration extends HttpServerConfiguration {
     private LogLevel logLevel;
     private int compressionThreshold = DEFAULT_COMPRESSIONTHRESHOLD;
     private int compressionLevel = DEFAULT_COMPRESSIONLEVEL;
-    private boolean useNativeTransport = DEFAULT_USE_NATIVE_TRANSPORT;
     private String fallbackProtocol = ApplicationProtocolNames.HTTP_1_1;
     private AccessLogger accessLogger;
     private Http2Settings http2Settings = new Http2Settings();
@@ -421,15 +420,6 @@ public class NettyHttpServerConfiguration extends HttpServerConfiguration {
     }
 
     /**
-     * Whether to use netty's native transport (epoll or kqueue) if available.
-     *
-     * @return To use netty's native transport (epoll or kqueue) if available.
-     */
-    public boolean isUseNativeTransport() {
-        return useNativeTransport;
-    }
-
-    /**
      * Whether to validate headers.
      *
      * @return Whether to validate headers
@@ -609,14 +599,6 @@ public class NettyHttpServerConfiguration extends HttpServerConfiguration {
      */
     public void setChunkedSupported(boolean chunkedSupported) {
         this.chunkedSupported = chunkedSupported;
-    }
-
-    /**
-     * Sets whether to use netty's native transport (epoll or kqueue) if available . Default value ({@value #DEFAULT_USE_NATIVE_TRANSPORT}).
-     * @param useNativeTransport True if netty's native transport should be use if available.
-     */
-    public void setUseNativeTransport(boolean useNativeTransport) {
-        this.useNativeTransport = useNativeTransport;
     }
 
     /**
