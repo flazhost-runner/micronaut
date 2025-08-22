@@ -38,11 +38,12 @@ import io.micronaut.http.body.MessageBodyHandlerRegistry;
 import io.micronaut.http.body.MessageBodyReader;
 import io.micronaut.http.codec.CodecException;
 import io.micronaut.http.context.ServerHttpRequestContext;
-import io.micronaut.http.netty.body.NettyByteBodyFactory;
+import io.micronaut.http.netty.body.AvailableNettyByteBody;
 import io.micronaut.http.server.netty.FormDataHttpContentProcessor;
 import io.micronaut.http.server.netty.FormRouteCompleter;
 import io.micronaut.http.server.netty.MicronautHttpData;
 import io.micronaut.http.server.netty.NettyHttpRequest;
+import io.micronaut.http.server.netty.NettyHttpServer;
 import io.micronaut.http.server.netty.configuration.NettyHttpServerConfiguration;
 import io.micronaut.http.server.netty.converters.NettyConverters;
 import io.micronaut.web.router.RouteAttributes;
@@ -53,6 +54,8 @@ import io.netty.buffer.ByteBufHolder;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.handler.codec.http.DefaultLastHttpContent;
 import io.netty.handler.codec.http.multipart.InterfaceHttpData;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -61,12 +64,15 @@ import java.util.Optional;
 
 @Internal
 final class NettyBodyAnnotationBinder<T> extends DefaultBodyAnnotationBinder<T> {
+
+    private static final Logger LOG = LoggerFactory.getLogger(NettyHttpServer.class);
+
     final NettyHttpServerConfiguration httpServerConfiguration;
     final MessageBodyHandlerRegistry bodyHandlerRegistry;
 
     NettyBodyAnnotationBinder(ConversionService conversionService,
                               NettyHttpServerConfiguration httpServerConfiguration,
-                                     MessageBodyHandlerRegistry bodyHandlerRegistry) {
+                              MessageBodyHandlerRegistry bodyHandlerRegistry) {
         super(conversionService);
         this.httpServerConfiguration = httpServerConfiguration;
         this.bodyHandlerRegistry = bodyHandlerRegistry;
@@ -103,7 +109,7 @@ final class NettyBodyAnnotationBinder<T> extends DefaultBodyAnnotationBinder<T> 
         if (!(source instanceof NettyHttpRequest<?> nhr)) {
             return super.bindFullBody(context, source);
         }
-        if (nhr.byteBody().expectedLength().orElse(-1) == 0) {
+        if (context.getArgument().isNullable() && nhr.byteBody().expectedLength().orElse(-1) == 0) {
             return BindingResult.empty();
         }
 
