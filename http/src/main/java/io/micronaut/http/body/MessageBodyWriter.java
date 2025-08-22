@@ -17,6 +17,7 @@ package io.micronaut.http.body;
 
 import io.micronaut.core.annotation.Experimental;
 import io.micronaut.core.annotation.Indexed;
+import io.micronaut.core.annotation.NextMajorVersion;
 import io.micronaut.core.annotation.NonNull;
 import io.micronaut.core.annotation.Nullable;
 import io.micronaut.core.io.buffer.ByteBuffer;
@@ -46,6 +47,7 @@ import java.util.Optional;
  */
 @Experimental
 @Indexed(MessageBodyWriter.class)
+@NextMajorVersion("Remove CodecException from write methods and use HttpHeaders. Make MediaType non-null.")
 public interface MessageBodyWriter<T> {
     /**
      * Is the type writeable.

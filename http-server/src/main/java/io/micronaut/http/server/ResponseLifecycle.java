@@ -16,6 +16,7 @@
 package io.micronaut.http.server;
 
 import io.micronaut.core.annotation.Internal;
+import io.micronaut.core.annotation.NextMajorVersion;
 import io.micronaut.core.annotation.NonNull;
 import io.micronaut.core.async.publisher.Publishers;
 import io.micronaut.core.async.subscriber.LazySendingSubscriber;
@@ -47,8 +48,10 @@ import io.micronaut.web.router.RouteInfo;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.Executor;
 
 /**
@@ -126,55 +129,79 @@ public abstract class ResponseLifecycle {
     }
 
     @SuppressWarnings("unchecked")
+    @NextMajorVersion("The default media type should not be provided here but by the message body writers. Consider deleting MediaTypeProvider")
     private ExecutionFlow<? extends ByteBodyHttpResponse<?>> encodeHttpResponse(
-        HttpRequest<?> nettyRequest,
+        HttpRequest<?> httpRequest,
         HttpResponse<?> httpResponse,
         Object body) {
         MutableHttpResponse<?> response = httpResponse.toMutableResponse();
-        if (nettyRequest.getMethod() != HttpMethod.HEAD && body != null) {
+        if (httpRequest.getMethod() != HttpMethod.HEAD && body != null) {
             Object routeInfoO = RouteAttributes.getRouteInfo(response).orElse(null);
             // usually this is a UriRouteInfo, avoid scalability issues here
             @SuppressWarnings("unchecked") final RouteInfo<Object> routeInfo = (RouteInfo<Object>) (routeInfoO instanceof DefaultUrlRouteInfo<?, ?> uri ? uri : (RouteInfo<?>) routeInfoO);
 
             if (Publishers.isConvertibleToPublisher(body)) {
                 response.body(null);
-                return mapToHttpContent(nettyRequest, response, body, routeInfo);
+                return mapToHttpContent(httpRequest, response, body, routeInfo);
             }
 
             // avoid checkcast for MessageBodyWriter interface here
             Object o = response.getBodyWriter().orElse(null);
             MessageBodyWriter<Object> messageBodyWriter = o instanceof ResponseBodyWriter rbw ? rbw : (MessageBodyWriter<Object>) o;
-            MediaType responseMediaType = response.getContentType().orElse(null);
+            List<MediaType> acceptMediaTypes = response.getContentType().stream().toList();
             Argument<Object> responseBodyType;
             if (routeInfo != null) {
                 responseBodyType = (Argument<Object>) routeInfo.getResponseBodyType();
             } else {
                 responseBodyType = Argument.of((Class<Object>) body.getClass());
             }
-            if (responseMediaType == null) {
+            if (acceptMediaTypes.isEmpty()) {
+                Collection<MediaType> accept = httpRequest.accept();
+                if (!accept.isEmpty()) {
+                    acceptMediaTypes = new ArrayList<>(accept);
+                }
+            }
+            // NOTE: This code should be removed in v5, message writer should be selected based on the priority and set the media type
+            if (acceptMediaTypes.isEmpty()) {
                 // perf: check for common body types
                 //noinspection ConditionCoveredByFurtherCondition
                 if (!(body instanceof String) && !(body instanceof byte[]) && body instanceof MediaTypeProvider mediaTypeProvider) {
-                    responseMediaType = mediaTypeProvider.getMediaType();
+                    acceptMediaTypes = List.of(mediaTypeProvider.getMediaType());
                 } else if (routeInfo != null) {
-                    responseMediaType = routeExecutor.resolveDefaultResponseContentType(nettyRequest, routeInfo);
+                    acceptMediaTypes = List.of(routeExecutor.resolveDefaultResponseContentType(httpRequest, routeInfo));
                 } else {
-                    responseMediaType = MediaType.APPLICATION_JSON_TYPE;
+                    acceptMediaTypes = List.of(MediaType.APPLICATION_JSON_TYPE);
                 }
             }
-
+            MediaType mediaType = null;
             if (messageBodyWriter == null) {
                 // lookup write to use, any logic that hits this path should consider setting
                 // a body writer on the response before writing
-                messageBodyWriter = messageBodyHandlerRegistry
-                    .findWriter(responseBodyType, Collections.singletonList(responseMediaType))
-                    .orElse(null);
+                for (MediaType acceptMediaType : acceptMediaTypes) {
+                    Optional<MessageBodyWriter<Object>> writer = messageBodyHandlerRegistry.findWriter(responseBodyType, acceptMediaType);
+                    if (writer.isPresent()) {
+                        mediaType = acceptMediaType;
+                        messageBodyWriter = writer.orElse(null);
+                        break;
+                    }
+                }
+
             }
-            if (messageBodyWriter == null || !responseBodyType.isInstance(body) || !messageBodyWriter.isWriteable(responseBodyType, responseMediaType)) {
+            if (mediaType == null) {
+                mediaType = acceptMediaTypes.get(0);
+            }
+            if (messageBodyWriter == null || !responseBodyType.isInstance(body) || !messageBodyWriter.isWriteable(responseBodyType, mediaType)) {
                 responseBodyType = Argument.ofInstance(body);
-                messageBodyWriter = messageBodyHandlerRegistry.getWriter(responseBodyType, List.of(responseMediaType));
+                for (MediaType acceptMediaType : acceptMediaTypes) {
+                    Optional<MessageBodyWriter<Object>> writer = messageBodyHandlerRegistry.findWriter(responseBodyType, acceptMediaType);
+                    if (writer.isPresent()) {
+                        mediaType = acceptMediaType;
+                        messageBodyWriter = writer.orElse(null);
+                        break;
+                    }
+                }
             }
-            return buildFinalResponse(nettyRequest, (MutableHttpResponse<Object>) response, responseBodyType, responseMediaType, body, messageBodyWriter, false);
+            return buildFinalResponse(httpRequest, (MutableHttpResponse<Object>) response, responseBodyType, mediaType, body, messageBodyWriter, false);
         } else {
             response.body(null);
 
@@ -219,7 +246,7 @@ public abstract class ResponseLifecycle {
 
                 if (messageBodyWriter == null || !responseBodyType.isInstance(message) || !messageBodyWriter.isWriteable(responseBodyType, finalMediaType)) {
                     responseBodyType = Argument.ofInstance(message);
-                    messageBodyWriter = wrap(messageBodyHandlerRegistry.getWriter(responseBodyType, List.of(finalMediaType)));
+                    messageBodyWriter = wrap(messageBodyHandlerRegistry.getWriter(responseBodyType, finalMediaType));
                 }
                 ExecutionFlow<CloseableByteBody> flow = writePieceAsync(
                     messageBodyWriter,
@@ -236,7 +263,7 @@ public abstract class ResponseLifecycle {
             httpContentPublisher = bodyPublisher
                 .concatMap(message -> {
                     Argument<Object> type = Argument.ofInstance(message);
-                    MessageBodyWriter<Object> messageBodyWriter = messageBodyHandlerRegistry.getWriter(type, finalMediaType == null ? List.of() : List.of(finalMediaType));
+                    MessageBodyWriter<Object> messageBodyWriter = messageBodyHandlerRegistry.getWriter(type, finalMediaType == null ? MediaType.ALL_TYPE : finalMediaType);
                     ExecutionFlow<CloseableByteBody> flow = writePieceAsync(messageBodyWriter, request, response, type, finalMediaType, message);
                     return ReactiveExecutionFlow.toPublisher(() -> flow);
                 });
@@ -334,7 +361,7 @@ public abstract class ResponseLifecycle {
             Object errorBody = errorResponse.body();
             Argument<Object> type = Argument.ofInstance(errorBody);
             MediaType errorContentType = errorResponse.getContentType().orElse(MediaType.APPLICATION_JSON_TYPE);
-            MessageBodyWriter<Object> errorBodyWriter = messageBodyHandlerRegistry.getWriter(type, List.of(errorContentType));
+            MessageBodyWriter<Object> errorBodyWriter = messageBodyHandlerRegistry.getWriter(type, errorContentType);
             if (!onIoExecutor && errorBodyWriter.isBlocking()) {
                 return ExecutionFlow.async(ioExecutor(), () -> ExecutionFlow.just(wrap(errorBodyWriter)
                     .write(byteBodyFactory, nettyRequest, errorResponse, type, errorContentType, errorBody)));

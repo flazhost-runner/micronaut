@@ -36,7 +36,6 @@ import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.List;
 
 /**
  * Handler for SSE events.
@@ -55,7 +54,6 @@ final class TextStreamBodyWriter<T> implements MessageBodyWriter<T> {
     private static final byte[] RETRY_PREFIX = "retry: ".getBytes(StandardCharsets.UTF_8);
     private static final byte[] COMMENT_PREFIX = ": ".getBytes(StandardCharsets.UTF_8);
     private static final byte[] NEWLINE = "\n".getBytes(StandardCharsets.UTF_8);
-    private static final List<MediaType> JSON_TYPE_LIST = List.of(MediaType.APPLICATION_JSON_TYPE);
 
     @Nullable
     private final MessageBodyWriter<Object> specificBodyWriter;
@@ -73,7 +71,7 @@ final class TextStreamBodyWriter<T> implements MessageBodyWriter<T> {
 
     @Override
     public MessageBodyWriter<T> createSpecific(Argument<T> type) {
-        return new TextStreamBodyWriter<>(registry, registry.findWriter(getBodyType(type), JSON_TYPE_LIST).orElse(null));
+        return new TextStreamBodyWriter<>(registry, registry.findWriter(getBodyType(type), MediaType.APPLICATION_JSON_TYPE).orElse(null));
     }
 
     @SuppressWarnings("unchecked")
@@ -114,10 +112,10 @@ final class TextStreamBodyWriter<T> implements MessageBodyWriter<T> {
         } else {
             MessageBodyWriter<Object> messageBodyWriter = specificBodyWriter;
             if (messageBodyWriter == null) {
-                messageBodyWriter = registry.findWriter(bodyType, JSON_TYPE_LIST).orElse(null);
+                messageBodyWriter = registry.findWriter(bodyType, MediaType.APPLICATION_JSON_TYPE).orElse(null);
                 if (messageBodyWriter == null) {
                     bodyType = Argument.ofInstance(data);
-                    messageBodyWriter = registry.getWriter(bodyType, JSON_TYPE_LIST);
+                    messageBodyWriter = registry.getWriter(bodyType, MediaType.APPLICATION_JSON_TYPE);
                 }
             }
             ByteArrayOutputStream baos = new ByteArrayOutputStream();

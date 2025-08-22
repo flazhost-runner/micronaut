@@ -16,6 +16,7 @@
 package io.micronaut.context;
 
 import io.micronaut.context.scope.CreatedBean;
+import io.micronaut.core.annotation.AnnotationMetadata;
 import io.micronaut.core.annotation.NonNull;
 import io.micronaut.core.annotation.Nullable;
 import io.micronaut.core.order.OrderUtil;
@@ -110,6 +111,11 @@ public class BeanRegistration<T> implements Ordered, CreatedBean<T>, BeanType<T>
     @Override
     public int getOrder() {
         return order;
+    }
+
+    @Override
+    public AnnotationMetadata getAnnotationMetadata() {
+        return beanDefinition.getAnnotationMetadata();
     }
 
     /**

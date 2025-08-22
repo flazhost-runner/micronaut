@@ -103,9 +103,6 @@ final class NettyBodyAnnotationBinder<T> extends DefaultBodyAnnotationBinder<T> 
         if (!(source instanceof NettyHttpRequest<?> nhr)) {
             return super.bindFullBody(context, source);
         }
-        if (nhr.byteBody().expectedLength().orElse(-1) == 0) {
-            return BindingResult.empty();
-        }
 
         // If there's an error during conversion, the body must stay available, so we split here.
         // This costs us nothing because we need to buffer anyway.
@@ -155,7 +152,7 @@ final class NettyBodyAnnotationBinder<T> extends DefaultBodyAnnotationBinder<T> 
         }
         MediaType mediaType = nhr.getContentType().orElse(null);
         if (mediaType != null && (reader == null || !reader.isReadable(context.getArgument(), mediaType))) {
-            reader = bodyHandlerRegistry.findReader(context.getArgument(), List.of(mediaType)).orElse(null);
+            reader = bodyHandlerRegistry.findReader(context.getArgument(), mediaType).orElse(null);
         }
         if (reader == null && nhr.isFormOrMultipartData()) {
             FormDataHttpContentProcessor processor = new FormDataHttpContentProcessor(nhr, httpServerConfiguration);

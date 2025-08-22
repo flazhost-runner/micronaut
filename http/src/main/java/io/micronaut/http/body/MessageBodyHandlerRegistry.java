@@ -54,6 +54,19 @@ public interface MessageBodyHandlerRegistry {
      * @param mediaType The media type
      * @return A message body reader if it is existing.
      * @param <T> The generic type
+     * @since 4.10
+     */
+    @NonNull
+    default <T> MessageBodyReader<T> getReader(@NonNull Argument<T> type, @NonNull MediaType mediaType) {
+        return findReader(type, mediaType).orElseThrow(() -> new CodecException("Cannot read value of argument [" + type + "]. No possible readers found for media type: " + mediaType));
+    }
+
+    /**
+     * Find a reader for the type and annotation metadata at declaration point.
+     * @param type The type
+     * @param mediaType The media type
+     * @return A message body reader if it is existing.
+     * @param <T> The generic type
      */
     @NonNull
     default <T> MessageBodyReader<T> getReader(@NonNull Argument<T> type, @Nullable List<MediaType> mediaType) {
@@ -80,7 +93,7 @@ public interface MessageBodyHandlerRegistry {
      */
     default <T> Optional<MessageBodyReader<T>> findReader(@NonNull Argument<T> type,
                                                           @Nullable MediaType mediaType) {
-        return findReader(type, mediaType == null ? List.of() : List.of(mediaType));
+        return findReader(type, mediaType == null ? List.of(MediaType.ALL_TYPE) : List.of(mediaType));
     }
 
     /**
@@ -114,7 +127,7 @@ public interface MessageBodyHandlerRegistry {
      */
     default <T> Optional<MessageBodyWriter<T>> findWriter(@NonNull Argument<T> type,
                                                           @Nullable MediaType mediaType) {
-        return findWriter(type, mediaType == null ? List.of() : List.of(mediaType));
+        return findWriter(type, mediaType == null ? List.of(MediaType.ALL_TYPE) : List.of(mediaType));
     }
 
     /**
@@ -125,7 +138,22 @@ public interface MessageBodyHandlerRegistry {
      * @since 4.6
      */
     default <T> Optional<MessageBodyWriter<T>> findWriter(@NonNull Argument<T> type) {
-        return findWriter(type, List.of());
+        return findWriter(type, MediaType.ALL_TYPE);
+    }
+
+    /**
+     * Gets a writer for the type and annotation metadata at declaration point or fails with {@link CodecException}.
+     * @param type The type
+     * @param mediaType The media type
+     * @return A message body writer if it is existing.
+     * @param <T> The generic type
+     * @since 4.10
+     */
+    @NonNull
+    default <T> MessageBodyWriter<T> getWriter(@NonNull Argument<T> type,
+                                               @NonNull MediaType mediaType) {
+        return findWriter(type, mediaType)
+            .orElseThrow(() -> new CodecException("Cannot encode value of argument [" + type + "]. No possible encoders found for media type: " + mediaType));
     }
 
     /**

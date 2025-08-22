@@ -15,6 +15,7 @@
  */
 package io.micronaut.http.body;
 
+import io.micronaut.core.annotation.AnnotationMetadata;
 import io.micronaut.core.annotation.Experimental;
 import io.micronaut.core.annotation.Internal;
 import io.micronaut.core.annotation.NonNull;
@@ -26,6 +27,7 @@ import io.micronaut.runtime.ApplicationConfiguration;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * {@link MessageBodyHandlerRegistry} implementation that does not need an application context.
@@ -36,8 +38,8 @@ import java.util.List;
 @Internal
 @Experimental
 public final class ContextlessMessageBodyHandlerRegistry extends AbstractMessageBodyHandlerRegistry {
-    private final List<ReaderEntry> readerEntries = new ArrayList<>();
-    private final List<WriterEntry> writerEntries = new ArrayList<>();
+    private final List<MessageBodyReaderDefinition<?>> readers = new ArrayList<>();
+    private final List<MessageBodyWriterDefinition<?>> writers = new ArrayList<>();
     private final List<TypedMessageBodyReader<?>> typedMessageBodyReaders;
     private final List<TypedMessageBodyWriter<?>> typedMessageBodyWriters;
 
@@ -72,8 +74,8 @@ public final class ContextlessMessageBodyHandlerRegistry extends AbstractMessage
      * @param handler   The handler
      */
     public void add(@NonNull MediaType mediaType, @NonNull MessageBodyHandler<?> handler) {
-        writerEntries.add(new WriterEntry(handler, mediaType));
-        readerEntries.add(new ReaderEntry(handler, mediaType));
+        writers.add(new MessageBodyWriterDefinition<>(handler, mediaType, AnnotationMetadata.EMPTY_METADATA));
+        readers.add(new MessageBodyReaderDefinition<>(handler, mediaType, AnnotationMetadata.EMPTY_METADATA));
     }
 
     /**
@@ -83,7 +85,7 @@ public final class ContextlessMessageBodyHandlerRegistry extends AbstractMessage
      * @param handler   The handler
      */
     public void add(@NonNull MediaType mediaType, @NonNull MessageBodyWriter<?> handler) {
-        writerEntries.add(new WriterEntry(handler, mediaType));
+        writers.add(new MessageBodyWriterDefinition<>(handler, mediaType, AnnotationMetadata.EMPTY_METADATA));
     }
 
     /**
@@ -93,52 +95,37 @@ public final class ContextlessMessageBodyHandlerRegistry extends AbstractMessage
      * @param handler   The handler
      */
     public void add(@NonNull MediaType mediaType, @NonNull MessageBodyReader<?> handler) {
-        readerEntries.add(new ReaderEntry(handler, mediaType));
+        readers.add(new MessageBodyReaderDefinition<>(handler, mediaType, AnnotationMetadata.EMPTY_METADATA));
     }
 
     @Override
-    protected <T> MessageBodyReader<T> findReaderImpl(Argument<T> type, List<MediaType> mediaTypes) {
-        for (TypedMessageBodyReader<?> messageBodyReader : typedMessageBodyReaders) {
-            TypedMessageBodyReader<T> reader = (TypedMessageBodyReader<T>) messageBodyReader;
-            if (type.getType().isAssignableFrom(reader.getType().getType())
-                && (mediaTypes.isEmpty() && reader.isReadable(type, null))
-                || mediaTypes.stream().anyMatch(mt -> reader.isReadable(type, mt))) {
-                return reader;
-            }
-        }
-        for (MediaType mediaType : mediaTypes) {
-            for (ReaderEntry entry : readerEntries) {
-                if (mediaType.matches(entry.mediaType)) {
-                    return (MessageBodyReader<T>) entry.handler;
-                }
-            }
-        }
-        return null;
+    @NonNull
+    protected <T> List<MessageBodyReaderDefinition<T>> findReaderImpl(Argument<T> type, MediaType mediaType) {
+        Stream<MessageBodyReaderDefinition<T>> typedStream = typedMessageBodyReaders.stream()
+            .filter(typed -> {
+                TypedMessageBodyReader<T> reader = (TypedMessageBodyReader<T>) typed;
+                return type.getType().isAssignableFrom(reader.getType().getType()) && reader.isReadable(type, mediaType);
+            })
+            .map(typed -> new MessageBodyReaderDefinition<>((TypedMessageBodyReader<T>) typed, mediaType, AnnotationMetadata.EMPTY_METADATA));
+        Stream<MessageBodyReaderDefinition<T>> readersStream = readers.stream()
+            .filter(reader -> mediaType.matches(reader.mediaType()))
+            .map(reader -> (MessageBodyReaderDefinition<T>) reader);
+        return Stream.concat(typedStream, readersStream).toList();
     }
 
     @Override
-    protected <T> MessageBodyWriter<T> findWriterImpl(Argument<T> type, List<MediaType> mediaTypes) {
-        for (TypedMessageBodyWriter<?> messageBodyReader : typedMessageBodyWriters) {
-            TypedMessageBodyWriter<T> writer = (TypedMessageBodyWriter<T>) messageBodyReader;
-            if (messageBodyReader.getType().isAssignableFrom(type.getType())
-                && (mediaTypes.isEmpty() && writer.isWriteable(type, null)
-                || mediaTypes.stream().anyMatch(mt -> writer.isWriteable(type, mt)))) {
-                return (MessageBodyWriter<T>) messageBodyReader;
-            }
-        }
-        for (MediaType mediaType : mediaTypes) {
-            for (WriterEntry entry : writerEntries) {
-                if (mediaType.matches(entry.mediaType)) {
-                    return (MessageBodyWriter<T>) entry.handler;
-                }
-            }
-        }
-        return null;
+    @NonNull
+    protected <T> List<MessageBodyWriterDefinition<T>> findWriterImpl(Argument<T> type, MediaType mediaType) {
+        Stream<MessageBodyWriterDefinition<T>> typedStream = typedMessageBodyWriters
+            .stream().filter(typed -> {
+                TypedMessageBodyWriter<T> writer = (TypedMessageBodyWriter<T>) typed;
+                return typed.getType().isAssignableFrom(type.getType()) && writer.isWriteable(type, mediaType);
+            })
+            .map(typed -> new MessageBodyWriterDefinition<>((MessageBodyWriter<T>) typed, mediaType, AnnotationMetadata.EMPTY_METADATA));
+        Stream<MessageBodyWriterDefinition<T>> writersStream = writers.stream()
+            .filter(writer -> mediaType.matches(writer.mediaType()))
+            .map(writer -> (MessageBodyWriterDefinition<T>) writer);
+        return Stream.concat(typedStream, writersStream).toList();
     }
 
-    private record ReaderEntry(MessageBodyReader<?> handler, MediaType mediaType) {
-    }
-
-    private record WriterEntry(MessageBodyWriter<?> handler, MediaType mediaType) {
-    }
 }

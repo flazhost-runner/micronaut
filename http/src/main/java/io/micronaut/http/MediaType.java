@@ -1277,7 +1277,17 @@ public class MediaType implements CharSequence {
         return Collections.unmodifiableList(mediaTypes);
     }
 
-    private static int naturalSort(MediaType o1, MediaType o2)  {
+    /**
+     * Compares two MediaType objects for natural sorting based on their type, subtype,
+     * and quality values. Media types with wildcard types or subtypes are sorted
+     * accordingly, with wildcard types being considered lower priority.
+     *
+     * @param o1 the first MediaType object to compare
+     * @param o2 the second MediaType object to compare
+     * @return a negative integer, zero, or a positive integer if the first MediaType
+     *         should come before, is equal to, or should come after the second MediaType
+     */
+    public static int naturalSort(MediaType o1, MediaType o2)  {
         //The */* type is always last
         boolean fullWildcard1 = o1.type.equals(WILDCARD);
         boolean fullWildcard2 = o2.type.equals(WILDCARD);

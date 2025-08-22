@@ -105,10 +105,14 @@ public final class JsonMessageHandler<T> implements MessageBodyHandler<T>, Custo
     @Override
     public T read(@NonNull Argument<T> type, MediaType mediaType, @NonNull Headers httpHeaders, @NonNull ByteBuffer<?> byteBuffer) throws CodecException {
         T decoded;
-        try {
-            decoded = jsonMapper.readValue(byteBuffer, type);
-        } catch (IOException e) {
-            throw decorateRead(type, e);
+        if (byteBuffer.readableBytes() == 0) {
+            decoded = null; // Prevent No content to map due to end-of-input
+        } else {
+            try {
+                decoded = jsonMapper.readValue(byteBuffer, type);
+            } catch (IOException e) {
+                throw decorateRead(type, e);
+            }
         }
         if (byteBuffer instanceof ReferenceCounted rc) {
             rc.release();

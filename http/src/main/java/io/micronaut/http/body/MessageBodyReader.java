@@ -17,6 +17,7 @@ package io.micronaut.http.body;
 
 import io.micronaut.core.annotation.Experimental;
 import io.micronaut.core.annotation.Indexed;
+import io.micronaut.core.annotation.NextMajorVersion;
 import io.micronaut.core.annotation.NonNull;
 import io.micronaut.core.annotation.Nullable;
 import io.micronaut.core.io.buffer.ByteBuffer;
@@ -41,6 +42,7 @@ import java.io.InputStream;
  */
 @Experimental
 @Indexed(MessageBodyReader.class)
+@NextMajorVersion("Remove CodecException from read methods and use HttpHeaders. Make MediaType non-null.")
 public interface MessageBodyReader<T> {
     /**
      * Is the type readable.

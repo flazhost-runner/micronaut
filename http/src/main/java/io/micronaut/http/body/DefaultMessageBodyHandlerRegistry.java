@@ -16,6 +16,8 @@
 package io.micronaut.http.body;
 
 import io.micronaut.context.BeanContext;
+import io.micronaut.context.BeanRegistration;
+import io.micronaut.context.BeanResolutionContext;
 import io.micronaut.context.annotation.BootstrapContextCompatible;
 import io.micronaut.core.annotation.Experimental;
 import io.micronaut.core.annotation.NonNull;
@@ -32,11 +34,10 @@ import io.micronaut.inject.qualifiers.Qualifiers;
 import jakarta.inject.Singleton;
 
 import java.lang.annotation.Annotation;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 /**
  * Stores message body readers and writers.
@@ -66,114 +67,81 @@ public final class DefaultMessageBodyHandlerRegistry extends AbstractMessageBody
 
     @SuppressWarnings({"unchecked"})
     @Override
-    protected <T> MessageBodyReader<T> findReaderImpl(Argument<T> type, List<MediaType> mediaTypes) {
-        List<MediaType> resolvedMediaTypes = resolveMediaTypes(mediaTypes);
-        return beanLocator.getBeansOfType(
+    @NonNull
+    protected <T> List<MessageBodyReaderDefinition<T>> findReaderImpl(@NonNull Argument<T> type, @NonNull MediaType mediaType) {
+        return beanLocator.getBeanRegistrations(
                 Argument.of(MessageBodyReader.class), // Select all readers and eliminate by the type later
                 Qualifiers.byQualifiers(
-                    // Filter by media types first before filtering by the type hierarchy
-                    new MediaTypeQualifier<>(Argument.of(MessageBodyReader.class, type), resolvedMediaTypes, Consumes.class),
-                    MatchArgumentQualifier.covariant(MessageBodyReader.class, type)
+                    MatchArgumentQualifier.covariant(MessageBodyReader.class, type),
+                    new MediaTypeQualifier<>(Argument.of(MessageBodyReader.class, type), mediaType, Consumes.class)
                 )
             ).stream()
-            .filter(reader -> resolvedMediaTypes.stream().anyMatch(mediaType -> reader.isReadable(type, mediaType)))
-            .findFirst()
-            .orElse(null);
+            .filter(reg -> reg.bean().isReadable(type, mediaType))
+            .map(reg -> new MessageBodyReaderDefinition<T>(reg.getBean(), mediaType, reg.definition().getAnnotationMetadata()))
+            .toList();
     }
 
+
     @NonNull
-    private List<MediaType> resolveMediaTypes(List<MediaType> mediaTypes) {
+    @Override
+    protected void resolveMediaType(MediaType mediaType, Consumer<MediaType> mediaTypeConsumer) {
+        mediaTypeConsumer.accept(mediaType);
         if (codecConfigurations.isEmpty()) {
-            return mediaTypes;
+            return;
         }
-        List<MediaType> resolvedMediaTypes = new ArrayList<>(mediaTypes.size());
-        resolvedMediaTypes.addAll(mediaTypes);
-        for (MediaType mediaType : mediaTypes) {
-            for (CodecConfiguration codecConfiguration : codecConfigurations) {
-                List<MediaType> additionalTypes = codecConfiguration.getAdditionalTypes();
-                if (additionalTypes.contains(mediaType)) {
-                    beanLocator.findBean(MediaTypeCodec.class, Qualifiers.byName(codecConfiguration.getName())).ifPresent(codec ->
-                        resolvedMediaTypes.addAll(codec.getMediaTypes())
-                    );
-                    break;
-                }
+        for (CodecConfiguration codecConfiguration : codecConfigurations) {
+            List<MediaType> additionalTypes = codecConfiguration.getAdditionalTypes();
+            if (additionalTypes.contains(mediaType)) {
+                beanLocator.findBean(MediaTypeCodec.class, Qualifiers.byName(codecConfiguration.getName()))
+                    .stream()
+                    .flatMap(c -> c.getMediaTypes().stream())
+                    .forEach(mediaTypeConsumer);
+                break;
             }
         }
-        return resolvedMediaTypes;
     }
 
     @SuppressWarnings({"unchecked"})
     @Override
-    protected <T> MessageBodyWriter<T> findWriterImpl(Argument<T> type, List<MediaType> mediaTypes) {
-        List<MediaType> resolvedMediaTypes = resolveMediaTypes(mediaTypes);
-        return beanLocator.getBeansOfType(
+    @NonNull
+    protected <T> List<MessageBodyWriterDefinition<T>> findWriterImpl(@NonNull Argument<T> type, @NonNull MediaType mediaType) {
+        return beanLocator.getBeanRegistrations(
                 Argument.of(MessageBodyWriter.class), // Select all writers and eliminate by the type later
                 Qualifiers.byQualifiers(
+                    MatchArgumentQualifier.contravariant(MessageBodyWriter.class, type),
                     // Filter by media types first before filtering by the type hierarchy
-                    new MediaTypeQualifier<>(Argument.of(MessageBodyWriter.class, type), resolvedMediaTypes, Produces.class),
-                    MatchArgumentQualifier.contravariant(MessageBodyWriter.class, type)
+                    new MediaTypeQualifier<>(Argument.of(MessageBodyWriter.class, type), mediaType, Produces.class)
                 )
             ).stream()
-            .filter(writer -> resolvedMediaTypes.stream().anyMatch(mediaType -> writer.isWriteable(type, mediaType)))
-            .findFirst().orElse(null);
+            .filter(reg -> reg.bean().isWriteable(type, mediaType))
+            .map(reg -> new MessageBodyWriterDefinition<T>(reg.getBean(), mediaType, reg.definition().getAnnotationMetadata()))
+            .toList();
     }
 
     private static final class MediaTypeQualifier<T> extends FilteringQualifier<T> {
         private final Argument<?> type;
-        private final List<MediaType> mediaTypes;
+        private final MediaType mediaType;
         private final Class<? extends Annotation> annotationType;
+        private static final List<MediaType> ALL_MATCH = List.of(MediaType.ALL_TYPE);
 
-        private MediaTypeQualifier(Argument<?> type,
-                                   List<MediaType> mediaTypes,
-                                   Class<? extends Annotation> annotationType) {
+        private MediaTypeQualifier(@NonNull Argument<?> type,
+                                   @NonNull MediaType mediaType,
+                                   @NonNull Class<? extends Annotation> annotationType) {
+            this.mediaType = Objects.requireNonNull(mediaType, "MediaType must not be null");
             this.type = type;
-            this.mediaTypes = mediaTypes;
             this.annotationType = annotationType;
         }
 
         @Override
         public <K extends BeanType<T>> Collection<K> filter(Class<T> beanType, Collection<K> candidates) {
-            List<K> all = new ArrayList<>(candidates.size());
-            candidatesLoop:
-            for (K candidate : candidates) {
-                String[] applicableTypes = candidate.getAnnotationMetadata().stringValues(annotationType);
-                if (applicableTypes.length == 0) {
-                    all.add(candidate);
-                    continue;
-                }
-                for (String mt : applicableTypes) {
-                    MediaType mediaType = new MediaType(mt);
-                    for (MediaType m : mediaTypes) {
-                        if (m.matches(mediaType)) {
-                            all.add(candidate);
-                            continue candidatesLoop;
-                        }
-                    }
-                }
-            }
-            // Handlers with a media type defined should have a priority
-            all.sort(Comparator.comparingInt(this::findOrder).reversed());
-            return all;
+            return DefaultMessageBodyHandlerRegistry.filterByMediaType(mediaType, annotationType.getTypeName(), candidates);
         }
 
-        private int findOrder(BeanType<?> beanType) {
-            int order = 0;
-            String[] applicableTypes = beanType.getAnnotationMetadata().stringValues(annotationType);
-            int size = mediaTypes.size();
-            for (String mt : applicableTypes) {
-                int index = mediaTypes.indexOf(new MediaType(mt));
-                if (index == -1) {
-                    continue;
-                }
-                int compareValue = size - index; // First value should have the priority
-                order = Integer.max(order, compareValue);
+        record Item<K>(K candidate, MediaType mediaType) implements Comparable<Item<K>> {
+            @Override
+            public int compareTo(Item<K> o) {
+                return MediaType.naturalSort(mediaType, o.mediaType);
             }
-            return order;
-        }
-
-        private static boolean isInvalidType(List<Argument<?>> consumedType, Argument<?> requiredType) {
-            Argument<?> argument = consumedType.get(0);
-            return !(argument.isTypeVariable() || argument.isAssignableFrom(requiredType.getType()));
         }
 
         @Override
@@ -185,21 +153,34 @@ public final class DefaultMessageBodyHandlerRegistry extends AbstractMessageBody
                 return false;
             }
             MediaTypeQualifier<?> that = (MediaTypeQualifier<?>) o;
-            return type.equalsType(that.type) && mediaTypes.equals(that.mediaTypes);
+            return type.equalsType(that.type) && mediaType.equals(that.mediaType);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(type.typeHashCode(), mediaTypes);
+            return Objects.hash(type.typeHashCode(), mediaType);
         }
 
         @Override
         public String toString() {
             return "MediaTypeQualifier[" +
                 "type=" + type + ", " +
-                "mediaTypes=" + mediaTypes + ", " +
+                "mediaType=" + mediaType + ", " +
                 "annotationType=" + annotationType + ']';
         }
 
+    }
+
+    private record BeanRegistrationHolder<T>(
+        BeanRegistration<T> registration) implements BeanType<T> {
+        @Override
+        public Class<T> getBeanType() {
+            return registration.getBeanType();
+        }
+
+        @Override
+        public boolean isEnabled(BeanContext context, BeanResolutionContext resolutionContext) {
+            return true;
+        }
     }
 }

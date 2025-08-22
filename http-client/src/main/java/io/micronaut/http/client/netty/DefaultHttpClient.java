@@ -805,7 +805,7 @@ public class DefaultHttpClient implements
     @Override
     public <I, B> Publisher<Event<B>> eventStream(@NonNull io.micronaut.http.HttpRequest<I> request, @NonNull Argument<B> eventType, @NonNull Argument<?> errorType) {
         setupConversionService(request);
-        MessageBodyReader<B> reader = handlerRegistry.getReader(eventType, List.of(MediaType.APPLICATION_JSON_TYPE));
+        MessageBodyReader<B> reader = handlerRegistry.getReader(eventType, MediaType.APPLICATION_JSON_TYPE);
         return Flux.from(eventStreamOrError(request, errorType)).map(byteBufferEvent -> {
             ByteBuffer<?> data = byteBufferEvent.getData();
 
@@ -1132,7 +1132,7 @@ public class DefaultHttpClient implements
 
             // could also be application/json, in which case we will stream an array
             MediaType mediaType = response.getContentType().orElse(MediaType.APPLICATION_JSON_STREAM_TYPE);
-            ChunkedMessageBodyReader<O> reader = (ChunkedMessageBodyReader<O>) handlerRegistry.getReader(type, List.of(mediaType));
+            ChunkedMessageBodyReader<O> reader = (ChunkedMessageBodyReader<O>) handlerRegistry.getReader(type, mediaType);
             return reader.readChunked(type, mediaType, response.getHeaders(), Flux.from(streamResponse).map(c -> NettyByteBufferFactory.DEFAULT.wrap(c.content())));
         });
     }
@@ -1370,7 +1370,7 @@ public class DefaultHttpClient implements
 
                         Flux<HttpContent> requestBodyPublisher = Flux.from(publisher).map(value -> {
                             Argument<Object> type = Argument.ofInstance(value);
-                            ByteBuffer<?> buffer = handlerRegistry.getWriter(type, List.of(requestContentType))
+                            ByteBuffer<?> buffer = handlerRegistry.getWriter(type, requestContentType)
                                 .writeTo(type, requestContentType, value, request.getHeaders(), byteBufferFactory);
                             return new DefaultHttpContent(((ByteBuf) buffer.asNativeBuffer()));
                         });
@@ -1384,7 +1384,7 @@ public class DefaultHttpClient implements
                         bodyContent = charSequenceToByteBuf(sequence, requestContentType);
                     } else {
                         Argument<Object> type = Argument.ofInstance(bodyValue);
-                        ByteBuffer<?> buffer = handlerRegistry.getWriter(type, List.of(requestContentType))
+                        ByteBuffer<?> buffer = handlerRegistry.getWriter(type, requestContentType)
                             .writeTo(type, requestContentType, bodyValue, request.getHeaders(), byteBufferFactory);
                         bodyContent = (ByteBuf) buffer.asNativeBuffer();
                     }
