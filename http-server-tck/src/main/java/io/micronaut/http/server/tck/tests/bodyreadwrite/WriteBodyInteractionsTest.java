@@ -188,7 +188,6 @@ public class WriteBodyInteractionsTest {
             return getCommandValue(httpHeaders, annotation);
         }
 
-
     }
 
     @Requires(property = "spec.name", value = SPEC_NAME)

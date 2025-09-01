@@ -16,6 +16,7 @@
 package io.micronaut.jackson.databind;
 
 import com.fasterxml.jackson.annotation.JsonView;
+import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -74,6 +75,7 @@ public final class JacksonDatabindMapper implements JsonMapper {
     public static final String PROPERTY_JSON_VIEW_ENABLED = "jackson.json-view.enabled";
 
     private final ObjectMapper objectMapper;
+    private final JsonFactory jsonFactory;
     private final JsonStreamConfig config;
     private final JsonNodeTreeCodec treeCodec;
     private final ObjectReader specializedReader;
@@ -92,6 +94,7 @@ public final class JacksonDatabindMapper implements JsonMapper {
     @Internal
     public JacksonDatabindMapper(ObjectMapper objectMapper, @Value("${" + JacksonDatabindMapper.PROPERTY_JSON_VIEW_ENABLED + ":false}") boolean allowViews) {
         this.objectMapper = objectMapper;
+        this.jsonFactory = objectMapper.getFactory();
         this.allowViews = allowViews;
         this.config = JsonStreamConfig.DEFAULT
             .withUseBigDecimalForFloats(objectMapper.getDeserializationConfig().isEnabled(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS))
@@ -108,6 +111,7 @@ public final class JacksonDatabindMapper implements JsonMapper {
 
     private JacksonDatabindMapper(JacksonDatabindMapper from, Argument<?> type, boolean allowViews) {
         this.objectMapper = from.objectMapper;
+        this.jsonFactory = from.objectMapper.getFactory();
         this.config = from.config;
         this.treeCodec = from.treeCodec;
         this.specializedReader = from.createReader(type);
@@ -177,7 +181,11 @@ public final class JacksonDatabindMapper implements JsonMapper {
 
     @Override
     public <T> T readValueFromTree(@NonNull JsonNode tree, @NonNull Argument<T> type) throws IOException {
-        return createReader(type).readValue(treeAsTokens(tree));
+        try (JsonParser parser = treeAsTokens(tree)) {
+            return createReader(type).readValue(parser);
+        } catch (JsonParseException pe) {
+            throw new JsonSyntaxException(pe);
+        }
     }
 
     @Override
@@ -199,8 +207,11 @@ public final class JacksonDatabindMapper implements JsonMapper {
 
     @Override
     public <T> T readValue(@NonNull InputStream inputStream, @NonNull Argument<T> type) throws IOException {
-        try {
-            return createReader(type).readValue(inputStream);
+        try (JsonParser parser = jsonFactory.createParser(inputStream)) {
+            if (parser.nextToken() == null) {
+                return null;
+            }
+            return createReader(type).readValue(parser);
         } catch (JsonParseException pe) {
             throw new JsonSyntaxException(pe);
         }
@@ -208,8 +219,11 @@ public final class JacksonDatabindMapper implements JsonMapper {
 
     @Override
     public <T> T readValue(byte @NonNull [] byteArray, @NonNull Argument<T> type) throws IOException {
-        try {
-            return createReader(type).readValue(byteArray);
+        try (JsonParser parser = jsonFactory.createParser(byteArray)) {
+            if (parser.nextToken() == null) {
+                return null;
+            }
+            return createReader(type).readValue(parser);
         } catch (JsonParseException pe) {
             throw new JsonSyntaxException(pe);
         }
@@ -217,7 +231,10 @@ public final class JacksonDatabindMapper implements JsonMapper {
 
     @Override
     public <T> T readValue(@NonNull ByteBuffer<?> byteBuffer, @NonNull Argument<T> type) throws IOException {
-        try (JsonParser parser = JacksonCoreParserFactory.createJsonParser(objectMapper.getFactory(), byteBuffer)) {
+        try (JsonParser parser = JacksonCoreParserFactory.createJsonParser(jsonFactory, byteBuffer)) {
+            if (parser.nextToken() == null) {
+                return null;
+            }
             return createReader(type).readValue(parser);
         } catch (JsonParseException pe) {
             throw new JsonSyntaxException(pe);
@@ -281,7 +298,7 @@ public final class JacksonDatabindMapper implements JsonMapper {
 
     @Override
     public @NonNull Processor<byte[], JsonNode> createReactiveParser(@NonNull Consumer<Processor<byte[], JsonNode>> onSubscribe, boolean streamArray) {
-        return new JacksonCoreProcessor(streamArray, objectMapper.getFactory(), config) {
+        return new JacksonCoreProcessor(streamArray, jsonFactory, config) {
             @Override
             public void subscribe(Subscriber<? super JsonNode> downstreamSubscriber) {
                 onSubscribe.accept(this);
