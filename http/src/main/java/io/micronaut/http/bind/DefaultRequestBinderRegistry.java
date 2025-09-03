@@ -15,6 +15,8 @@
  */
 package io.micronaut.http.bind;
 
+import io.micronaut.core.annotation.AnnotationMetadata;
+import io.micronaut.core.annotation.AnnotationUtil;
 import io.micronaut.core.annotation.NonNull;
 import io.micronaut.core.bind.ArgumentBinder;
 import io.micronaut.core.bind.annotation.Bindable;
@@ -33,8 +35,8 @@ import io.micronaut.http.PushCapableHttpRequest;
 import io.micronaut.http.annotation.Body;
 import io.micronaut.http.bind.binders.AnnotatedRequestArgumentBinder;
 import io.micronaut.http.bind.binders.ContinuationArgumentBinder;
-import io.micronaut.http.bind.binders.CookieObjectArgumentBinder;
 import io.micronaut.http.bind.binders.CookieAnnotationBinder;
+import io.micronaut.http.bind.binders.CookieObjectArgumentBinder;
 import io.micronaut.http.bind.binders.DefaultBodyAnnotationBinder;
 import io.micronaut.http.bind.binders.DefaultUnmatchedRequestArgumentBinder;
 import io.micronaut.http.bind.binders.HeaderAnnotationBinder;
@@ -48,6 +50,8 @@ import io.micronaut.http.bind.binders.RequestBeanAnnotationBinder;
 import io.micronaut.http.bind.binders.TypedRequestArgumentBinder;
 import io.micronaut.http.cookie.Cookie;
 import io.micronaut.http.cookie.Cookies;
+import io.micronaut.inject.annotation.AnnotationMetadataHierarchy;
+import io.micronaut.inject.annotation.MutableAnnotationMetadata;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
@@ -71,7 +75,7 @@ import static io.micronaut.core.util.KotlinUtils.KOTLIN_COROUTINES_SUPPORTED;
 public class DefaultRequestBinderRegistry implements RequestBinderRegistry {
 
     private static final long CACHE_MAX_SIZE = 30;
-
+    private static final AnnotationMetadata NULLABLE_ANNOTATION_METADATA;
     private final Map<Class<? extends Annotation>, RequestArgumentBinder> byAnnotation = new LinkedHashMap<>();
     private final Map<TypeAndAnnotation, RequestArgumentBinder> byTypeAndAnnotation = new LinkedHashMap<>();
     private final Map<Integer, RequestArgumentBinder> byType = new LinkedHashMap<>();
@@ -80,6 +84,12 @@ public class DefaultRequestBinderRegistry implements RequestBinderRegistry {
         new ConcurrentLinkedHashMap.Builder<TypeAndAnnotation, Optional<RequestArgumentBinder>>().maximumWeightedCapacity(CACHE_MAX_SIZE).build();
     private final List<RequestArgumentBinder<Object>> unmatchedBinders = new ArrayList<>();
     private final DefaultUnmatchedRequestArgumentBinder defaultUnmatchedRequestArgumentBinder;
+
+    static {
+        MutableAnnotationMetadata nullable = new MutableAnnotationMetadata();
+        nullable.addAnnotation(AnnotationUtil.NULLABLE, Map.of());
+        NULLABLE_ANNOTATION_METADATA = nullable;
+    }
 
     /**
      * @param conversionService The conversion service
@@ -268,7 +278,14 @@ public class DefaultRequestBinderRegistry implements RequestBinderRegistry {
                 .filter(arg -> arg.getType() != Void.class);
             if (typeVariable.isPresent()) {
                 @SuppressWarnings("unchecked")
-                ArgumentConversionContext<Object> unwrappedConversionContext = ConversionContext.of((Argument<Object>) typeVariable.get());
+                Argument<Object> argument = (Argument<Object>) typeVariable.get();
+                argument = argument.withAnnotationMetadata(
+                    new AnnotationMetadataHierarchy(
+                        argument.getAnnotationMetadata(),
+                        NULLABLE_ANNOTATION_METADATA // HttpRequest's body can be null
+                    )
+                );
+                ArgumentConversionContext<Object> unwrappedConversionContext = ConversionContext.of(argument);
                 ArgumentBinder.BindingResult<Object> bodyBound = bodyAnnotationBinder.bindFullBody(unwrappedConversionContext, source);
                 // can't use flatMap here because we return a present optional even when the body conversion failed
                 return new PendingRequestBindingResult<>() {
@@ -286,14 +303,14 @@ public class DefaultRequestBinderRegistry implements RequestBinderRegistry {
                     public Optional<HttpRequest<?>> getValue() {
                         Optional<Object> body = bodyBound.getValue();
                         if (pushCapable) {
-                            return Optional.of(new PushCapableRequestWrapper<Object>((HttpRequest<Object>) source, (PushCapableHttpRequest<?>) source) {
+                            return Optional.of(new PushCapableRequestWrapper<>((HttpRequest<Object>) source, (PushCapableHttpRequest<?>) source) {
                                 @Override
                                 public Optional<Object> getBody() {
                                     return body;
                                 }
                             });
                         } else {
-                            return Optional.of(new HttpRequestWrapper<Object>((HttpRequest<Object>) source) {
+                            return Optional.of(new HttpRequestWrapper<>((HttpRequest<Object>) source) {
                                 @Override
                                 public Optional<Object> getBody() {
                                     return body;

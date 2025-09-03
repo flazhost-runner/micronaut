@@ -34,10 +34,15 @@ import java.io.InputStream;
 @Prototype
 @BootstrapContextCompatible
 @Internal
-final class InputStreamBodyReader implements MessageBodyReader<InputStream> {
+final class InputStreamBodyReader implements TypedMessageBodyReader<InputStream> {
 
     @Override
     public InputStream read(Argument<InputStream> type, MediaType mediaType, Headers httpHeaders, InputStream inputStream) throws CodecException {
         return inputStream;
+    }
+
+    @Override
+    public Argument<InputStream> getType() {
+        return Argument.of(InputStream.class);
     }
 }
