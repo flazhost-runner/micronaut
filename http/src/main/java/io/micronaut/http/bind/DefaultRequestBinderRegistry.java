@@ -15,13 +15,10 @@
  */
 package io.micronaut.http.bind;
 
-import io.micronaut.core.annotation.AnnotationMetadata;
-import io.micronaut.core.annotation.AnnotationUtil;
 import io.micronaut.core.annotation.NonNull;
 import io.micronaut.core.bind.ArgumentBinder;
 import io.micronaut.core.bind.annotation.Bindable;
 import io.micronaut.core.convert.ArgumentConversionContext;
-import io.micronaut.core.convert.ConversionContext;
 import io.micronaut.core.convert.ConversionError;
 import io.micronaut.core.convert.ConversionService;
 import io.micronaut.core.type.Argument;
@@ -50,8 +47,6 @@ import io.micronaut.http.bind.binders.RequestBeanAnnotationBinder;
 import io.micronaut.http.bind.binders.TypedRequestArgumentBinder;
 import io.micronaut.http.cookie.Cookie;
 import io.micronaut.http.cookie.Cookies;
-import io.micronaut.inject.annotation.AnnotationMetadataHierarchy;
-import io.micronaut.inject.annotation.MutableAnnotationMetadata;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
@@ -75,7 +70,6 @@ import static io.micronaut.core.util.KotlinUtils.KOTLIN_COROUTINES_SUPPORTED;
 public class DefaultRequestBinderRegistry implements RequestBinderRegistry {
 
     private static final long CACHE_MAX_SIZE = 30;
-    private static final AnnotationMetadata NULLABLE_ANNOTATION_METADATA;
     private final Map<Class<? extends Annotation>, RequestArgumentBinder> byAnnotation = new LinkedHashMap<>();
     private final Map<TypeAndAnnotation, RequestArgumentBinder> byTypeAndAnnotation = new LinkedHashMap<>();
     private final Map<Integer, RequestArgumentBinder> byType = new LinkedHashMap<>();
@@ -85,11 +79,6 @@ public class DefaultRequestBinderRegistry implements RequestBinderRegistry {
     private final List<RequestArgumentBinder<Object>> unmatchedBinders = new ArrayList<>();
     private final DefaultUnmatchedRequestArgumentBinder defaultUnmatchedRequestArgumentBinder;
 
-    static {
-        MutableAnnotationMetadata nullable = new MutableAnnotationMetadata();
-        nullable.addAnnotation(AnnotationUtil.NULLABLE, Map.of());
-        NULLABLE_ANNOTATION_METADATA = nullable;
-    }
 
     /**
      * @param conversionService The conversion service
@@ -277,16 +266,7 @@ public class DefaultRequestBinderRegistry implements RequestBinderRegistry {
                 .filter(arg -> arg.getType() != Object.class)
                 .filter(arg -> arg.getType() != Void.class);
             if (typeVariable.isPresent()) {
-                @SuppressWarnings("unchecked")
-                Argument<Object> argument = (Argument<Object>) typeVariable.get();
-                argument = argument.withAnnotationMetadata(
-                    new AnnotationMetadataHierarchy(
-                        argument.getAnnotationMetadata(),
-                        NULLABLE_ANNOTATION_METADATA // HttpRequest's body can be null
-                    )
-                );
-                ArgumentConversionContext<Object> unwrappedConversionContext = ConversionContext.of(argument);
-                ArgumentBinder.BindingResult<Object> bodyBound = bodyAnnotationBinder.bindFullBody(unwrappedConversionContext, source);
+                ArgumentBinder.BindingResult<Object> bodyBound = bodyAnnotationBinder.bindFullBodyNullable((Argument<Object>) typeVariable.get(), source);
                 // can't use flatMap here because we return a present optional even when the body conversion failed
                 return new PendingRequestBindingResult<>() {
                     @Override
