@@ -104,7 +104,7 @@ final class NettyBodyAnnotationBinder<T> extends DefaultBodyAnnotationBinder<T> 
         if (!(source instanceof NettyHttpRequest<?> nhr)) {
             return super.bindFullBody(context, source);
         }
-        if (nhr.byteBody().expectedLength().orElse(-1) == 0) {
+        if (context.getArgument().isNullable() && nhr.byteBody().expectedLength().orElse(-1) == 0) {
             return BindingResult.empty();
         }
 
