@@ -31,6 +31,10 @@ tasks {
     }
 }
 
+tasks.named<Test>("test") {
+    jvmArgs = listOf("--enable-preview")
+}
+
 graalvmNative {
     toolchainDetection = false
     metadataRepository {

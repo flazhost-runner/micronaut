@@ -650,9 +650,15 @@ public class ConnectionManager {
     final <V, C extends Future<V>> void withPropagation(Future<? extends V> channelFuture, GenericFutureListener<C> listener) {
         PropagatedContext propagatedContext = PropagatedContext.getOrEmpty();
         channelFuture.addListener(f -> {
-            try (PropagatedContext.Scope ignored = propagatedContext.propagate()) {
+            if (propagatedContext.isBound()) {
                 //noinspection unchecked
                 listener.operationComplete((C) f);
+            } else {
+                propagatedContext.propagateCall(() -> {
+                    //noinspection unchecked
+                    listener.operationComplete((C) f);
+                    return null;
+                });
             }
         });
     }

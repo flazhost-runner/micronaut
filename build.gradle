@@ -48,3 +48,8 @@ configurations.jacocoAggregation.dependencies.removeIf {
 configurations.javadocAggregatorBase.dependencies.removeIf {
     it instanceof ProjectDependency && it.path.startsWith(":test-")
 }
+
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs.add("--enable-preview")
+}
+
