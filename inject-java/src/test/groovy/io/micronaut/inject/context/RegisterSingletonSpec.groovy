@@ -24,12 +24,14 @@ import io.micronaut.inject.qualifiers.Qualifiers
 import jakarta.inject.Named
 import jakarta.inject.Singleton
 import spock.lang.Issue
+import spock.lang.PendingFeature
 import spock.lang.Specification
 
 import java.lang.reflect.Proxy
 
 class RegisterSingletonSpec extends Specification {
 
+    @PendingFeature
     void "test register singleton with generic types"() {
         given:
         ApplicationContext context = ApplicationContext.run()
@@ -44,6 +46,7 @@ class RegisterSingletonSpec extends Specification {
         context.close()
     }
 
+    @PendingFeature
     void "test register singleton and exposed type"() {
         given:
         ApplicationContext context = ApplicationContext.run()

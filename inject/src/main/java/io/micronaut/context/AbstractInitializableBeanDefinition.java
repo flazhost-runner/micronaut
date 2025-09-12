@@ -837,7 +837,7 @@ public abstract class AbstractInitializableBeanDefinition<T> extends AbstractBea
                 }
             }
         }
-        if (bean instanceof LifeCycle lifeCycle) {
+        if (bean instanceof LifeCycle<?> lifeCycle) {
             bean = lifeCycle.start();
         }
         return bean;
@@ -855,7 +855,7 @@ public abstract class AbstractInitializableBeanDefinition<T> extends AbstractBea
     @Internal
     @UsedByGeneratedCode
     protected Object preDestroy(BeanResolutionContext resolutionContext, BeanContext context, Object bean) {
-        if (bean instanceof LifeCycle lifeCycle) {
+        if (bean instanceof LifeCycle<?> lifeCycle) {
             bean = lifeCycle.stop();
         }
         return bean;

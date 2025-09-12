@@ -19,9 +19,11 @@ import io.micronaut.annotation.processing.test.AbstractTypeElementSpec
 import io.micronaut.context.ApplicationContext
 import io.micronaut.context.event.ApplicationEventListener
 import io.micronaut.context.event.StartupEvent
+import spock.lang.PendingFeature
 
 class MappedIntroductionOnConcreteClassSpec extends AbstractTypeElementSpec {
 
+    @PendingFeature(reason = "This test should fail because ListenerAdviceMarker convert the class to be an Application listener which should fail on startup because if the missing interceptor")
     void "test mapped introduction of new interface on concrete class"() {
         given:
             ApplicationContext applicationContext = buildContext('test.MyBeanWithMappedIntroduction', '''

@@ -277,21 +277,21 @@ public interface BeanDefinitionRegistry {
      * @param qualifier The qualifier
      * @return The bean definitions
      */
-    @NonNull Collection<BeanDefinition<?>> getBeanDefinitions(@NonNull Qualifier<Object> qualifier);
+    @NonNull Collection<BeanDefinition<Object>> getBeanDefinitions(@NonNull Qualifier<Object> qualifier);
 
     /**
      * Get all registered {@link BeanDefinition}.
      *
      * @return The bean definitions
      */
-    @NonNull Collection<BeanDefinition<?>> getAllBeanDefinitions();
+    @NonNull Collection<BeanDefinition<Object>> getAllBeanDefinitions();
 
     /**
      * Get all enabled {@link BeanDefinitionReference}.
      *
      * @return The bean definitions
      */
-    @NonNull Collection<BeanDefinitionReference<?>> getBeanDefinitionReferences();
+    @NonNull Collection<BeanDefinitionReference<Object>> getBeanDefinitionReferences();
 
     /**
      * Get all disabled {@link DisabledBean}.

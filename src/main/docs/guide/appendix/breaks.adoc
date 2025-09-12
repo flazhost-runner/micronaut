@@ -37,6 +37,13 @@ ApplicationContext customApplicationContext = ApplicationContext.create(myEnv);
 
 ----
 
+==== Bean context performance improvements
+
+The bean context in v5 tries to avoid scanning all available beans as much as possible.
+The bean definitions are now generated with all posible exposed types (if not explicitly defined by `@Bean(typed=..)`).
+Beans added at the runtime require all the exposed types (supertypes and interfaces) explicitly defined.
+
+TODO: Example with the new API
 
 == 4.0.0
 

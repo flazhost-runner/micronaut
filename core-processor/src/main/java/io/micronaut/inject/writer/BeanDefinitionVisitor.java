@@ -33,6 +33,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Interface for {@link BeanDefinitionVisitor} implementations such as {@link BeanDefinitionWriter}.
@@ -170,6 +171,12 @@ public interface BeanDefinitionVisitor extends OriginatingElements, Toggleable {
      * @param typeName The type name
      */
     void setInterceptedType(String typeName);
+
+    /**
+     * @param exposes The exposed types
+     * @since 5.0
+     */
+    void setExposes(Set<ClassElement> exposes);
 
     /**
      * @return The intercepted type

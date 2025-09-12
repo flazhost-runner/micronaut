@@ -542,10 +542,6 @@ public abstract class AbstractBeanResolutionContext implements BeanResolutionCon
         return Optional.empty();
     }
 
-    protected void onNewSegment(Segment<?, ?> segment) {
-        //no-op
-    }
-
     @NonNull
     private Map<CharSequence, Object> getAttributesOrCreate() {
         if (attributes == null) {
@@ -859,12 +855,6 @@ public abstract class AbstractBeanResolutionContext implements BeanResolutionCon
             } else {
                 push(constructorSegment);
             }
-        }
-
-        @Override
-        public void push(Segment<?, ?> segment) {
-            super.push(segment);
-            AbstractBeanResolutionContext.this.onNewSegment(segment);
         }
 
         @Override

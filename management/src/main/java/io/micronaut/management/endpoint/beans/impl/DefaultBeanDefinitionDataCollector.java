@@ -63,7 +63,7 @@ public class DefaultBeanDefinitionDataCollector implements BeanDefinitionDataCol
         List<BeanDefinition<?>> beanDefinitions = beanContext.getAllBeanDefinitions()
             .stream()
             .sorted(Comparator.comparing((BeanDefinition<?> bd) -> bd.getClass().getName()))
-            .toList();
+            .collect(Collectors.toUnmodifiableList());
 
         beanData.put("beans", getBeans(beanDefinitions));
         beanData.put("disabled", getDisabledBeans());

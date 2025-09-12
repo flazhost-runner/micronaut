@@ -314,16 +314,16 @@ public class PropertySourcePropertyResolver implements PropertyResolver, AutoClo
     @NonNull
     @Override
     public Collection<String> getPropertyEntries(@NonNull String name) {
-        return getPropertyEntries(name, io.micronaut.core.value.PropertyCatalog.NORMALIZED);
+        return getPropertyEntries(name, PropertyCatalog.NORMALIZED);
     }
 
     @NonNull
     @Override
-    public Collection<String> getPropertyEntries(@NonNull String name, @NonNull io.micronaut.core.value.PropertyCatalog propertyCatalog) {
+    public Collection<String> getPropertyEntries(@NonNull String name, @NonNull PropertyCatalog propertyCatalog) {
         if (StringUtils.isEmpty(name)) {
             return Collections.emptySet();
         }
-        Map<String, DefaultPropertyEntry> entries = resolveEntriesForKey(name, false, PropertyCatalog.valueOf(propertyCatalog.name()));
+        Map<String, DefaultPropertyEntry> entries = resolveEntriesForKey(name, false, propertyCatalog);
         if (entries == null) {
             return Collections.emptySet();
         }
@@ -880,21 +880,20 @@ public class PropertySourcePropertyResolver implements PropertyResolver, AutoClo
         if (name.isEmpty()) {
             return null;
         }
-        final Map<String, DefaultPropertyEntry>[] catalog = getCatalog(propertyCatalog);
-
-        Map<String, DefaultPropertyEntry> entries = null;
         char firstChar = name.charAt(0);
         if (Character.isLetter(firstChar)) {
+            final Map<String, DefaultPropertyEntry>[] catalog = getCatalog(propertyCatalog);
             int index = firstChar - 65;
             if (index < catalog.length && index >= 0) {
-                entries = catalog[index];
+                Map<String, DefaultPropertyEntry> entries = catalog[index];
                 if (allowCreate && entries == null) {
                     entries = new LinkedHashMap<>(5);
                     catalog[index] = entries;
                 }
+                return entries;
             }
         }
-        return entries;
+        return null;
     }
 
     /**

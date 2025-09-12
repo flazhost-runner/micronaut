@@ -34,10 +34,12 @@ import io.micronaut.core.annotation.AnnotationValue;
 import io.micronaut.core.annotation.Internal;
 import io.micronaut.core.annotation.NonNull;
 import io.micronaut.core.annotation.Nullable;
+import io.micronaut.core.convert.ConversionService;
 import io.micronaut.core.convert.DefaultMutableConversionService;
 import io.micronaut.core.convert.MutableConversionService;
 import io.micronaut.core.convert.TypeConverter;
 import io.micronaut.core.convert.TypeConverterRegistrar;
+import io.micronaut.core.io.ResourceLoader;
 import io.micronaut.core.io.scan.ClassPathResourceLoader;
 import io.micronaut.core.naming.Named;
 import io.micronaut.core.type.Argument;
@@ -46,7 +48,6 @@ import io.micronaut.core.util.StringUtils;
 import io.micronaut.core.value.PropertyResolver;
 import io.micronaut.inject.BeanConfiguration;
 import io.micronaut.inject.BeanDefinition;
-import io.micronaut.inject.BeanDefinitionReference;
 import io.micronaut.inject.QualifiedBeanType;
 import io.micronaut.inject.qualifiers.EachBeanQualifier;
 import io.micronaut.inject.qualifiers.PrimaryQualifier;
@@ -65,6 +66,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
 import static io.micronaut.context.env.Environment.BOOTSTRAP_NAME;
@@ -270,12 +272,11 @@ final class DefaultApplicationContext extends DefaultBeanContext implements Conf
     }
 
     private boolean isBootstrapPropertySourceLocatorPresent() {
-        for (BeanDefinitionReference<?> beanDefinitionReference : resolveBeanDefinitionReferences()) {
-            if (BootstrapPropertySourceLocator.class.isAssignableFrom(beanDefinitionReference.getBeanType())) {
-                return true;
-            }
-        }
-        return false;
+        return beanDefinitionProvider.exists(BootstrapPropertySourceLocator.class);
+    }
+
+    private static long elapsedMillis(long startNanos) {
+        return TimeUnit.MILLISECONDS.convert(System.nanoTime() - startNanos, TimeUnit.NANOSECONDS);
     }
 
     @Override
@@ -299,21 +300,15 @@ final class DefaultApplicationContext extends DefaultBeanContext implements Conf
 
     @Override
     protected void registerConversionService() {
-        RuntimeBeanDefinition.Builder<? extends Environment> definition = RuntimeBeanDefinition
-            .builder(Environment.class, () -> environment);
-
-        //noinspection unchecked
-        definition = definition
+        registerBeanDefinition(RuntimeBeanDefinition.builder(environment)
             .singleton(true)
-            .qualifier(PrimaryQualifier.INSTANCE);
-
-        RuntimeBeanDefinition<? extends Environment> beanDefinition = definition.build();
-        BeanDefinition<? extends Environment> existing = findBeanDefinition(beanDefinition.getBeanType()).orElse(null);
-        if (existing instanceof RuntimeBeanDefinition<?> runtimeBeanDefinition) {
-            removeBeanDefinition(runtimeBeanDefinition);
-        }
-        registerBeanDefinition(beanDefinition);
-        registerSingleton(MutableConversionService.class, environment.getConversionService());
+            .exposedTypes(Environment.class, PropertyResolver.class, ResourceLoader.class)
+            .qualifier(PrimaryQualifier.instance())
+            .build());
+        registerBeanDefinition(RuntimeBeanDefinition.builder(environment.getConversionService())
+            .singleton(true)
+            .exposedTypes(MutableConversionService.class, ConversionService.class)
+            .build());
     }
 
     @Override

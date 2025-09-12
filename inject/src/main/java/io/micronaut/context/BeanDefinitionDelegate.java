@@ -75,6 +75,11 @@ sealed class BeanDefinitionDelegate<T> extends AbstractBeanContextConditional
         this.typeArgumentsMap = typeArgumentsMap;
     }
 
+    @Override
+    public int getOrder() {
+        return definition.getOrder();
+    }
+
     public Optional<ConfigurationPath> getConfigurationPath() {
         return Optional.ofNullable(configurationPath);
     }

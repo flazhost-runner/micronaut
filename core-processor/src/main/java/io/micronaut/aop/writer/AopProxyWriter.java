@@ -400,6 +400,9 @@ public class AopProxyWriter implements ProxyingBeanDefinitionVisitor, ClassOutpu
         } else {
             proxyBeanDefinitionWriter.setInterceptedType(targetClassFullName);
         }
+        if (interfaceTypes != null && interfaceTypes.length > 0) {
+            proxyBeanDefinitionWriter.setExposes(Set.of(interfaceTypes));
+        }
 
         proxyBuilder = ClassDef.builder(proxyFullName).synthetic();
 
@@ -491,6 +494,11 @@ public class AopProxyWriter implements ProxyingBeanDefinitionVisitor, ClassOutpu
     @Override
     public void setInterceptedType(String typeName) {
         proxyBeanDefinitionWriter.setInterceptedType(typeName);
+    }
+
+    @Override
+    public void setExposes(Set<ClassElement> exposes) {
+        proxyBeanDefinitionWriter.setExposes(exposes);
     }
 
     @Override

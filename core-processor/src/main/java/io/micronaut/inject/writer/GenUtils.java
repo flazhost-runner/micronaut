@@ -45,6 +45,7 @@ public final class GenUtils {
     private static final ClassTypeDef MAP_TYPE = ClassTypeDef.of(Map.class);
     private static final ClassTypeDef MAP_ENTRY_TYPE = ClassTypeDef.of(Map.Entry.class);
     private static final ClassTypeDef LIST_TYPE = ClassTypeDef.of(List.class);
+    private static final ClassTypeDef SET_TYPE = ClassTypeDef.of(Set.class);
 
     private GenUtils() {
     }
@@ -169,6 +170,41 @@ public final class GenUtils {
                 TypeDef.OBJECT.array().instantiate(values)
             );
         }
+    }
+
+    /**
+     * The set of expression.
+     * @param values The values
+     * @return the expression
+     */
+    public static ExpressionDef setOf(List<ExpressionDef> values) {
+        if (values != null) {
+            values = values.stream().filter(Objects::nonNull).toList();
+        }
+        if (values == null || values.isEmpty()) {
+            return SET_TYPE.invokeStatic("of", SET_TYPE);
+        }
+        if (values.size() < 11) {
+            List<TypeDef> parameterTypes = new ArrayList<>(values.size());
+            for (ExpressionDef ignore : values) {
+                parameterTypes.add(TypeDef.OBJECT);
+            }
+            return SET_TYPE.invokeStatic("of", parameterTypes, SET_TYPE, values);
+        } else {
+            return setOfArray(TypeDef.OBJECT.array().instantiate(values));
+        }
+    }
+
+    /**
+     * The set of expression.
+     * @param array The array
+     * @return the expression
+     */
+    public static ExpressionDef setOfArray(ExpressionDef array) {
+        if (!array.type().isArray()) {
+            throw new IllegalArgumentException("Argument must be an array");
+        }
+        return SET_TYPE.invokeStatic("of", List.of(TypeDef.OBJECT.array()), SET_TYPE, array);
     }
 
 }

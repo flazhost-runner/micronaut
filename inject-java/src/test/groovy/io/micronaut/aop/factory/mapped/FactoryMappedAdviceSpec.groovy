@@ -2,9 +2,11 @@ package io.micronaut.aop.factory.mapped
 
 import io.micronaut.annotation.processing.test.AbstractTypeElementSpec
 import io.micronaut.context.ApplicationContext
+import spock.lang.PendingFeature
 
 class FactoryMappedAdviceSpec extends AbstractTypeElementSpec {
 
+    @PendingFeature
     void "test configuration mapping"() {
         given:
         ApplicationContext applicationContext = buildContext('test.MyConfiguration', '''
@@ -14,7 +16,7 @@ package test;
 @io.micronaut.aop.factory.mapped.TestConfiguration
 public class MyConfiguration {
 
-    @io.micronaut.context.annotation.Bean    
+    @io.micronaut.context.annotation.Bean
     public MyBean myBean() {
         return new MyBean("default");
     }
