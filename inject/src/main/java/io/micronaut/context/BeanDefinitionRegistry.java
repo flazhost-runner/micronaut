@@ -95,8 +95,24 @@ public interface BeanDefinitionRegistry {
     }
 
     /**
-     * Registers a new reference at runtime. Not that registering beans can impact
-     * the object graph therefore should this should be done as soon as possible prior to
+     * Registers a bean at runtime. Note that registering beans can impact
+     * the object graph therefore this should be done as soon as possible prior to
+     * the creation of other beans preferably with a high priority {@link io.micronaut.context.annotation.Context} scope bean.
+     *
+     * @param definition The reference
+     * @param instance The instance of the bean
+     * @param inject If the bean instance should be injected.
+     * @return The registry
+     * @param <B> The bean type
+     * @since 5.0
+     */
+    @NonNull
+    @Experimental
+    <B> BeanDefinitionRegistry registerBean(@NonNull BeanDefinition<B> definition, @NonNull B instance, boolean inject);
+
+    /**
+     * Registers a new reference at runtime. Note that registering beans can impact
+     * the object graph therefore this should be done as soon as possible prior to
      * the creation of other beans preferably with a high priority {@link io.micronaut.context.annotation.Context} scope bean.
      *
      * @param definition The reference.
@@ -110,7 +126,6 @@ public interface BeanDefinitionRegistry {
         throw new UnsupportedOperationException("This implementation of BeanDefinitionRegistry doesn't support runtime registration of bean definitions");
     }
 
-
     /**
      * <p>Registers a new singleton bean at runtime. This method expects that the bean definition data will have been
      * compiled ahead of time.</p>
@@ -123,7 +138,7 @@ public interface BeanDefinitionRegistry {
      * @param type      The bean type
      * @param singleton The singleton bean
      * @param qualifier The bean qualifier
-     * @param inject    Whether the singleton should be injected (defaults to true)
+     * @param inject    Whether the singleton should be injected
      * @param <T>       The concrete type
      * @return This bean context
      */

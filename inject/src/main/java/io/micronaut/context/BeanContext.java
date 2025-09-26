@@ -22,6 +22,7 @@ import io.micronaut.core.annotation.Nullable;
 import io.micronaut.core.attr.MutableAttributeHolder;
 import io.micronaut.core.convert.ConversionServiceProvider;
 import io.micronaut.core.type.Argument;
+import io.micronaut.inject.BeanDefinition;
 import io.micronaut.inject.BeanIdentifier;
 import io.micronaut.inject.validation.BeanDefinitionValidator;
 
@@ -87,8 +88,8 @@ public interface BeanContext extends
      * @param <T>      The bean generic type
      * @return The instance
      */
-    default @NonNull
-    <T> T createBean(@NonNull Class<T> beanType) {
+    @NonNull
+    default <T> T createBean(@NonNull Class<T> beanType) {
         return createBean(beanType, (Qualifier<T>) null);
     }
 
@@ -273,6 +274,9 @@ public interface BeanContext extends
      */
     @NonNull
     BeanDefinitionValidator getBeanValidator();
+
+    @Override
+    <B> BeanContext registerBean(BeanDefinition<B> definition, B instance, boolean inject);
 
     @Override
     @NonNull

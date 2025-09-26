@@ -637,6 +637,11 @@ public sealed class DefaultBeanContext implements ConfigurableBeanContext permit
     }
 
     @Override
+    public <B> BeanContext registerBean(BeanDefinition<B> definition, B instance, boolean inject) {
+        return this;
+    }
+
+    @Override
     public <T> BeanContext registerSingleton(@NonNull Class<T> type, @NonNull T singleton, Qualifier<T> qualifier, boolean inject) {
         purgeCacheForBeanInstance(singleton);
 
@@ -651,29 +656,26 @@ public sealed class DefaultBeanContext implements ConfigurableBeanContext permit
         } else {
             beanDefinition = null;
         }
-        if (beanDefinition != null && !(beanDefinition instanceof RuntimeBeanDefinition<T>) && beanDefinition.getBeanType().isInstance(singleton)) {
-            try (BeanResolutionContext context = newResolutionContext(beanDefinition, null)) {
-                if (inject) {
-                    doInjectAndInitialize(context, singleton, beanDefinition);
-                }
-                BeanKey<T> key = new BeanKey<>(beanDefinition.asArgument(), qualifier);
-                singletonScope.registerSingletonBean(BeanRegistration.of(this, key, beanDefinition, singleton), qualifier);
-            }
-        } else {
+        if (beanDefinition == null || !beanDefinition.getBeanType().isInstance(singleton)) {
             RuntimeBeanDefinition<T> runtimeBeanDefinition = RuntimeBeanDefinition.builder(type, () -> singleton)
                 .singleton(true)
                 .qualifier(qualifier)
                 .build();
-
-            var registration = BeanRegistration.of(
-                this,
-                new BeanKey<>(runtimeBeanDefinition, qualifier),
-                runtimeBeanDefinition,
-                singleton
-            );
-            singletonScope.registerSingletonBean(registration, qualifier);
             registerBeanDefinition(runtimeBeanDefinition);
+            beanDefinition = runtimeBeanDefinition;
         }
+        if (inject) {
+            try (BeanResolutionContext context = newResolutionContext(beanDefinition, null)) {
+                doInjectAndInitialize(context, singleton, beanDefinition);
+            }
+        }
+        var registration = BeanRegistration.of(
+            this,
+            new BeanKey<>(beanDefinition, qualifier),
+            beanDefinition,
+            singleton
+        );
+        singletonScope.registerSingletonBean(registration, qualifier);
         return this;
     }
 
