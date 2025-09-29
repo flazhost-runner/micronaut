@@ -67,6 +67,11 @@ public final class InterceptorRegistryBean implements InstantiatableBeanDefiniti
     }
 
     @Override
+    public boolean isPrimary() {
+        return false;
+    }
+
+    @Override
     public boolean isParallel() {
         return false;
     }

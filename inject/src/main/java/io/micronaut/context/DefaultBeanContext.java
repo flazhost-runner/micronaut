@@ -17,9 +17,7 @@ package io.micronaut.context;
 
 import io.micronaut.context.annotation.ConfigurationReader;
 import io.micronaut.context.annotation.Context;
-import io.micronaut.context.annotation.DefaultImplementation;
 import io.micronaut.context.annotation.Executable;
-import io.micronaut.context.annotation.Infrastructure;
 import io.micronaut.context.annotation.Parallel;
 import io.micronaut.context.annotation.Primary;
 import io.micronaut.context.annotation.Prototype;
@@ -56,11 +54,9 @@ import io.micronaut.context.scope.BeanCreationContext;
 import io.micronaut.context.scope.CreatedBean;
 import io.micronaut.context.scope.CustomScope;
 import io.micronaut.context.scope.CustomScopeRegistry;
-import io.micronaut.core.annotation.AnnotationClassValue;
 import io.micronaut.core.annotation.AnnotationMetadata;
 import io.micronaut.core.annotation.AnnotationMetadataProvider;
 import io.micronaut.core.annotation.AnnotationMetadataResolver;
-import io.micronaut.core.annotation.AnnotationValue;
 import io.micronaut.core.annotation.Internal;
 import io.micronaut.core.annotation.NextMajorVersion;
 import io.micronaut.core.annotation.NonNull;
@@ -88,7 +84,6 @@ import io.micronaut.core.util.StringUtils;
 import io.micronaut.core.util.clhm.ConcurrentLinkedHashMap;
 import io.micronaut.core.value.PropertyResolver;
 import io.micronaut.core.value.ValueResolver;
-import io.micronaut.inject.AdvisedBeanType;
 import io.micronaut.inject.BeanConfiguration;
 import io.micronaut.inject.BeanDefinition;
 import io.micronaut.inject.BeanDefinitionMethodReference;
@@ -104,6 +99,7 @@ import io.micronaut.inject.MethodExecutionHandle;
 import io.micronaut.inject.ParametrizedInstantiatableBeanDefinition;
 import io.micronaut.inject.ProxyBeanDefinition;
 import io.micronaut.inject.QualifiedBeanType;
+import io.micronaut.inject.ReplacesDefinition;
 import io.micronaut.inject.UnsafeExecutionHandle;
 import io.micronaut.inject.ValidatedBeanDefinition;
 import io.micronaut.inject.provider.AbstractProviderDefinition;
@@ -1586,7 +1582,7 @@ public sealed class DefaultBeanContext implements ConfigurableBeanContext permit
                 .toList();
         }
 
-        filterReplacedBeans(null, candidates);
+        filterReplacedBeans(candidates);
         return candidates;
     }
 
@@ -1883,7 +1879,7 @@ public sealed class DefaultBeanContext implements ConfigurableBeanContext permit
                     throw new BeanInstantiationException(MSG_BEAN_DEFINITION + (contextScopeBean.getName()) + MSG_COULD_NOT_BE_LOADED + e.getMessage(), e);
                 }
             }
-            filterReplacedBeans(null, eagerInit);
+            filterReplacedBeans(eagerInit);
             OrderUtil.sortOrdered(eagerInit);
             for (BeanDefinition<Object> eagerInitDefinition : eagerInit) {
                 try {
@@ -2070,7 +2066,7 @@ public sealed class DefaultBeanContext implements ConfigurableBeanContext permit
                     candidates.add(candidate);
                 }
             }
-            filterReplacedBeans(resolutionContext, candidates);
+            filterReplacedBeans(candidates);
         } else {
             candidates = Collections.emptySet();
         }
@@ -2334,7 +2330,7 @@ public sealed class DefaultBeanContext implements ConfigurableBeanContext permit
                 }
             });
 
-            filterReplacedBeans(null, parallelDefinitions);
+            filterReplacedBeans(parallelDefinitions);
 
             parallelDefinitions.forEach(beanDefinition -> ForkJoinPool.commonPool().execute(() -> {
                 try {
@@ -2352,34 +2348,32 @@ public sealed class DefaultBeanContext implements ConfigurableBeanContext permit
         }).start();
     }
 
-    private <T> void filterReplacedBeans(BeanResolutionContext resolutionContext, Collection<BeanDefinition<T>> candidates) {
+    private <T> void filterReplacedBeans(Collection<BeanDefinition<T>> candidates) {
         if (candidates.size() > 1) {
-            List<BeanDefinition<T>> replacementTypes = new ArrayList<>(2);
+            List<Map.Entry<ReplacesDefinition<T>, BeanDefinition<T>>> replacementTypes = new ArrayList<>(2);
             for (BeanDefinition<T> candidate : candidates) {
-                if (candidate.getAnnotationMetadata().hasStereotype(REPLACES_ANN)) {
-                    replacementTypes.add(candidate);
+                ReplacesDefinition<T> beanReplacementDefinition = candidate.getReplacesDefinition();
+                if (beanReplacementDefinition != null) {
+                    replacementTypes.add(Map.entry(beanReplacementDefinition, candidate));
                 }
             }
             if (!replacementTypes.isEmpty()) {
-                candidates.removeIf(definition -> checkIfReplacementExists(resolutionContext, replacementTypes, definition));
+                candidates.removeIf(definition -> checkIfReplacementExists(replacementTypes, definition));
             }
         }
     }
 
-    private <T> boolean checkIfReplacementExists(BeanResolutionContext resolutionContext,
-                                                 List<BeanDefinition<T>> replacementTypes,
+    private <T> boolean checkIfReplacementExists(List<Map.Entry<ReplacesDefinition<T>, BeanDefinition<T>>> replacementTypes,
                                                  BeanDefinition<T> definitionToBeReplaced) {
-        if (!definitionToBeReplaced.isEnabled(this, resolutionContext)) {
-            return true;
-        }
-        final AnnotationMetadata annotationMetadata = definitionToBeReplaced.getAnnotationMetadata();
-        if (annotationMetadata.hasDeclaredStereotype(Infrastructure.class)) {
+        if (!definitionToBeReplaced.isCanBeReplaced()) {
             return false;
         }
-        for (BeanDefinition<T> replacementType : replacementTypes) {
-            if (isNotTheSameDefinition(replacementType, definitionToBeReplaced) &&
-                isNotProxy(replacementType, definitionToBeReplaced) &&
-                checkIfReplaces(replacementType, definitionToBeReplaced, annotationMetadata)) {
+        for (Map.Entry<ReplacesDefinition<T>, BeanDefinition<T>> replacement : replacementTypes) {
+            BeanDefinition<T> beanDefinition = replacement.getValue();
+            ReplacesDefinition<T> replacementCheck = replacement.getKey();
+            if (isNotTheSameDefinition(beanDefinition, definitionToBeReplaced) &&
+                isNotTheTargetOfProxy(beanDefinition, definitionToBeReplaced) &&
+                replacementCheck.replaces(definitionToBeReplaced)) {
                 return true;
             }
         }
@@ -2396,115 +2390,10 @@ public sealed class DefaultBeanContext implements ConfigurableBeanContext permit
         return replacingCandidate != definitionToBeReplaced;
     }
 
-    private <T> boolean isNotProxy(BeanDefinition<T> replacingCandidate, BeanDefinition<T> definitionToBeReplaced) {
-        return !(replacingCandidate instanceof ProxyBeanDefinition &&
-            ((ProxyBeanDefinition<T>) replacingCandidate).getTargetDefinitionType() == definitionToBeReplaced.getClass());
-    }
-
-    private <T> boolean checkIfReplaces(BeanDefinition<T> replacingCandidate, BeanDefinition<T> definitionToBeReplaced, AnnotationMetadata annotationMetadata) {
-        final AnnotationValue<Replaces> replacesAnnotation = replacingCandidate.getAnnotation(Replaces.class);
-        final Class replacedBeanType = replacesAnnotation.classValue(Replaces.MEMBER_BEAN).orElse(getCanonicalBeanType(replacingCandidate));
-        final Optional<String> named = replacesAnnotation.stringValue(Replaces.MEMBER_NAMED);
-        final Optional<AnnotationClassValue<?>> qualifier = replacesAnnotation.annotationClassValue(Replaces.MEMBER_QUALIFIER);
-
-        if (named.isPresent() && qualifier.isPresent()) {
-            throw new ConfigurationException("Both \"named\" and \"qualifier\" should not be present: " + replacesAnnotation);
-        }
-
-        if (named.isPresent()) {
-            final String name = named.get();
-            if (qualifiedByNamed(definitionToBeReplaced, replacedBeanType, name)) {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Bean [{}] replaces existing bean of type [{}] qualified by name [{}]",
-                        replacingCandidate.getBeanType(), definitionToBeReplaced.getBeanType(), name);
-                }
-                return true;
-            }
-            return false;
-        }
-
-        if (qualifier.isPresent()) {
-            final AnnotationClassValue<?> qualifierClassValue = qualifier.get();
-            if (qualifiedByQualifier(definitionToBeReplaced, replacedBeanType, qualifierClassValue)) {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Bean [{}] replaces existing bean of type [{}] qualified by qualifier [{}]",
-                        replacingCandidate.getBeanType(), definitionToBeReplaced.getBeanType(), qualifierClassValue);
-                }
-                return true;
-            }
-            return false;
-        }
-
-        Optional<Class<?>> factory = replacesAnnotation.classValue(Replaces.MEMBER_FACTORY);
-        if (factory.isPresent()) {
-            Optional<Class<?>> declaringType = definitionToBeReplaced.getDeclaringType();
-            if (declaringType.isPresent()) {
-                Class<?> factoryClass = factory.get();
-                final boolean factoryReplaces = factoryClass == declaringType.get() &&
-                    checkIfTypeMatches(definitionToBeReplaced, annotationMetadata, replacedBeanType);
-                if (factoryReplaces) {
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug("Bean [{}] replaces existing bean of type [{}] in factory type [{}]",
-                            replacingCandidate.getBeanType(), replacedBeanType, factoryClass);
-                    }
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        final boolean isTypeMatches = checkIfTypeMatches(definitionToBeReplaced, annotationMetadata, replacedBeanType);
-        if (isTypeMatches && LOG.isDebugEnabled()) {
-            LOG.debug("Bean [{}] replaces existing bean of type [{}]", replacingCandidate.getBeanType(), replacedBeanType);
-        }
-        return isTypeMatches;
-    }
-
-    private <T> boolean qualifiedByQualifier(BeanDefinition<T> definitionToBeReplaced,
-                                             Class<T> replacedBeanType,
-                                             AnnotationClassValue<?> qualifier) {
-        @SuppressWarnings("unchecked") final Class<? extends Annotation> qualifierClass =
-            (Class<? extends Annotation>) qualifier.getType().orElse(null);
-        if (qualifierClass != null && !qualifierClass.isAssignableFrom(Annotation.class)) {
-            return Qualifiers.<T>byStereotype(qualifierClass).doesQualify(replacedBeanType, definitionToBeReplaced);
-        } else {
-            throw new ConfigurationException("Default qualifier value was used while replacing %s".formatted(replacedBeanType));
-        }
-    }
-
-    private <T> boolean qualifiedByNamed(BeanDefinition<T> definitionToBeReplaced, Class<T> replacedBeanType, String named) {
-        return Qualifiers.<T>byName(named).doesQualify(replacedBeanType, definitionToBeReplaced);
-    }
-
-    private <T> Class<T> getCanonicalBeanType(BeanDefinition<T> beanDefinition) {
-        if (beanDefinition instanceof BeanDefinitionDelegate<T> beanDefinitionDelegate) {
-            beanDefinition = beanDefinitionDelegate.getDelegate();
-        }
-        if (beanDefinition instanceof AdvisedBeanType<?> advisedBeanType) {
-            return (Class<T>) advisedBeanType.getInterceptedType();
-        }
-        if (beanDefinition instanceof ProxyBeanDefinition<T> proxyBeanDefinition) {
-            return proxyBeanDefinition.getTargetType();
-        }
-        return beanDefinition.getBeanType();
-    }
-
-    private <T> boolean checkIfTypeMatches(BeanDefinition<T> definitionToBeReplaced,
-                                           AnnotationMetadata annotationMetadata,
-                                           Class replacingCandidate) {
-        Class<T> bt = getCanonicalBeanType(definitionToBeReplaced);
-        if (annotationMetadata.hasAnnotation(DefaultImplementation.class)) {
-            Optional<Class> defaultImpl = annotationMetadata.classValue(DefaultImplementation.class);
-            if (defaultImpl.isEmpty()) {
-                defaultImpl = annotationMetadata.classValue(DefaultImplementation.class, "name");
-            }
-            if (defaultImpl.filter(impl -> impl == bt).isPresent()) {
-                return replacingCandidate.isAssignableFrom(bt);
-            } else {
-                return replacingCandidate == bt;
-            }
-        }
-        return replacingCandidate != Object.class && replacingCandidate.isAssignableFrom(bt);
+    private <T> boolean isNotTheTargetOfProxy(BeanDefinition<T> replacingCandidate, BeanDefinition<T> definitionToBeReplaced) {
+        return !(replacingCandidate.isProxy()
+            && replacingCandidate instanceof ProxyBeanDefinition<T> proxyBeanDefinition &&
+            proxyBeanDefinition.getTargetDefinitionType() == definitionToBeReplaced.getClass());
     }
 
     private <T> void doInjectAndInitialize(BeanResolutionContext resolutionContext, T instance, BeanDefinition<T> beanDefinition) {
@@ -3155,13 +3044,11 @@ public sealed class DefaultBeanContext implements ConfigurableBeanContext permit
 
         // try resolve @DefaultImplementation
         BeanDefinition<T> first = candidates.iterator().next();
-        if (first.hasStereotype(DefaultImplementation.class)) {
-            String n = first.stringValue(DefaultImplementation.class, "name").orElse(null);
-            if (n != null) {
-                for (BeanDefinition<T> bd : candidates) {
-                    if (bd.getBeanType().getName().equals(n)) {
-                        return bd;
-                    }
+        Class<?> defaultImplementation = first.getDefaultImplementation();
+        if (defaultImplementation != null) {
+            for (BeanDefinition<T> bd : candidates) {
+                if (bd.getBeanType().equals(defaultImplementation)) {
+                    return bd;
                 }
             }
         }
@@ -3406,7 +3293,7 @@ public sealed class DefaultBeanContext implements ConfigurableBeanContext permit
     private <T> boolean isCandidatePresent(Argument<T> beanType, Qualifier<T> qualifier) {
         final Collection<BeanDefinition<T>> candidates = findBeanCandidates(null, beanType, true, null);
         if (!candidates.isEmpty()) {
-            filterReplacedBeans(null, candidates);
+            filterReplacedBeans(candidates);
             if (qualifier != null) {
                 return qualifier.doesQualifyQualified(beanType.getType(), candidates);
             }

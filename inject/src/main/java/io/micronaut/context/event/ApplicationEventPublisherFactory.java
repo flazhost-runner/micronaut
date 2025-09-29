@@ -88,6 +88,11 @@ public final class ApplicationEventPublisherFactory<T>
     }
 
     @Override
+    public boolean isPrimary() {
+        return false;
+    }
+
+    @Override
     public @NonNull Class<?>[] getIndexes() {
         return new Class<?>[]{getBeanType()};
     }

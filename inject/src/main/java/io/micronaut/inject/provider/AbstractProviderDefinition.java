@@ -90,6 +90,11 @@ public abstract class AbstractProviderDefinition<T> implements InstantiatableBea
     }
 
     @Override
+    public boolean isPrimary() {
+        return false;
+    }
+
+    @Override
     public Set<Class<?>> getExposedTypes() {
         return Set.of(getBeanType());
     }
