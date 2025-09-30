@@ -22,6 +22,7 @@ import io.micronaut.core.beans.BeanIntrospector;
 import io.micronaut.core.bind.annotation.AbstractArgumentBinder;
 import io.micronaut.core.bind.annotation.Bindable;
 import io.micronaut.core.convert.ArgumentConversionContext;
+import io.micronaut.core.convert.ConversionError;
 import io.micronaut.core.convert.ConversionService;
 import io.micronaut.core.convert.format.Format;
 import io.micronaut.core.convert.value.ConvertibleMultiValues;
@@ -169,7 +170,7 @@ public class QueryValueArgumentBinder<T> extends AbstractArgumentBinder<T> imple
                 .stringValue(Bindable.class, "defaultValue").orElse(null) : null;
 
             ArgumentConversionContext<?> conversionContext = context.with(builderArg);
-            Optional<?> converted = hasNoValue ? conversionService.convert(defaultValue, conversionContext) :conversionService.convert(values, conversionContext);
+            Optional<?> converted = hasNoValue ? conversionService.convert(defaultValue, conversionContext) : conversionService.convert(values, conversionContext);
             if (converted.isPresent()) {
                 try {
                     @SuppressWarnings({"unchecked"})
@@ -177,6 +178,13 @@ public class QueryValueArgumentBinder<T> extends AbstractArgumentBinder<T> imple
                     introspectionBuilder.with(index, rawArg, converted.get());
                 } catch (Exception e) {
                     context.reject(builderArg, e);
+                    return BindingResult.unsatisfied();
+                }
+            } else if (conversionContext.hasErrors()) {
+                ConversionError conversionError = conversionContext.getLastError().orElse(null);
+                if (conversionError != null) {
+                    Exception cause = conversionError.getCause();
+                    context.reject(builderArg, cause);
                     return BindingResult.unsatisfied();
                 }
             }
