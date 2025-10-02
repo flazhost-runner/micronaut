@@ -15,8 +15,8 @@
  */
 package io.micronaut.inject;
 
-import io.micronaut.context.annotation.Executable;
 import io.micronaut.context.annotation.Replaces;
+import io.micronaut.core.annotation.Experimental;
 
 /**
  * The {@link Replaces} definition. The class will check if the given bean definition is replaced by the current bean definition.
@@ -24,7 +24,7 @@ import io.micronaut.context.annotation.Replaces;
  * @param <T> The type of the bean definition
  * @since 5.0
  */
-@Executable
+@Experimental
 public interface ReplacesDefinition<T> {
 
     /**
