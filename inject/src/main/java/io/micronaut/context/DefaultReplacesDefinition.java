@@ -25,8 +25,6 @@ import io.micronaut.core.annotation.Nullable;
 import io.micronaut.inject.BeanDefinition;
 import io.micronaut.inject.ReplacesDefinition;
 import io.micronaut.inject.qualifiers.Qualifiers;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.lang.annotation.Annotation;
 import java.util.Optional;
@@ -49,8 +47,6 @@ public record DefaultReplacesDefinition<T>(@NonNull Class<T> beanType,
                                            @Nullable Qualifier<T> qualifier,
                                            @Nullable Class<?> factoryClass) implements ReplacesDefinition<T> {
 
-
-    private static final Logger LOG = LoggerFactory.getLogger(DefaultReplacesDefinition.class);
 
     public DefaultReplacesDefinition(@NonNull Class<T> beanType, AnnotationValue<Replaces> replacesAnnotation) {
         this(
@@ -87,8 +83,8 @@ public record DefaultReplacesDefinition<T>(@NonNull Class<T> beanType,
     public boolean replaces(BeanDefinition<T> beanDefinition) {
         if (qualifier != null) {
             if (qualifier.doesQualify(beanType, beanDefinition)) {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Bean [{}] replaces existing bean of type [{}] qualified by qualifier [{}]", beanDefinition, beanDefinition.getBeanType(), qualifier);
+                if (DefaultBeanContext.LOG.isDebugEnabled()) {
+                    DefaultBeanContext.LOG.debug("Bean [{}] replaces existing bean of type [{}] qualified by qualifier [{}]", beanDefinition, beanDefinition.getBeanType(), qualifier);
                 }
                 return true;
             }
@@ -99,11 +95,11 @@ public record DefaultReplacesDefinition<T>(@NonNull Class<T> beanType,
             Optional<Class<?>> declaringType = beanDefinition.getDeclaringType();
             if (declaringType.isPresent()) {
                 if (factoryClass == declaringType.get()) {
-                    if (LOG.isDebugEnabled()) {
+                    if (DefaultBeanContext.LOG.isDebugEnabled()) {
                         if (beanTypeToReplace == null) {
-                            LOG.debug("Bean [{}] replaces the factory type [{}]", beanType, factoryClass);
+                            DefaultBeanContext.LOG.debug("Bean [{}] replaces the factory type [{}]", beanType, factoryClass);
                         } else {
-                            LOG.debug("Bean [{}] replaces existing bean of type [{}] in factory type [{}]", beanType, beanTypeToReplace, factoryClass);
+                            DefaultBeanContext.LOG.debug("Bean [{}] replaces existing bean of type [{}] in factory type [{}]", beanType, beanTypeToReplace, factoryClass);
                         }
                     }
                     return true;
@@ -114,8 +110,8 @@ public record DefaultReplacesDefinition<T>(@NonNull Class<T> beanType,
 
         if (beanTypeToReplace != null) {
             final boolean isTypeMatches = checkIfTypeMatches(beanDefinition, beanTypeToReplace);
-            if (isTypeMatches && LOG.isDebugEnabled()) {
-                LOG.debug("Bean [{}] replaces existing bean of type [{}]", beanType, beanTypeToReplace);
+            if (isTypeMatches && DefaultBeanContext.LOG.isDebugEnabled()) {
+                DefaultBeanContext.LOG.debug("Bean [{}] replaces existing bean of type [{}]", beanType, beanTypeToReplace);
             }
             return isTypeMatches;
         }

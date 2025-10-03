@@ -137,6 +137,7 @@ import io.micronaut.inject.configuration.builder.ConfigurationBuilderDefinition;
 import io.micronaut.inject.configuration.builder.ConfigurationBuilderOfFieldDefinition;
 import io.micronaut.inject.configuration.builder.ConfigurationBuilderOfMethodDefinition;
 import io.micronaut.inject.configuration.builder.ConfigurationBuilderPropertyDefinition;
+import io.micronaut.inject.processing.ProcessingException;
 import io.micronaut.inject.qualifiers.AnyQualifier;
 import io.micronaut.inject.qualifiers.Qualifiers;
 import io.micronaut.inject.visitor.BeanElementVisitor;
@@ -2529,11 +2530,6 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
 
     private StatementDef addReplacesDefinition() {
         AnnotationMetadata producingAnnotationMetadata = annotationMetadata;
-//        if (beanProducingElement instanceof MethodElement methodElement) {
-//            producingAnnotationMetadata = methodElement.getMethodAnnotationMetadata();
-//        } else {
-//            producingAnnotationMetadata = annotationMetadata;
-//        }
         AnnotationValue<Replaces> replacesAnnotationValue = producingAnnotationMetadata.getAnnotation(Replaces.class);
         if (replacesAnnotationValue == null) {
             classDefBuilder.addMethod(
@@ -2558,7 +2554,7 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
         AnnotationClassValue<?> replacesFactory = replacesAnnotationValue.annotationClassValue(Replaces.MEMBER_FACTORY).orElse(null);
 
         if (named != null && qualifier != null) {
-            visitorContext.fail("Both \"named\" and \"qualifier\" should not be present", beanProducingElement);
+            throw new ProcessingException(beanProducingElement, "Both \"named\" and \"qualifier\" should not be present");
         }
 
         ExpressionDef qualifierExpression;
