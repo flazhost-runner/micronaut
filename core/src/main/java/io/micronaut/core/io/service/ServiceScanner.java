@@ -100,6 +100,20 @@ final class ServiceScanner<S> {
             }
 
             private void collect(Consumer<? super S> consumer, boolean allowFork) {
+                final ServiceScanner.StaticServiceDefinitions ssd = ServiceScanner.findStaticServiceDefinitions();
+                if (ssd != null) {
+                    Map<String, Set<String>> stringSetMap = ssd.serviceTypeMap();
+                    Set<String> strings = stringSetMap.get(serviceName);
+                    if (strings != null && !strings.isEmpty()) {
+                        // Avoid parallel execution for native
+                        for (String serviceEntry : strings) {
+                            final ServiceInstanceLoader<S> task = new ServiceInstanceLoader<>(serviceEntry, transformer);
+                            task.compute();
+                            task.consume(consumer);
+                        }
+                    }
+                    return;
+                }
                 boolean fork = allowFork && ForkJoinPool.getCommonPoolParallelism() > 1;
                 ServiceEntriesLoader<S> task = new ServiceEntriesLoader<>(serviceName, classLoader, lineCondition, transformer, fork);
                 if (fork) {
@@ -127,43 +141,18 @@ final class ServiceScanner<S> {
         private final Predicate<String> lineCondition;
         private final Function<String, S> transformer;
         private final boolean fork;
-        private final Set<String> serviceEntries;
 
         private ServiceEntriesLoader(String serviceName, ClassLoader classLoader, Predicate<String> lineCondition, Function<String, S> transformer, boolean fork) {
             this.serviceName = serviceName;
             this.classLoader = classLoader;
             this.lineCondition = lineCondition;
             this.transformer = transformer;
-            final ServiceScanner.StaticServiceDefinitions ssd = ServiceScanner.findStaticServiceDefinitions();
-            if (ssd != null) {
-                Map<String, Set<String>> stringSetMap = ssd.serviceTypeMap();
-                serviceEntries = stringSetMap.get(serviceName);
-                if (serviceEntries == null) {
-                    this.fork = fork;
-                } else {
-                    this.fork = false;
-                }
-            } else {
-                serviceEntries = null;
-                this.fork = fork;
-            }
+            this.fork = fork;
         }
 
         @Override
         protected void compute() {
             try {
-                if (serviceEntries != null) {
-                    for (String serviceEntry : serviceEntries) {
-                        final ServiceInstanceLoader<S> task = new ServiceInstanceLoader<>(serviceEntry, transformer);
-                        tasks.add(task);
-                        if (fork) {
-                            task.fork();
-                        } else {
-                            task.compute();
-                        }
-                    }
-                    return;
-                }
                 Enumeration<URL> serviceConfigs = findStandardServiceConfigs();
                 while (serviceConfigs.hasMoreElements()) {
                     URL url = serviceConfigs.nextElement();

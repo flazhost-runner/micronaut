@@ -39,7 +39,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Stream;
 
 import static io.micronaut.context.env.Environment.AMAZON_EC2;
 import static io.micronaut.context.env.Environment.ANDROID;
@@ -85,6 +84,7 @@ final class DefaultEnvironmentAndPackageDeducer implements EnvironmentNamesDeduc
     private static final String ORACLE_CLOUD_ASSET_TAG_FILE = "/sys/devices/virtual/dmi/id/chassis_asset_tag";
     private static final String ORACLE_CLOUD_WINDOWS_ASSET_TAG_CMD = "wmic systemenclosure get smbiosassettag";
     private static final String DO_SYS_VENDOR_FILE = "/sys/devices/virtual/dmi/id/sys_vendor";
+    private static final List<String> TEST_PACKAGE_PREFIXES = List.of("org.spockframework", "org.junit", "io.kotlintest", "io.kotest");
 
     private final Logger log;
     private final ApplicationContextConfiguration configuration;
@@ -305,8 +305,11 @@ final class DefaultEnvironmentAndPackageDeducer implements EnvironmentNamesDeduc
             }
         }
         if (deduceEnvironments) {
-            if (Stream.of("org.spockframework", "org.junit", "io.kotlintest", "io.kotest").anyMatch(className::startsWith)) {
-                environments.add(TEST);
+            for (String packagePrefix : TEST_PACKAGE_PREFIXES) {
+                if (className.startsWith(packagePrefix)) {
+                    environments.add(TEST);
+                    break;
+                }
             }
 
             if (className.startsWith("com.android")) {
