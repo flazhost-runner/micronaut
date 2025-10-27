@@ -38,7 +38,7 @@ class Outer {
     interface Foo<T extends CharSequence> {}
 
     @jakarta.inject.Singleton
-    class FooImpl implements Foo<String> {}
+    static class FooImpl implements Foo<String> {}
 }
 ''')
         def itfe = definition.beanType.classLoader.loadClass('innergenerics.Outer$Foo')

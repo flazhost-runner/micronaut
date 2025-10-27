@@ -99,6 +99,9 @@ class DeclaredBeanElementCreator extends AbstractBeanElementCreator {
         beanDefinitionWriters.add(beanDefinitionWriter);
         beanDefinitionWriter.visitTypeArguments(classElement.getAllTypeArguments());
         visitAnnotationMetadata(beanDefinitionWriter, classElement.getAnnotationMetadata());
+        if (classElement.isInner() && !classElement.isStatic()) {
+            throw new ProcessingException(classElement, "Cannot instantiate inner non static class");
+        }
         MethodElement constructorElement = classElement.getRequiredPrimaryConstructor();
         applyConfigurationInjectionIfNecessary(beanDefinitionWriter, constructorElement);
         ClassElement beanDef = ClassElement.of(beanDefinitionWriter.getBeanTypeName());
