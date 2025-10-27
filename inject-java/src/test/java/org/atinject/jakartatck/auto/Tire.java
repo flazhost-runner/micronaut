@@ -16,13 +16,13 @@
 
 package org.atinject.jakartatck.auto;
 
-import java.util.LinkedHashSet;
-import java.util.Set;
-
+import io.micronaut.core.annotation.ReflectiveAccess;
 import jakarta.inject.Inject;
-
 import org.atinject.jakartatck.auto.accessories.RoundThing;
 import org.atinject.jakartatck.auto.accessories.SpareTire;
+
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 public class Tire extends RoundThing {
 
@@ -31,6 +31,7 @@ public class Tire extends RoundThing {
     protected static final Set<String> moreProblems = new LinkedHashSet<>();
 
     FuelTank constructorInjection = NEVER_INJECTED;
+    @ReflectiveAccess
     @Inject FuelTank fieldInjection = NEVER_INJECTED;
     FuelTank methodInjection = NEVER_INJECTED;
     @Inject static FuelTank staticFieldInjection = NEVER_INJECTED;
@@ -69,6 +70,7 @@ public class Tire extends RoundThing {
         this.constructorInjection = constructorInjection;
     }
 
+    @ReflectiveAccess
     @Inject void supertypeMethodInjection(FuelTank methodInjection) {
         if (!hasTireBeenFieldInjected()) {
             methodInjectedBeforeFields = true;
@@ -95,6 +97,7 @@ public class Tire extends RoundThing {
         staticMethodInjection = methodInjection;
     }
 
+    @ReflectiveAccess
     @Inject private void injectPrivateMethod() {
         if (superPrivateMethodInjected) {
             similarPrivateMethodInjectedTwice = true;
@@ -102,6 +105,7 @@ public class Tire extends RoundThing {
         superPrivateMethodInjected = true;
     }
 
+    @ReflectiveAccess
     @Inject void injectPackagePrivateMethod() {
         if (superPackagePrivateMethodInjected) {
             similarPackagePrivateMethodInjectedTwice = true;
@@ -123,10 +127,12 @@ public class Tire extends RoundThing {
         superPublicMethodInjected = true;
     }
 
+    @ReflectiveAccess
     @Inject private void injectPrivateMethodForOverride() {
         subPrivateMethodForOverrideInjected = true;
     }
 
+    @ReflectiveAccess
     @Inject void injectPackagePrivateMethodForOverride() {
         subPackagePrivateMethodForOverrideInjected = true;
     }
@@ -165,12 +171,14 @@ public class Tire extends RoundThing {
 
     boolean packagePrivateMethod2Injected;
 
+    @ReflectiveAccess
     @Inject void injectPackagePrivateMethod2() {
         packagePrivateMethod2Injected = true;
     }
 
     public boolean packagePrivateMethod3Injected;
 
+    @ReflectiveAccess
     @Inject void injectPackagePrivateMethod3() {
         packagePrivateMethod3Injected = true;
     }

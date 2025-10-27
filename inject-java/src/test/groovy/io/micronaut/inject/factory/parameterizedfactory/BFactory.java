@@ -19,6 +19,7 @@ import io.micronaut.context.annotation.Parameter;
 import io.micronaut.context.annotation.Factory;
 import io.micronaut.context.annotation.Prototype;
 
+import io.micronaut.core.annotation.ReflectiveAccess;
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
@@ -29,11 +30,13 @@ public class BFactory {
     boolean postConstructCalled = false;
     boolean getCalled = false;
     @Inject
+    @ReflectiveAccess
     private A fieldA;
     @Inject protected A anotherField;
     @Inject A a;
     private A methodInjected;
 
+    @ReflectiveAccess
     @Inject private void injectMe(A a) {
         methodInjected = a;
     }

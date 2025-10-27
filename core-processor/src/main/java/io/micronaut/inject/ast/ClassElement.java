@@ -28,6 +28,7 @@ import io.micronaut.core.util.ArgumentUtils;
 import io.micronaut.core.util.CollectionUtils;
 import io.micronaut.inject.ast.annotation.MutableAnnotationMetadataDelegate;
 import io.micronaut.inject.ast.beans.BeanElementBuilder;
+import io.micronaut.inject.processing.ProcessingException;
 
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.ParameterizedType;
@@ -231,6 +232,18 @@ public interface ClassElement extends TypedElement {
         return getSimpleName().endsWith(PROXY_SUFFIX);
     }
 
+
+    /**
+     * Find a required constructor for this class. The constructor might be inaccessible and require reflection to access it.
+     * The alternative to {@link #getPrimaryConstructor(boolean)} including inaccessible constructors.
+     * @return The primary constructor
+     * @since 5.0.0
+     */
+    @NonNull
+    default MethodElement getRequiredPrimaryConstructor() {
+        return getPrimaryConstructor(true).orElseThrow(() -> new ProcessingException(this, "No primary constructor found for type: " + getName() + getConstructors()));
+    }
+
     /**
      * Find and return a single primary constructor. If more than constructor candidate exists, then return empty unless a
      * constructor is found that is annotated with either {@link io.micronaut.core.annotation.Creator} or {@link AnnotationUtil#INJECT}.
@@ -238,6 +251,18 @@ public interface ClassElement extends TypedElement {
      * @return The primary constructor if one is present
      */
     default @NonNull Optional<MethodElement> getPrimaryConstructor() {
+        return getPrimaryConstructor(false);
+    }
+
+    /**
+     * Find and return a single primary constructor. If more than constructor candidate exists, then return empty unless a
+     * constructor is found that is annotated with either {@link io.micronaut.core.annotation.Creator} or {@link AnnotationUtil#INJECT}.
+     *
+     * @param allowInaccessible If inaccessible constructors should be allowed
+     * @return The primary constructor if one is present
+     * @since 5.0.0
+     */
+    default @NonNull Optional<MethodElement> getPrimaryConstructor(boolean allowInaccessible) {
         Optional<MethodElement> staticCreator = findStaticCreator();
         if (staticCreator.isPresent()) {
             return staticCreator;
@@ -247,6 +272,9 @@ public interface ClassElement extends TypedElement {
             return Optional.empty();
         }
         List<ConstructorElement> constructors = getAccessibleConstructors();
+        if (constructors.isEmpty() && allowInaccessible) {
+            constructors = getConstructors();
+        }
         if (constructors.isEmpty()) {
             return Optional.empty();
         }
@@ -350,10 +378,58 @@ public interface ClassElement extends TypedElement {
      */
     @NonNull
     default List<ConstructorElement> getAccessibleConstructors() {
-        return getEnclosedElements(ElementQuery.CONSTRUCTORS)
+        return getConstructors()
                 .stream()
                 .filter(ctor -> !ctor.isPrivate())
                 .toList();
+    }
+
+    /**
+     * Find all constructors.
+     *
+     * @return accessible constructors
+     * @since 5.0.0
+     */
+    @NonNull
+    default List<ConstructorElement> getConstructors() {
+        List<ConstructorElement> constructorElements = getEnclosedElements(ElementQuery.CONSTRUCTORS);
+        if (constructorElements.isEmpty()) {
+            return List.of(
+                new ConstructorElement() {
+
+                    @Override
+                    public boolean isProtected() {
+                        return false;
+                    }
+
+                    @Override
+                    public boolean isPublic() {
+                        return true;
+                    }
+
+                    @Override
+                    public Object getNativeType() {
+                        return null;
+                    }
+
+                    @Override
+                    public ClassElement getDeclaringType() {
+                        return ClassElement.this;
+                    }
+
+                    @Override
+                    public @NonNull ParameterElement[] getParameters() {
+                        return new ParameterElement[0];
+                    }
+
+                    @Override
+                    public MethodElement withParameters(@NonNull ParameterElement... newParameters) {
+                        throw new UnsupportedOperationException("Cannot add parameters to a constructor of a non-generic type");
+                    }
+                }
+            );
+        }
+        return constructorElements;
     }
 
     /**

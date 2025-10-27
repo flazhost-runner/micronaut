@@ -27,6 +27,7 @@ import io.micronaut.core.annotation.AnnotationValueBuilder;
 import io.micronaut.core.annotation.Internal;
 import io.micronaut.core.annotation.NonNull;
 import io.micronaut.core.annotation.Nullable;
+import io.micronaut.core.annotation.ReflectiveAccess;
 import io.micronaut.core.util.ArrayUtils;
 import io.micronaut.core.util.CollectionUtils;
 import io.micronaut.inject.InjectionPoint;
@@ -48,6 +49,7 @@ import io.micronaut.inject.ast.beans.BeanElementBuilder;
 import io.micronaut.inject.ast.beans.BeanFieldElement;
 import io.micronaut.inject.ast.beans.BeanMethodElement;
 import io.micronaut.inject.ast.beans.BeanParameterElement;
+import io.micronaut.inject.processing.ProcessingException;
 import io.micronaut.inject.visitor.VisitorContext;
 
 import java.io.IOException;
@@ -664,21 +666,29 @@ public abstract class AbstractBeanDefinitionBuilder implements BeanElementBuilde
 
                 for (BeanMethodElement postConstructMethod : postConstructMethods) {
                     if (postConstructMethod.getDeclaringType().equals(beanType)) {
+                        boolean reflectionRequired = postConstructMethod.isReflectionRequired();
+                        if (reflectionRequired && !postConstructMethod.hasAnnotation(ReflectiveAccess.class)) {
+                            throw new ProcessingException(postConstructMethod, "Post constructor method is not accessible. Annotate with @ReflectiveAccess to use reflection.");
+                        }
                         beanDefinitionWriter.visitPostConstructMethod(
                             beanType,
                             postConstructMethod,
-                            postConstructMethod.isReflectionRequired(),
+                            reflectionRequired,
                             visitorContext
                         );
                     }
                 }
 
                 for (BeanMethodElement preDestroyMethod : preDestroyMethods) {
+                    boolean reflectionRequired = preDestroyMethod.isReflectionRequired();
+                    if (reflectionRequired && !preDestroyMethod.hasAnnotation(ReflectiveAccess.class)) {
+                        throw new ProcessingException(preDestroyMethod, "Post destroy method is not accessible. Annotate with @ReflectiveAccess to use reflection.");
+                    }
                     if (preDestroyMethod.getDeclaringType().equals(beanType)) {
                         beanDefinitionWriter.visitPreDestroyMethod(
                             beanType,
                             preDestroyMethod,
-                            preDestroyMethod.isReflectionRequired(),
+                            reflectionRequired,
                             visitorContext
                         );
                     }
@@ -723,11 +733,15 @@ public abstract class AbstractBeanDefinitionBuilder implements BeanElementBuilde
 
                 } else {
                     InternalBeanElementMethod ibm = (InternalBeanElementMethod) memberElement;
+                    boolean reflectionRequired = ibm.isReflectionRequired();
+                    if (reflectionRequired && !ibm.hasAnnotation(ReflectiveAccess.class)) {
+                        throw new ProcessingException(ibm, "Method is not accessible. Annotate with @ReflectiveAccess to use reflection.");
+                    }
                     ibm.<InternalBeanElementMethod>with(element ->
                         beanDefinitionWriter.visitMethodInjectionPoint(
                             ibm.getDeclaringType(),
                             ibm,
-                            ibm.isReflectionRequired(),
+                            reflectionRequired,
                             visitorContext
                         )
                     );
@@ -788,9 +802,13 @@ public abstract class AbstractBeanDefinitionBuilder implements BeanElementBuilde
                 visitorContext.fail("Cannot create associated bean with no accessible primary constructor. Consider supply the constructor with createWith(..)", originatingElement);
                 return true;
             } else {
+                boolean requiresReflection = !constructorElement.isPublic();
+                if (requiresReflection && !constructorElement.hasAnnotation(ReflectiveAccess.class)) {
+                    throw new ProcessingException(constructorElement, "Constructor is not accessible. Annotate with @ReflectiveAccess to use reflection.");
+                }
                 beanDefinitionWriter.visitBeanDefinitionConstructor(
                     constructorElement,
-                    !constructorElement.isPublic(),
+                    requiresReflection,
                     visitorContext
                 );
             }
@@ -813,18 +831,22 @@ public abstract class AbstractBeanDefinitionBuilder implements BeanElementBuilde
     private void visitField(BeanDefinitionVisitor beanDefinitionWriter,
                             BeanFieldElement injectedField,
                             InternalBeanElementField ibf) {
+        boolean reflectionRequired = ibf.isReflectionRequired();
+        if (reflectionRequired && !ibf.hasAnnotation(ReflectiveAccess.class)) {
+            throw new ProcessingException(ibf, "Field is not accessible. Annotate with @ReflectiveAccess to use reflection.");
+        }
         if (injectedField.hasAnnotation(Value.class) || injectedField.hasAnnotation(Property.class)) {
             beanDefinitionWriter.visitFieldValue(
                 injectedField.getDeclaringType(),
                 injectedField,
-                ibf.isReflectionRequired(),
+                reflectionRequired,
                 ibf.isDeclaredNullable() || !InjectionPoint.isInjectionRequired(injectedField)
             );
         } else {
             beanDefinitionWriter.visitFieldInjectionPoint(
                 injectedField.getDeclaringType(),
                 ibf,
-                ibf.isReflectionRequired(),
+                reflectionRequired,
                 visitorContext
             );
         }

@@ -15,11 +15,13 @@
  */
 package io.micronaut.inject.field.listinjection;
 
+import io.micronaut.core.annotation.ReflectiveAccess;
 import jakarta.inject.Inject;
 import java.util.List;
 
 public class B {
     @Inject
+    @ReflectiveAccess
     private List<A> all;
 
     List<A> getAll() {

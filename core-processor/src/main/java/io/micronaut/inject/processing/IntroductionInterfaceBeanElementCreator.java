@@ -39,6 +39,9 @@ final class IntroductionInterfaceBeanElementCreator extends AbstractBeanElementC
 
     IntroductionInterfaceBeanElementCreator(ClassElement classElement, VisitorContext visitorContext) {
         super(classElement, visitorContext);
+        if (!classElement.isInterface()) {
+            throw new IllegalArgumentException("Introduction interface must be an interface: " + classElement.getName());
+        }
     }
 
     @Override
@@ -58,12 +61,7 @@ final class IntroductionInterfaceBeanElementCreator extends AbstractBeanElementC
             }
         }
 
-        MethodElement constructorElement = classElement.getPrimaryConstructor().orElse(null);
-        if (constructorElement != null) {
-            aopProxyWriter.visitBeanDefinitionConstructor(constructorElement, constructorElement.isReflectionRequired(), visitorContext);
-        } else {
-            aopProxyWriter.visitDefaultConstructor(classElement, visitorContext);
-        }
+        aopProxyWriter.visitDefaultConstructor(visitorContext);
 
         // The introduction will include overridden methods* (find(List) <- find(Iterable)*) but ordinary class introduction doesn't
         // Because of the caching we need to process declared methods first

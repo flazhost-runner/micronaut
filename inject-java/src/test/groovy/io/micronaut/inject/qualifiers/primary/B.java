@@ -15,14 +15,17 @@
  */
 package io.micronaut.inject.qualifiers.primary;
 
+import io.micronaut.core.annotation.ReflectiveAccess;
 import jakarta.inject.Inject;
 import java.util.List;
 
 public class B {
     @Inject
+    @ReflectiveAccess
     private List<A> all;
 
     @Inject
+    @ReflectiveAccess
     private A a;
 
     public List<A> getAll() {

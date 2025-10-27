@@ -234,7 +234,7 @@ final class FactoryBeanElementCreator extends DeclaredBeanElementCreator {
             if (constructorElement != null) {
                 aopProxyWriter.visitBeanDefinitionConstructor(constructorElement, constructorElement.isReflectionRequired(), visitorContext);
             } else {
-                aopProxyWriter.visitDefaultConstructor(AnnotationMetadata.EMPTY_METADATA, visitorContext);
+                aopProxyWriter.visitDefaultConstructor(visitorContext);
             }
             aopProxyWriter.visitSuperBeanDefinitionFactory(producedBeanDefinitionWriter.getBeanDefinitionName());
             aopProxyWriter.visitTypeArguments(producedType.getAllTypeArguments());

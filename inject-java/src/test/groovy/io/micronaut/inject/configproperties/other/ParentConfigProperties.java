@@ -17,12 +17,14 @@ package io.micronaut.inject.configproperties.other;
 
 import io.micronaut.context.annotation.ConfigurationBuilder;
 import io.micronaut.context.annotation.ConfigurationProperties;
+import io.micronaut.core.annotation.ReflectiveAccess;
 import io.micronaut.inject.configuration.Engine;
 
 @ConfigurationProperties("parent")
 public class ParentConfigProperties {
 
     private String name;
+    @ReflectiveAccess
     protected String nationality;
 
     @ConfigurationBuilder(configurationPrefix = "engine", prefixes = "with")
@@ -36,6 +38,7 @@ public class ParentConfigProperties {
         return name;
     }
 
+    @ReflectiveAccess
     protected void setName(String name) {
         this.name = name;
     }

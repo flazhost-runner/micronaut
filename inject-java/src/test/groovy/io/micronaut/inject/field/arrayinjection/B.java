@@ -16,12 +16,14 @@
 package io.micronaut.inject.field.arrayinjection;
 
 import io.micronaut.context.BeanContext;
+import io.micronaut.core.annotation.ReflectiveAccess;
 import jakarta.inject.Inject;
 import java.util.Arrays;
 import java.util.List;
 
 public class B {
     @Inject
+    @ReflectiveAccess
     private A[] all;
     @Inject
     protected A[] all2;

@@ -15,6 +15,7 @@
  */
 package io.micronaut.inject.named;
 
+import io.micronaut.core.annotation.ReflectiveAccess;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
 import jakarta.inject.Singleton;
@@ -26,9 +27,11 @@ public class NamedFunctionBean {
     private final NamedFunction outputFromConstructor;
     @Inject
     @Named("INPUT")
+    @ReflectiveAccess
     private NamedFunction privateFieldInput;
     @Inject
     @Named("OUTPUT")
+    @ReflectiveAccess
     private NamedFunction privateFieldOutput;
     public NamedFunctionBean(
             @Named("INPUT") NamedFunction inputFromConstructor,

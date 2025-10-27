@@ -15,6 +15,7 @@
  */
 package io.micronaut.inject.lifecycle.beanwithprivatepostconstruct;
 
+import io.micronaut.core.annotation.ReflectiveAccess;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
@@ -40,6 +41,7 @@ public class B {
     }
 
     @PostConstruct
+    @ReflectiveAccess
     private void setup() {
         if(a != null && another != null) {
             injectedFirst = true;

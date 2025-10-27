@@ -23,6 +23,7 @@ import io.micronaut.context.annotation.Property;
 import io.micronaut.core.annotation.AnnotationMetadata;
 import io.micronaut.core.annotation.AnnotationValue;
 import io.micronaut.core.annotation.Internal;
+import io.micronaut.core.annotation.ReflectiveAccess;
 import io.micronaut.inject.annotation.AnnotationMetadataHierarchy;
 import io.micronaut.inject.annotation.MutableAnnotationMetadata;
 import io.micronaut.inject.ast.ClassElement;
@@ -119,14 +120,22 @@ final class ConfigurationReaderBeanElementCreator extends DeclaredBeanElementCre
                             .map(p -> p == parameter ? parameter.withAnnotationMetadata(finalAnnotationMetadata) : p)
                             .toArray(ParameterElement[]::new)
                     );
-                visitor.visitSetterValue(methodElement.getDeclaringType(), methodElement, annotationMetadata, methodElement.isReflectionRequired(classElement), true);
+                boolean reflectionRequired = methodElement.isReflectionRequired(classElement);
+                if (reflectionRequired && !methodElement.hasAnnotation(ReflectiveAccess.class)) {
+                    throw new ProcessingException(methodElement, "Setter method for property [" + propertyElement.getName() + "] is not accessible. Annotate with @ReflectiveAccess to use reflection.");
+                }
+                visitor.visitSetterValue(methodElement.getDeclaringType(), methodElement, annotationMetadata, reflectionRequired, true);
                 claimed = true;
             } else if (propertyElement.getWriteAccessKind() == PropertyElement.AccessKind.FIELD && field.isPresent()) {
                 visitor.setValidated(visitor.isValidated() || propertyElement.hasAnnotation(ANN_REQUIRES_VALIDATION));
                 FieldElement fieldElement = field.get();
                 AnnotationMetadata annotationMetadata = MutableAnnotationMetadata.of(propertyElement.getAnnotationMetadata());
                 annotationMetadata = calculatePath(propertyElement, fieldElement, annotationMetadata);
-                visitor.visitFieldValue(fieldElement.getDeclaringType(), fieldElement.withAnnotationMetadata(annotationMetadata), fieldElement.isReflectionRequired(classElement), true);
+                boolean reflectionRequired = fieldElement.isReflectionRequired(classElement);
+                if (reflectionRequired && !fieldElement.hasAnnotation(ReflectiveAccess.class)) {
+                    throw new ProcessingException(fieldElement, "Field for property [" + propertyElement.getName() + "] is not accessible. Annotate with @ReflectiveAccess to use reflection.");
+                }
+                visitor.visitFieldValue(fieldElement.getDeclaringType(), fieldElement.withAnnotationMetadata(annotationMetadata), reflectionRequired, true);
                 claimed = true;
             }
             if (readMethod.isPresent()) {

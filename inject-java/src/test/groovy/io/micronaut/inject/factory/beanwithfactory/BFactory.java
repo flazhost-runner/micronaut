@@ -18,6 +18,7 @@ package io.micronaut.inject.factory.beanwithfactory;
 import io.micronaut.context.annotation.Factory;
 import io.micronaut.context.annotation.Prototype;
 
+import io.micronaut.core.annotation.ReflectiveAccess;
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 
@@ -28,6 +29,7 @@ public class BFactory  {
     boolean getCalled = false;
 
     @Inject
+    @ReflectiveAccess
     private A fieldA;
     @Inject
     protected A anotherField;
@@ -37,6 +39,7 @@ public class BFactory  {
     private A methodInjected;
 
     @Inject
+    @ReflectiveAccess
     private Object injectMe(A a) {
         methodInjected = a;
         return methodInjected;

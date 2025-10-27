@@ -100,13 +100,9 @@ public interface BeanDefinitionVisitor extends OriginatingElements, Toggleable {
      * Visits the constructor used to create the bean definition in the case where no constructor is present.
      * This method should only be called in the class defines no constructor.
      *
-     * @param annotationMetadata The annotation metadata for the constructor
      * @param visitorContext     The visitor context
      */
-    void visitDefaultConstructor(
-            AnnotationMetadata annotationMetadata,
-            VisitorContext visitorContext
-    );
+    void visitDefaultConstructor(VisitorContext visitorContext);
 
     /**
      * @return A map of the type arguments for the bean.

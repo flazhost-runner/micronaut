@@ -16,6 +16,7 @@
 package io.micronaut.inject.method.mapinjection;
 
 import io.micronaut.context.BeanContext;
+import io.micronaut.core.annotation.ReflectiveAccess;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
@@ -34,6 +35,7 @@ public class B {
     }
 
     @Inject
+    @ReflectiveAccess
     private void setPrivate(LinkedHashMap<CharSequence, A> a, BeanContext beanContext) {
         this.linked = a;
     }

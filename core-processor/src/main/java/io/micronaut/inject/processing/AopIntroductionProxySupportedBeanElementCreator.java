@@ -16,8 +16,8 @@
 package io.micronaut.inject.processing;
 
 import io.micronaut.aop.writer.AopProxyWriter;
-import io.micronaut.core.annotation.AnnotationMetadata;
 import io.micronaut.core.annotation.Internal;
+import io.micronaut.core.annotation.ReflectiveAccess;
 import io.micronaut.inject.ast.ClassElement;
 import io.micronaut.inject.ast.MethodElement;
 import io.micronaut.inject.ast.PropertyElement;
@@ -46,16 +46,17 @@ final class AopIntroductionProxySupportedBeanElementCreator extends DeclaredBean
         aopProxyVisitor.visitTypeArguments(classElement.getAllTypeArguments());
         visitAnnotationMetadata(aopProxyVisitor, classElement.getAnnotationMetadata());
         beanDefinitionWriters.add(aopProxyVisitor);
-        MethodElement constructorElement = classElement.getPrimaryConstructor().orElse(null);
-        if (constructorElement != null) {
+        if (classElement.isInterface()) {
+            aopProxyVisitor.visitDefaultConstructor(visitorContext);
+        } else {
+            MethodElement constructorElement = classElement.getRequiredPrimaryConstructor();
+            boolean requiresReflection = constructorElement.isPrivate();
+            if (requiresReflection && !constructorElement.hasAnnotation(ReflectiveAccess.class)) {
+                throw new ProcessingException(constructorElement, "Constructor is not accessible. Annotate with @ReflectiveAccess to use reflection.");
+            }
             aopProxyVisitor.visitBeanDefinitionConstructor(
                 constructorElement,
-                constructorElement.isPrivate(),
-                visitorContext
-            );
-        } else {
-            aopProxyVisitor.visitDefaultConstructor(
-                AnnotationMetadata.EMPTY_METADATA,
+                requiresReflection,
                 visitorContext
             );
         }

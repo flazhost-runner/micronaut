@@ -19,6 +19,7 @@ import io.micronaut.context.AbstractExecutableMethodsDefinition;
 import io.micronaut.core.annotation.Internal;
 import io.micronaut.core.annotation.NonNull;
 import io.micronaut.core.annotation.Nullable;
+import io.micronaut.core.annotation.ReflectiveAccess;
 import io.micronaut.core.reflect.ReflectionUtils;
 import io.micronaut.core.util.CollectionUtils;
 import io.micronaut.inject.ast.ClassElement;
@@ -110,6 +111,7 @@ public final class DispatchWriter implements ClassOutputWriter {
      */
     public int addSetField(FieldElement beanField) {
         if (beanField.isReflectionRequired(ClassElement.of(thisType))) {
+            checkIfFieldIsAccessibleUsingReflection(beanField);
             return addDispatchTarget(new FieldSetReflectionDispatchTarget(beanField));
         }
         return addDispatchTarget(new FieldSetDispatchTarget(beanField));
@@ -123,9 +125,16 @@ public final class DispatchWriter implements ClassOutputWriter {
      */
     public int addGetField(FieldElement beanField) {
         if (beanField.isReflectionRequired(ClassElement.of(thisType))) {
+            checkIfFieldIsAccessibleUsingReflection(beanField);
             return addDispatchTarget(new FieldGetReflectionDispatchTarget(beanField));
         }
         return addDispatchTarget(new FieldGetDispatchTarget(beanField));
+    }
+
+    private void checkIfFieldIsAccessibleUsingReflection(FieldElement beanField) {
+        if (!beanField.hasAnnotation(ReflectiveAccess.class)) {
+            throw new ProcessingException(beanField, "Field is not accessible. Annotate with @ReflectiveAccess to use reflection.");
+        }
     }
 
     /**
@@ -159,6 +168,9 @@ public final class DispatchWriter implements ClassOutputWriter {
         if (methodElement.isReflectionRequired(ClassElement.of(thisType))) {
             if (isKotlinDefault) {
                 throw new ProcessingException(methodElement, "Kotlin default methods are not supported for reflection invocation");
+            }
+            if (!methodElement.hasAnnotation(ReflectiveAccess.class)) {
+                throw new ProcessingException(methodElement, "Method is not accessible. Annotate with @ReflectiveAccess to use reflection.");
             }
             return new MethodReflectionDispatchTarget(declaringType, methodElement, dispatchTargets.size(), useOneDispatch);
         } else if (isKotlinDefault) {

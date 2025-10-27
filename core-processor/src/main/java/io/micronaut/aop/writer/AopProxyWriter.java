@@ -531,13 +531,13 @@ public class AopProxyWriter implements ProxyingBeanDefinitionVisitor, ClassOutpu
     }
 
     @Override
-    public void visitDefaultConstructor(AnnotationMetadata annotationMetadata, VisitorContext visitorContext) {
+    public void visitDefaultConstructor(VisitorContext visitorContext) {
         this.constructorRequiresReflection = false;
         this.visitorContext = visitorContext;
         ClassElement classElement = ClassElement.of(proxyFullName);
         this.declaredConstructor = MethodElement.of(
             classElement,
-            annotationMetadata,
+            AnnotationMetadata.EMPTY_METADATA,
             classElement,
             classElement,
             "<init>"

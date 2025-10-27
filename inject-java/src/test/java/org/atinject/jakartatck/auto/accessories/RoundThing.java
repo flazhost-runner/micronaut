@@ -16,24 +16,28 @@
 
 package org.atinject.jakartatck.auto.accessories;
 
+import io.micronaut.core.annotation.ReflectiveAccess;
 import jakarta.inject.Inject;
 
 public class RoundThing {
 
     public boolean packagePrivateMethod2Injected;
 
+    @ReflectiveAccess
     @Inject void injectPackagePrivateMethod2() {
         packagePrivateMethod2Injected = true;
     }
 
     public boolean packagePrivateMethod3Injected;
 
+    @ReflectiveAccess
     @Inject void injectPackagePrivateMethod3() {
         packagePrivateMethod3Injected = true;
     }
 
     public boolean packagePrivateMethod4Injected;
 
+    @ReflectiveAccess
     @Inject void injectPackagePrivateMethod4() {
         packagePrivateMethod4Injected = true;
     }

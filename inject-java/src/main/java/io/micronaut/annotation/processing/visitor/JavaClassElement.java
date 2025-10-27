@@ -684,7 +684,7 @@ public class JavaClassElement extends AbstractTypeAwareJavaElement implements Ar
     @NonNull
     @Override
     @SuppressWarnings("java:S1119")
-    public Optional<MethodElement> getPrimaryConstructor() {
+    public Optional<MethodElement> getPrimaryConstructor(boolean allowInaccessible) {
         if (JavaModelUtils.isRecord(classElement)) {
             Optional<MethodElement> staticCreator = findStaticCreator();
             if (staticCreator.isPresent()) {
@@ -695,6 +695,10 @@ public class JavaClassElement extends AbstractTypeAwareJavaElement implements Ar
                 return Optional.empty();
             }
             List<ConstructorElement> constructors = getAccessibleConstructors();
+            if (constructors.isEmpty() && allowInaccessible) {
+                constructors = getConstructors();
+            }
+
             Optional<ConstructorElement> annotatedConstructor = constructors.stream()
                 .filter(c -> c.hasStereotype(AnnotationUtil.INJECT) || c.hasStereotype(Creator.class))
                 .findFirst();
@@ -729,7 +733,7 @@ public class JavaClassElement extends AbstractTypeAwareJavaElement implements Ar
                 return Optional.of(constructors.get(constructors.size() - 1));
             }
         }
-        return ArrayableClassElement.super.getPrimaryConstructor();
+        return ArrayableClassElement.super.getPrimaryConstructor(allowInaccessible);
     }
 
     @Override

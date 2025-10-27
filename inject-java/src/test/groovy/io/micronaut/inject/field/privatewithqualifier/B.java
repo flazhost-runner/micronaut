@@ -15,6 +15,7 @@
  */
 package io.micronaut.inject.field.privatewithqualifier;
 
+import io.micronaut.core.annotation.ReflectiveAccess;
 import io.micronaut.inject.field.protectedwithqualifier.A;
 import io.micronaut.inject.qualifiers.One;
 
@@ -24,10 +25,12 @@ import jakarta.inject.Named;
 public class B {
     @Inject
     @One
+    @ReflectiveAccess
     private A a;
 
     @Inject
     @Named("twoA")
+    @ReflectiveAccess
     private A a2;
 
     public A getA() {

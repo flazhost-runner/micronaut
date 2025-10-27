@@ -29,6 +29,7 @@ import io.micronaut.core.annotation.Internal;
 import io.micronaut.core.annotation.NextMajorVersion;
 import io.micronaut.core.annotation.NonNull;
 import io.micronaut.core.annotation.Nullable;
+import io.micronaut.core.annotation.ReflectiveAccess;
 import io.micronaut.core.util.CollectionUtils;
 import io.micronaut.core.util.StringUtils;
 import io.micronaut.inject.InjectionPoint;
@@ -98,15 +99,14 @@ class DeclaredBeanElementCreator extends AbstractBeanElementCreator {
         beanDefinitionWriters.add(beanDefinitionWriter);
         beanDefinitionWriter.visitTypeArguments(classElement.getAllTypeArguments());
         visitAnnotationMetadata(beanDefinitionWriter, classElement.getAnnotationMetadata());
-        MethodElement constructorElement = classElement.getPrimaryConstructor().orElse(null);
-        if (constructorElement != null) {
-            applyConfigurationInjectionIfNecessary(beanDefinitionWriter, constructorElement);
-            ClassElement beanDef = ClassElement.of(beanDefinitionWriter.getBeanTypeName());
-            boolean requiresReflection = !constructorElement.isAccessible(beanDef);
-            beanDefinitionWriter.visitBeanDefinitionConstructor(constructorElement, requiresReflection, visitorContext);
-        } else {
-            beanDefinitionWriter.visitDefaultConstructor(AnnotationMetadata.EMPTY_METADATA, visitorContext);
+        MethodElement constructorElement = classElement.getRequiredPrimaryConstructor();
+        applyConfigurationInjectionIfNecessary(beanDefinitionWriter, constructorElement);
+        ClassElement beanDef = ClassElement.of(beanDefinitionWriter.getBeanTypeName());
+        boolean requiresReflection = !constructorElement.isAccessible(beanDef);
+        if (requiresReflection && !constructorElement.hasAnnotation(ReflectiveAccess.class)) {
+            throw new ProcessingException(constructorElement, "Constructor is not accessible. Annotate with @ReflectiveAccess to use reflection.");
         }
+        beanDefinitionWriter.visitBeanDefinitionConstructor(constructorElement, requiresReflection, visitorContext);
         return beanDefinitionWriter;
     }
 
@@ -130,18 +130,14 @@ class DeclaredBeanElementCreator extends AbstractBeanElementCreator {
             );
             beanDefinitionWriters.add(aopProxyVisitor);
             MethodElement constructorElement = classElement.getPrimaryConstructor().orElse(null);
-            if (constructorElement != null) {
-                aopProxyVisitor.visitBeanDefinitionConstructor(
-                    constructorElement,
-                    constructorElement.isPrivate(),
-                    visitorContext
-                );
-            } else {
-                aopProxyVisitor.visitDefaultConstructor(
-                    AnnotationMetadata.EMPTY_METADATA,
-                    visitorContext
-                );
+            if (constructorElement == null) {
+                throw new ProcessingException(classElement, "Cannot create an AOP proxy without an accessible constructor.");
             }
+            aopProxyVisitor.visitBeanDefinitionConstructor(
+                constructorElement,
+                false,
+                visitorContext
+            );
             aopProxyVisitor.visitSuperBeanDefinition(visitor.getBeanDefinitionName());
         }
         return aopProxyVisitor;
@@ -316,7 +312,6 @@ class DeclaredBeanElementCreator extends AbstractBeanElementCreator {
                 visitor.setValidated(true);
             }
             staticMethodCheck(writeElement);
-            // TODO: Require @ReflectiveAccess for private methods in Micronaut 4
             visitMethodInjectionPoint(visitor, writeElement);
             return true;
         }
@@ -344,20 +339,28 @@ class DeclaredBeanElementCreator extends AbstractBeanElementCreator {
         if (methodElement.hasDeclaredAnnotation(AnnotationUtil.POST_CONSTRUCT)) {
             staticMethodCheck(methodElement);
             // TODO: Require @ReflectiveAccess for private methods in Micronaut 4
+            boolean reflectionRequired = methodElement.isReflectionRequired(classElement);
+            if (reflectionRequired && !methodElement.hasAnnotation(ReflectiveAccess.class)) {
+                throw new ProcessingException(methodElement, "Post construct method is not accessible. Annotate with @ReflectiveAccess to use reflection.");
+            }
             visitor.visitPostConstructMethod(
                 methodElement.getDeclaringType(),
                 methodElement,
-                methodElement.isReflectionRequired(classElement),
+                reflectionRequired,
                 visitorContext);
             claimed = true;
         }
         if (methodElement.hasDeclaredAnnotation(AnnotationUtil.PRE_DESTROY)) {
             staticMethodCheck(methodElement);
             // TODO: Require @ReflectiveAccess for private methods in Micronaut 4
+            boolean reflectionRequired = methodElement.isReflectionRequired(classElement);
+            if (reflectionRequired && !methodElement.hasAnnotation(ReflectiveAccess.class)) {
+                throw new ProcessingException(methodElement, "Pre destroy method is not accessible. Annotate with @ReflectiveAccess to use reflection.");
+            }
             visitor.visitPreDestroyMethod(
                 methodElement.getDeclaringType(),
                 methodElement,
-                methodElement.isReflectionRequired(classElement),
+                reflectionRequired,
                 visitorContext
             );
             claimed = true;
@@ -367,7 +370,6 @@ class DeclaredBeanElementCreator extends AbstractBeanElementCreator {
         }
         if (!methodElement.isStatic() && isInjectPointMethod(methodElement)) {
             staticMethodCheck(methodElement);
-            // TODO: Require @ReflectiveAccess for private methods in Micronaut 4
             visitMethodInjectionPoint(visitor, methodElement);
             return true;
         }
@@ -381,10 +383,14 @@ class DeclaredBeanElementCreator extends AbstractBeanElementCreator {
      */
     protected void visitMethodInjectionPoint(BeanDefinitionVisitor visitor, MethodElement methodElement) {
         applyConfigurationInjectionIfNecessary(visitor, methodElement);
+        boolean reflectionRequired = methodElement.isReflectionRequired(classElement);
+        if (reflectionRequired && !methodElement.hasAnnotation(ReflectiveAccess.class)) {
+            throw new ProcessingException(methodElement, "Inject method is not accessible. Annotate with @ReflectiveAccess to use reflection.");
+        }
         visitor.visitMethodInjectionPoint(
             methodElement.getDeclaringType(),
             methodElement,
-            methodElement.isReflectionRequired(classElement),
+            reflectionRequired,
             visitorContext
         );
     }
@@ -504,20 +510,28 @@ class DeclaredBeanElementCreator extends AbstractBeanElementCreator {
         AnnotationMetadata fieldAnnotationMetadata = fieldElement.getAnnotationMetadata();
         boolean isRequired = InjectionPoint.isInjectionRequired(fieldElement);
         if (fieldAnnotationMetadata.hasStereotype(Value.class) || fieldAnnotationMetadata.hasStereotype(Property.class)) {
+            boolean reflectionRequired = fieldElement.isReflectionRequired(classElement);
+            if (reflectionRequired && !fieldElement.hasAnnotation(ReflectiveAccess.class)) {
+                throw new ProcessingException(fieldElement, "Field is not accessible. Annotate with @ReflectiveAccess to use reflection.");
+            }
             visitor.visitFieldValue(
                 fieldElement.getDeclaringType(),
                 fieldElement,
-                fieldElement.isReflectionRequired(classElement),
+                reflectionRequired,
                 !isRequired
             );
             return true;
         }
         if (fieldAnnotationMetadata.hasStereotype(AnnotationUtil.INJECT)
             || fieldAnnotationMetadata.hasDeclaredStereotype(AnnotationUtil.QUALIFIER)) {
+            boolean reflectionRequired = fieldElement.isReflectionRequired(classElement);
+            if (reflectionRequired && !fieldElement.hasAnnotation(ReflectiveAccess.class)) {
+                throw new ProcessingException(fieldElement, "Field is not accessible. Annotate with @ReflectiveAccess to use reflection.");
+            }
             visitor.visitFieldInjectionPoint(
                 fieldElement.getDeclaringType(),
                 fieldElement,
-                fieldElement.isReflectionRequired(classElement),
+                reflectionRequired,
                 visitorContext
             );
             return true;
@@ -601,7 +615,13 @@ class DeclaredBeanElementCreator extends AbstractBeanElementCreator {
             visitorContext
         );
 
-        aopProxyWriter.visitDefaultConstructor(methodAnnotationMetadata, visitorContext);
+        aopProxyWriter.visitBeanDefinitionConstructor(MethodElement.of(
+            classElement,
+            methodAnnotationMetadata,
+            classElement,
+            classElement,
+            "<init>"
+        ), false, visitorContext);
 
         List<MethodElement> methods = interfaceToAdapt.getEnclosedElements(ElementQuery.ALL_METHODS.onlyAbstract());
         if (methods.isEmpty()) {

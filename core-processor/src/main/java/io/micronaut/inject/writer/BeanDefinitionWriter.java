@@ -77,6 +77,7 @@ import io.micronaut.core.annotation.Internal;
 import io.micronaut.core.annotation.NextMajorVersion;
 import io.micronaut.core.annotation.NonNull;
 import io.micronaut.core.annotation.Nullable;
+import io.micronaut.core.annotation.ReflectiveAccess;
 import io.micronaut.core.beans.BeanConstructor;
 import io.micronaut.core.convert.ConversionService;
 import io.micronaut.core.convert.ConversionServiceProvider;
@@ -127,6 +128,7 @@ import io.micronaut.inject.configuration.builder.ConfigurationBuilderDefinition;
 import io.micronaut.inject.configuration.builder.ConfigurationBuilderOfFieldDefinition;
 import io.micronaut.inject.configuration.builder.ConfigurationBuilderOfPropertyDefinition;
 import io.micronaut.inject.configuration.builder.ConfigurationBuilderPropertyDefinition;
+import io.micronaut.inject.processing.ProcessingException;
 import io.micronaut.inject.qualifiers.AnyQualifier;
 import io.micronaut.inject.qualifiers.Qualifiers;
 import io.micronaut.inject.visitor.BeanElementVisitor;
@@ -1086,12 +1088,12 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
     }
 
     @Override
-    public void visitDefaultConstructor(AnnotationMetadata annotationMetadata, VisitorContext visitorContext) {
+    public void visitDefaultConstructor(VisitorContext visitorContext) {
         if (this.constructor == null) {
             ClassElement bean = ClassElement.of(((ClassTypeDef) beanTypeDef).getName());
             MethodElement defaultConstructor = MethodElement.of(
                 bean,
-                annotationMetadata,
+                AnnotationMetadata.EMPTY_METADATA,
                 bean,
                 bean,
                 "<init>"
@@ -1757,6 +1759,9 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
         Element factoryElement = factoryBuildMethodDefinition.factoryElement;
         if (factoryElement instanceof MethodElement methodElement) {
             if (methodElement.isReflectionRequired()) {
+                if (!methodElement.hasAnnotation(ReflectiveAccess.class)) {
+                    throw new ProcessingException(methodElement, "Factory method is not accessible. Annotate with @ReflectiveAccess to use reflection.");
+                }
                 return TYPE_REFLECTION_UTILS.invokeStatic(
                     METHOD_INVOKE_INACCESSIBLE_METHOD,
 
@@ -1772,6 +1777,9 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
         }
         FieldElement fieldElement = (FieldElement) factoryElement;
         if (fieldElement.isReflectionRequired()) {
+            if (!fieldElement.hasAnnotation(ReflectiveAccess.class)) {
+                throw new ProcessingException(fieldElement, "Factory field is not accessible. Annotate with @ReflectiveAccess to use reflection.");
+            }
             return TYPE_REFLECTION_UTILS.invokeStatic(
                 GET_FIELD_WITH_REFLECTION_METHOD,
 

@@ -15,12 +15,14 @@
  */
 package io.micronaut.inject.field.setinjection;
 
+import io.micronaut.core.annotation.ReflectiveAccess;
 import jakarta.inject.Inject;
 
 import java.util.Set;
 
 public class B {
     @Inject
+    @ReflectiveAccess
     private Set<A> all;
 
     Set<A> getAll() {

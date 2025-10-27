@@ -15,6 +15,7 @@
  */
 package io.micronaut.inject.lifecycle.beanwithprivatepredestroy;
 
+import io.micronaut.core.annotation.ReflectiveAccess;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
@@ -47,6 +48,7 @@ public class B implements Closeable {
     }
 
     @PreDestroy
+    @ReflectiveAccess
     private void another(C c) {
         if(c != null) {
             injectedDestroyCalled = true;

@@ -1,6 +1,7 @@
 package io.micronaut.inject.field.samename.v2.newpackage;
 
 import io.micronaut.context.annotation.Requires;
+import io.micronaut.core.annotation.ReflectiveAccess;
 import io.micronaut.inject.field.samename.v2.Abc;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
@@ -10,6 +11,7 @@ import jakarta.inject.Singleton;
 public class Bar {
 
     @Inject
+    @ReflectiveAccess
     protected Abc abc;
 
     public Abc getBarAbc() {

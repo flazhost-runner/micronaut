@@ -16,6 +16,7 @@
 
 package org.atinject.jakartatck.auto.accessories;
 
+import io.micronaut.core.annotation.ReflectiveAccess;
 import jakarta.inject.Inject;
 
 import org.atinject.jakartatck.auto.FuelTank;
@@ -49,6 +50,7 @@ public class SpareTire extends Tire {
         staticMethodInjection = methodInjection;
     }
 
+    @ReflectiveAccess
     @Inject private void injectPrivateMethod() {
         if (subPrivateMethodInjected) {
             similarPrivateMethodInjectedTwice = true;

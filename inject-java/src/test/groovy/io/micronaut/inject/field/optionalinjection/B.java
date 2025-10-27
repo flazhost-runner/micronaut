@@ -15,14 +15,17 @@
  */
 package io.micronaut.inject.field.optionalinjection;
 
+import io.micronaut.core.annotation.ReflectiveAccess;
 import jakarta.inject.Inject;
 import java.util.Optional;
 
 public class B {
     @Inject
+    @ReflectiveAccess
     private Optional<A> a;
 
     @Inject
+    @ReflectiveAccess
     private Optional<C> c;
 
     A getA() {

@@ -17,6 +17,7 @@ package io.micronaut.inject.lifecycle.beaninitializingeventlistener;
 
 import io.micronaut.context.annotation.Factory;
 
+import io.micronaut.core.annotation.ReflectiveAccess;
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 import jakarta.inject.Provider;
@@ -28,11 +29,13 @@ public class BFactory implements Provider<B> {
     boolean postConstructCalled = false;
     boolean getCalled = false;
     @Inject
+    @ReflectiveAccess
     private A fieldA;
     @Inject protected A anotherField;
     @Inject A a;
     private A methodInjected;
 
+    @ReflectiveAccess
     @Inject private Object injectMe(A a) {
         methodInjected = a;
         return methodInjected;

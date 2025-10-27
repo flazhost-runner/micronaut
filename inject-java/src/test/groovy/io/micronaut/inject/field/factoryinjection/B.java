@@ -15,10 +15,12 @@
  */
 package io.micronaut.inject.field.factoryinjection;
 
+import io.micronaut.core.annotation.ReflectiveAccess;
 import jakarta.inject.Inject;
 
 public class B {
     @Inject
+    @ReflectiveAccess
     private A a;
 
     public A getA() {

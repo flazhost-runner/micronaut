@@ -15,10 +15,12 @@
  */
 package io.micronaut.inject.failures.ctorexception;
 
+import io.micronaut.core.annotation.ReflectiveAccess;
 import jakarta.inject.Inject;
 
 public class MyClassB {
     @Inject
+    @ReflectiveAccess
     private MyClassA propA;
 
     public MyClassA getPropA() {

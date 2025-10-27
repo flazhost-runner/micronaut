@@ -15,6 +15,7 @@
  */
 package io.micronaut.inject.method.streaminjection;
 
+import io.micronaut.core.annotation.ReflectiveAccess;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import java.util.List;
@@ -30,6 +31,7 @@ public class B {
     private Stream<A> another2;
 
     @Inject
+    @ReflectiveAccess
     private void setAll(Stream<A> all) {
         this.all = all;
     }

@@ -17,6 +17,7 @@ package io.micronaut.inject.writer;
 
 import io.micronaut.core.annotation.Internal;
 import io.micronaut.core.annotation.Nullable;
+import io.micronaut.core.annotation.ReflectiveAccess;
 import io.micronaut.core.reflect.InstantiationUtils;
 import io.micronaut.core.reflect.ReflectionUtils;
 import io.micronaut.inject.ast.ClassElement;
@@ -24,6 +25,7 @@ import io.micronaut.inject.ast.KotlinParameterElement;
 import io.micronaut.inject.ast.MethodElement;
 import io.micronaut.inject.ast.ParameterElement;
 import io.micronaut.inject.ast.PrimitiveElement;
+import io.micronaut.inject.processing.ProcessingException;
 import io.micronaut.sourcegen.model.ClassTypeDef;
 import io.micronaut.sourcegen.model.ExpressionDef;
 import io.micronaut.sourcegen.model.MethodDef;
@@ -90,7 +92,11 @@ public final class MethodGenUtils {
                                                       boolean allowKotlinDefaults,
                                                       @Nullable
                                                       List<? extends ExpressionDef> values) {
-        return invokeBeanConstructor(constructor, constructor.isReflectionRequired(callingType), allowKotlinDefaults, values, values == null ? null : values.stream().map(ExpressionDef::isNonNull).toList());
+        boolean reflectionRequired = constructor.isReflectionRequired(callingType);
+        if (reflectionRequired && !constructor.hasAnnotation(ReflectiveAccess.class)) {
+            throw new ProcessingException(constructor, "Constructor is not accessible. Annotate with @ReflectiveAccess to use reflection.");
+        }
+        return invokeBeanConstructor(constructor, reflectionRequired, allowKotlinDefaults, values, values == null ? null : values.stream().map(ExpressionDef::isNonNull).toList());
     }
 
     public static ExpressionDef invokeBeanConstructor(MethodElement constructor,
