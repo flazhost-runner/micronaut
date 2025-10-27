@@ -481,7 +481,8 @@ package test.A;
 
 @jakarta.inject.Singleton
 class TestBean {
-
+    @io.micronaut.core.annotation.ReflectiveAccess
+    TestBean() {}
 }
 ''')
         then:

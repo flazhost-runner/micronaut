@@ -75,6 +75,7 @@ class Outer1 {
 package addann;
 
 import io.micronaut.core.annotation.Introspected;
+import io.micronaut.core.annotation.ReflectiveAccess;
 import jakarta.validation.constraints.NotBlank;
 import java.util.Map;
 
@@ -82,6 +83,7 @@ import java.util.Map;
 class Outer2 {
     static class NotProcessedByVisitor {
 
+        @ReflectiveAccess
         private Map<@NotBlank String, String> hnameMap;
 
     }
@@ -99,6 +101,7 @@ class Outer2 {
 package addann;
 
 import io.micronaut.core.annotation.Introspected;
+import io.micronaut.core.annotation.ReflectiveAccess;
 import jakarta.validation.constraints.NotBlank;
 import java.util.Map;
 
@@ -106,6 +109,7 @@ import java.util.Map;
 class Outer3 {
     static class NotProcessedByVisitor2 {
 
+        @ReflectiveAccess
         private Map<@NotBlank String, String> hnameMap;
 
     }

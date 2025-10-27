@@ -1171,6 +1171,7 @@ interface Unit {
 @Controller
 class Time extends Quantity<Time, TimeUnit> {
 
+    @io.micronaut.core.annotation.ReflectiveAccess
     private Time(BigDecimal amount, TimeUnit unit) {
         super(amount, unit);
     }

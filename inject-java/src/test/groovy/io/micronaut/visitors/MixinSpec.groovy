@@ -18,6 +18,7 @@ import io.micronaut.core.annotation.Introspected;
 
 class MyBean {
     static final class Inner {
+        @io.micronaut.core.annotation.ReflectiveAccess
         String name;
     }
 }

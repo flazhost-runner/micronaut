@@ -36,21 +36,21 @@ import jakarta.inject.Inject;
 @Controller("/test")
 public class TestController {
 
-    @Inject private String privateField;  
-    protected String protectedField;   
+    @Inject @io.micronaut.core.annotation.ReflectiveAccess private String privateField;
+    protected String protectedField;
     public String publicField;
     String packagePrivateField;
-    
+
     TestController(String constructorArg) {}
-    
+
     @Inject
     void setterMethod(String method) {}
-    
+
     @Get("/getMethod")
     public String getMethod(String argument) {
         return "";
     }
-    
+
     @Post("/postMethod")
     public String postMethod() {
         return "";
@@ -73,20 +73,20 @@ import jakarta.inject.Inject;
 
 public class TestController {
 
-    @Inject private String privateField;  
-    protected String protectedField;   
+    @Inject @io.micronaut.core.annotation.ReflectiveAccess private String privateField;
+    protected String protectedField;
     public String publicField;
     String packagePrivateField;
-    
+
     TestController(String constructorArg) {}
-    
+
     void setterMethod(String method) {}
-    
+
     @Get("/getMethod")
     public String getMethod(String argument) {
         return "";
     }
-    
+
     @Post("/postMethod")
     public String postMethod() {
         return "";
@@ -111,13 +111,13 @@ import jakarta.inject.Inject;
 @Generated
 public class TestGenerated {
 
-    @Inject private String privateField;  
-    protected String protectedField;   
+    @Inject private String privateField;
+    protected String protectedField;
     public String publicField;
     String packagePrivateField;
-    
+
     TestGenerated(String constructorArg) {}
-    
+
     void setterMethod(String method) {}
 
 }

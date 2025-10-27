@@ -117,12 +117,14 @@ class Foobar3 {
 package addann;
 
 import io.micronaut.context.annotation.Property;
+import io.micronaut.core.annotation.ReflectiveAccess;
 
 class Foobar4 {
 
     static class AnnotateClass {
 
         @Property(name = "xyz") // Make the BeanDefinitionInjectProcessor to see the class
+        @ReflectiveAccess
         private String myField;
 
     }

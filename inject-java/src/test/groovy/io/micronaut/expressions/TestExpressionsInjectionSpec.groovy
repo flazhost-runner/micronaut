@@ -1,8 +1,6 @@
 package io.micronaut.expressions
 
 import io.micronaut.annotation.processing.test.AbstractEvaluatedExpressionsSpec
-import io.micronaut.context.env.PropertySource
-import io.micronaut.context.exceptions.NoSuchBeanException
 
 class TestExpressionsInjectionSpec extends AbstractEvaluatedExpressionsSpec {
 
@@ -17,6 +15,7 @@ class TestExpressionsInjectionSpec extends AbstractEvaluatedExpressionsSpec {
             @Singleton
             class Expr {
                 @Value("#{ 15 ^ 2 }")
+                @io.micronaut.core.annotation.ReflectiveAccess
                 private int intValue;
 
                 @Value("#{ 100 }")
