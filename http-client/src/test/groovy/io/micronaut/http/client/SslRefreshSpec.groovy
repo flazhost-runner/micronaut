@@ -28,14 +28,14 @@ import java.security.cert.X509Certificate
 @IgnoreIf({ os.isMacOs() })
 class SslRefreshSpec extends Specification {
 
-    @Shared List<String> ciphers = ['TLS_RSA_WITH_AES_128_CBC_SHA',
-                                    'TLS_RSA_WITH_AES_256_CBC_SHA',
-                                    'TLS_RSA_WITH_AES_128_GCM_SHA256',
-                                    'TLS_RSA_WITH_AES_256_GCM_SHA384',
+    @Shared List<String> ciphers = ['TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA',
+                                    'TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA',
+                                    'TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256',
+                                    'TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384',
+                                    'TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256',
+                                    'TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384',
                                     'TLS_DHE_RSA_WITH_AES_128_GCM_SHA256',
-                                    'TLS_DHE_RSA_WITH_AES_256_GCM_SHA384',
-                                    'TLS_DHE_DSS_WITH_AES_128_GCM_SHA256',
-                                    'TLS_DHE_DSS_WITH_AES_256_GCM_SHA384']
+                                    'TLS_DHE_RSA_WITH_AES_256_GCM_SHA384']
     @Shared Path keyStorePath
     @Shared Path trustStorePath
     @Shared Map<String, Object> config = [
