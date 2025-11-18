@@ -25,7 +25,7 @@ import java.security.KeyStore
 import java.security.cert.Certificate
 import java.security.cert.X509Certificate
 
-@IgnoreIf({ os.isMacOs() || javaVersion == 25 })
+@IgnoreIf({ os.isMacOs() })
 class SslRefreshSpec extends Specification {
 
     @Shared List<String> ciphers = ['TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA',
