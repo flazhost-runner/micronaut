@@ -60,7 +60,6 @@ import io.micronaut.inject.writer.BeanDefinitionWriter;
 import org.intellij.lang.annotations.Language;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import spock.lang.Specification;
 
 import javax.annotation.processing.Messager;
 import javax.annotation.processing.ProcessingEnvironment;
@@ -97,7 +96,7 @@ import java.util.stream.StreamSupport;
  * @author Graeme Rocher
  * @since 1.0
  */
-public abstract class AbstractTypeElementTest extends Specification {
+public abstract class AbstractTypeElementTest {
 
     /**
      * Builds a class element for the given source code.
@@ -114,7 +113,8 @@ public abstract class AbstractTypeElementTest extends Specification {
             JavacTask lastTask = parser.getLastTask().orElseThrow();
             ProcessingEnvironment processingEnv = parser.getProcessingEnv();
             Messager messager = processingEnv.getMessager();
-            ModelUtils modelUtils = new ModelUtils(lastTask.getElements(), lastTask.getTypes()) { };
+            ModelUtils modelUtils = new ModelUtils(lastTask.getElements(), lastTask.getTypes()) {
+            };
 
             JavaVisitorContext visitorContext = new JavaVisitorContext(
                 processingEnv,
@@ -132,8 +132,8 @@ public abstract class AbstractTypeElementTest extends Specification {
     }
 
     protected final <T> T buildClassElement(@Language("java") String packageInfo,
-                                      @Language("java") String cls,
-                                      Function<? super ClassElement, T> function) {
+                                            @Language("java") String cls,
+                                            Function<? super ClassElement, T> function) {
         Objects.requireNonNull(function, "function");
         JavaFiles files = new JavaFiles().add("Test", cls).add("package-info", packageInfo);
         return buildClassElement(files, function);
@@ -153,7 +153,8 @@ public abstract class AbstractTypeElementTest extends Specification {
             JavacTask lastTask = parser.getLastTask().orElseThrow();
             ProcessingEnvironment processingEnv = parser.getProcessingEnv();
             Messager messager = processingEnv.getMessager();
-            ModelUtils modelUtils = new ModelUtils(lastTask.getElements(), lastTask.getTypes()) { };
+            ModelUtils modelUtils = new ModelUtils(lastTask.getElements(), lastTask.getTypes()) {
+            };
 
             JavaVisitorContext visitorContext = new JavaVisitorContext(
                 processingEnv,
@@ -186,8 +187,8 @@ public abstract class AbstractTypeElementTest extends Specification {
     }
 
     protected final AnnotationMetadata buildMethodArgumentAnnotationMetadata(@Language("java") String cls,
-                                                                       String methodName,
-                                                                       String argumentName) {
+                                                                             String methodName,
+                                                                             String argumentName) {
         AbstractAnnotationMetadataBuilder.clearMutated();
         TypeElement element = buildTypeElement(cls);
         ExecutableElement method = null;
@@ -231,7 +232,8 @@ public abstract class AbstractTypeElementTest extends Specification {
             return (BeanIntrospection<?>) introspectionClass.getDeclaredConstructor().newInstance();
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException |
+                 NoSuchMethodException e) {
             throw new IllegalStateException("Failed to instantiate BeanIntrospection: " + beanFullName, e);
         }
     }
@@ -253,7 +255,8 @@ public abstract class AbstractTypeElementTest extends Specification {
             return (GraalReflectionConfigurer) configurerClass.getDeclaredConstructor().newInstance();
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException |
+                 NoSuchMethodException e) {
             throw new IllegalStateException("Failed to instantiate GraalReflectionConfigurer: " + beanFullName, e);
         }
     }
@@ -331,8 +334,8 @@ public abstract class AbstractTypeElementTest extends Specification {
      * @return The bean definition
      */
     protected final BeanDefinition<?> getBeanDefinition(ApplicationContext context,
-                                                  String className,
-                                                  @Nullable Qualifier<?> qualifier) {
+                                                        String className,
+                                                        @Nullable Qualifier<?> qualifier) {
         try {
             Class beanType = context.getClassLoader().loadClass(className);
             return context.getBeanDefinition(beanType, qualifier);
@@ -356,41 +359,41 @@ public abstract class AbstractTypeElementTest extends Specification {
     }
 
     protected final ApplicationContext buildContext(String className,
-                                              @Language("java") String cls) {
+                                                    @Language("java") String cls) {
         return buildContext(className, cls, false, Collections.emptyMap());
     }
 
     protected final ApplicationContext buildContext(String className,
-                                              @Language("java") String cls,
-                                              boolean includeAllBeans) {
+                                                    @Language("java") String cls,
+                                                    boolean includeAllBeans) {
         return buildContext(className, cls, includeAllBeans, Collections.emptyMap());
     }
 
     protected final ApplicationContext buildContext(String className,
-                                              @Language("java") String cls,
-                                              boolean includeAllBeans,
-                                              Map<String, Object> properties) {
+                                                    @Language("java") String cls,
+                                                    boolean includeAllBeans,
+                                                    Map<String, Object> properties) {
         return buildContext(null, className, cls, includeAllBeans, properties);
     }
 
     protected final ApplicationContext buildContext(@Nullable @Language("java") String packageJava,
-                                              String className,
-                                              @Language("java") String cls) {
+                                                    String className,
+                                                    @Language("java") String cls) {
         return buildContext(packageJava, className, cls, false, Collections.emptyMap());
     }
 
     protected final ApplicationContext buildContext(@Nullable @Language("java") String packageJava,
-                                              String className,
-                                              @Language("java") String cls,
-                                              boolean includeAllBeans) {
+                                                    String className,
+                                                    @Language("java") String cls,
+                                                    boolean includeAllBeans) {
         return buildContext(packageJava, className, cls, includeAllBeans, Collections.emptyMap());
     }
 
     protected final ApplicationContext buildContext(@Nullable @Language("java") String packageJava,
-                                              String className,
-                                              @Language("java") String cls,
-                                              boolean includeAllBeans,
-                                              Map<String, Object> properties) {
+                                                    String className,
+                                                    @Language("java") String cls,
+                                                    boolean includeAllBeans,
+                                                    Map<String, Object> properties) {
         JavaFiles files = new JavaFiles().add(className, cls);
         if (packageJava != null) {
             files.add("package-info", packageJava);
@@ -399,8 +402,8 @@ public abstract class AbstractTypeElementTest extends Specification {
     }
 
     protected final ApplicationContext buildContext(JavaFiles files,
-                                              boolean includeAllBeans,
-                                              Map<String, Object> properties) {
+                                                    boolean includeAllBeans,
+                                                    Map<String, Object> properties) {
         try (JavaParser parser = newJavaParser()) {
             Iterable<? extends JavaFileObject> javaFiles = parser.generate(
                 files.getFiles().stream()
@@ -431,7 +434,8 @@ public abstract class AbstractTypeElementTest extends Specification {
                         }
                         try {
                             return (BeanDefinitionReference<?>) classLoader.loadClass(name).getDeclaredConstructor().newInstance();
-                        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException
+                        } catch (ClassNotFoundException | InstantiationException |
+                                 IllegalAccessException
                                  | InvocationTargetException | NoSuchMethodException e) {
                             throw new IllegalStateException("Failed to load bean definition reference: " + name, e);
                         }
@@ -573,14 +577,15 @@ public abstract class AbstractTypeElementTest extends Specification {
             return (BeanDefinition<?>) beanDefClass.getDeclaredConstructor().newInstance();
         } catch (ClassNotFoundException e) {
             return null;
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException |
+                 NoSuchMethodException e) {
             throw new IllegalStateException("Failed to instantiate bean definition: " + beanFullName, e);
         }
     }
 
     protected final BeanDefinition<?> buildBeanDefinition(String packageName,
-                                                     String className,
-                                                     @Language("java") String cls) {
+                                                          String className,
+                                                          @Language("java") String cls) {
         String beanDefName = (className.startsWith("$") ? "" : "$") + className + BeanDefinitionWriter.CLASS_SUFFIX;
         String beanFullName = packageName + '.' + beanDefName;
         ClassLoader classLoader = buildClassLoader(className, cls);
@@ -589,7 +594,8 @@ public abstract class AbstractTypeElementTest extends Specification {
             return (BeanDefinition<?>) beanDefClass.getDeclaredConstructor().newInstance();
         } catch (ClassNotFoundException e) {
             return null;
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException |
+                 NoSuchMethodException e) {
             throw new IllegalStateException("Failed to instantiate bean definition: " + beanFullName, e);
         }
     }
@@ -670,7 +676,7 @@ public abstract class AbstractTypeElementTest extends Specification {
     }
 
     protected final BeanDefinitionReference<?> buildInterceptedBeanDefinitionReference(String className,
-                                                                                 @Language("java") String cls) {
+                                                                                       @Language("java") String cls) {
         String classSimpleName = NameUtils.getSimpleName(className);
         String beanDefName = (classSimpleName.startsWith("$") ? "" : "$") + classSimpleName
             + BeanDefinitionWriter.CLASS_SUFFIX + BeanDefinitionVisitor.PROXY_SUFFIX + BeanDefinitionWriter.CLASS_SUFFIX;
@@ -687,7 +693,7 @@ public abstract class AbstractTypeElementTest extends Specification {
     }
 
     protected final BeanDefinitionReference<?> buildBeanDefinitionReference(String className,
-                                                                       @Language("java") String cls) {
+                                                                            @Language("java") String cls) {
         String classSimpleName = NameUtils.getSimpleName(className);
         String beanDefName = (classSimpleName.startsWith("$") ? "" : "$") + classSimpleName + BeanDefinitionWriter.CLASS_SUFFIX;
         String packageName = NameUtils.getPackageName(className);
@@ -740,7 +746,8 @@ public abstract class AbstractTypeElementTest extends Specification {
             JavacTask javacTask = parser.getJavacTask();
             ProcessingEnvironment processingEnv = parser.getProcessingEnv();
             Messager messager = processingEnv.getMessager();
-            ModelUtils modelUtils = new ModelUtils(javacTask.getElements(), javacTask.getTypes()) { };
+            ModelUtils modelUtils = new ModelUtils(javacTask.getElements(), javacTask.getTypes()) {
+            };
             JavaVisitorContext visitorContext = new JavaVisitorContext(
                 processingEnv,
                 messager,
@@ -807,8 +814,8 @@ public abstract class AbstractTypeElementTest extends Specification {
      * Can be used to test that {@link ClassElement#getBoundGenericTypes()} returns the right types in the right
      * context.
      *
-     * @param classElement            The class element to reconstruct
-     * @param typeVarsAsDeclarations  Whether type variables should be represented as declarations
+     * @param classElement           The class element to reconstruct
+     * @param typeVarsAsDeclarations Whether type variables should be represented as declarations
      * @return a String representing the type signature.
      */
     @Experimental
@@ -868,8 +875,8 @@ public abstract class AbstractTypeElementTest extends Specification {
             }
             return classElement.getSimpleName()
                 + typeArguments.stream()
-                    .map(arg -> reconstructTypeSignatureInternal(arg, false))
-                    .collect(Collectors.joining(", ", "<", ">"));
+                .map(arg -> reconstructTypeSignatureInternal(arg, false))
+                .collect(Collectors.joining(", ", "<", ">"));
         }
     }
 
