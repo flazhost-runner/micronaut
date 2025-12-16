@@ -18,7 +18,6 @@ package io.micronaut.core.beans;
 import io.micronaut.core.annotation.Internal;
 import io.micronaut.core.annotation.UsedByGeneratedCode;
 
-import org.jspecify.annotations.NonNull;
 
 
 /**
@@ -55,7 +54,6 @@ public abstract class AbstractBeanIntrospectionReference<T> implements BeanIntro
         return present;
     }
 
-    @NonNull
     @Override
     public String getName() {
         return getBeanType().getName();

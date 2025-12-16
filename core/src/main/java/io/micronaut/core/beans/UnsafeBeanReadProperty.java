@@ -16,7 +16,6 @@
 package io.micronaut.core.beans;
 
 import io.micronaut.core.annotation.Experimental;
-import org.jspecify.annotations.NonNull;
 
 /**
  * Unsafe bean property interface adds read methods which don't validate the input/output.
@@ -36,6 +35,6 @@ public interface UnsafeBeanReadProperty<B, T> extends BeanReadProperty<B, T> {
      * @param bean The bean to read from
      * @return The value
      */
-    T getUnsafe(@NonNull B bean);
+    T getUnsafe(B bean);
 
 }

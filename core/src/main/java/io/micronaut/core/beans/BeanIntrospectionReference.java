@@ -19,7 +19,6 @@ import io.micronaut.core.annotation.AnnotationMetadataProvider;
 import io.micronaut.core.annotation.Internal;
 import io.micronaut.core.naming.Named;
 
-import org.jspecify.annotations.NonNull;
 
 /**
  * A reference to a {@link BeanIntrospection} that may or may not be present on the classpath.
@@ -45,12 +44,12 @@ public interface BeanIntrospectionReference<T> extends AnnotationMetadataProvide
      * @return The type
      * @throws io.micronaut.core.beans.exceptions.IntrospectionException if the introspection cannot be loaded
      */
-    @NonNull Class<T> getBeanType();
+    Class<T> getBeanType();
 
     /**
      * Loads the introspection.
      * @return The loaded introspection.
      * @throws io.micronaut.core.beans.exceptions.IntrospectionException if the introspection cannot be loaded
      */
-    @NonNull BeanIntrospection<T> load();
+    BeanIntrospection<T> load();
 }

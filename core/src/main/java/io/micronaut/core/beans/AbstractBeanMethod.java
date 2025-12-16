@@ -15,7 +15,6 @@
  */
 package io.micronaut.core.beans;
 
-import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import io.micronaut.core.annotation.AnnotationMetadata;
 import io.micronaut.core.annotation.Internal;
@@ -52,9 +51,9 @@ public abstract class AbstractBeanMethod<B, T> implements BeanMethod<B, T> {
      */
     @UsedByGeneratedCode
     protected AbstractBeanMethod(
-            @NonNull BeanIntrospection<B> introspection,
-            @NonNull Argument<T> returnType,
-            @NonNull String name,
+            BeanIntrospection<B> introspection,
+            Argument<T> returnType,
+            String name,
             @Nullable AnnotationMetadata annotationMetadata,
             @Nullable Argument<?>... arguments) {
         this.introspection = introspection;
@@ -64,14 +63,13 @@ public abstract class AbstractBeanMethod<B, T> implements BeanMethod<B, T> {
         this.returnType = returnType;
     }
 
-    @NonNull
     @Override
     public BeanIntrospection<B> getDeclaringBean() {
         return introspection;
     }
 
     @Override
-    public final @NonNull ReturnType<T> getReturnType() {
+    public final ReturnType<T> getReturnType() {
         return new ReturnType<>() {
             @Override
             public Class<T> getType() {
@@ -79,7 +77,6 @@ public abstract class AbstractBeanMethod<B, T> implements BeanMethod<B, T> {
             }
 
             @Override
-            @NonNull
             public Argument<T> asArgument() {
                 return returnType;
             }
@@ -89,7 +86,6 @@ public abstract class AbstractBeanMethod<B, T> implements BeanMethod<B, T> {
                 return returnType.getTypeVariables();
             }
 
-            @NonNull
             @Override
             public AnnotationMetadata getAnnotationMetadata() {
                 return returnType.getAnnotationMetadata();
@@ -97,13 +93,11 @@ public abstract class AbstractBeanMethod<B, T> implements BeanMethod<B, T> {
         };
     }
 
-    @NonNull
     @Override
     public final AnnotationMetadata getAnnotationMetadata() {
         return annotationMetadata;
     }
 
-    @NonNull
     @Override
     public final String getName() {
         return name;
@@ -116,7 +110,7 @@ public abstract class AbstractBeanMethod<B, T> implements BeanMethod<B, T> {
 
     @SuppressWarnings("java:S2638")
     @Override
-    public T invoke(@NonNull B instance, Object... arguments) {
+    public T invoke(B instance, Object... arguments) {
         return invokeInternal(instance, arguments);
     }
 

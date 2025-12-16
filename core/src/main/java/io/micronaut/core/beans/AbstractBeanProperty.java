@@ -22,7 +22,6 @@ import io.micronaut.core.reflect.ReflectionUtils;
 import io.micronaut.core.type.Argument;
 import io.micronaut.core.util.ArgumentUtils;
 
-import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import io.micronaut.core.util.ObjectUtils;
 
@@ -61,9 +60,9 @@ public abstract class AbstractBeanProperty<B, P> implements UnsafeBeanProperty<B
     @Internal
     @UsedByGeneratedCode
     protected AbstractBeanProperty(
-            @NonNull BeanIntrospection<B> introspection,
-            @NonNull Class<P> type,
-            @NonNull String name,
+            BeanIntrospection<B> introspection,
+            Class<P> type,
+            String name,
             @Nullable AnnotationMetadata annotationMetadata,
             @Nullable Argument[] typeArguments) {
         this.introspection = introspection;
@@ -75,18 +74,16 @@ public abstract class AbstractBeanProperty<B, P> implements UnsafeBeanProperty<B
         this.typeOrWrapperType = ReflectionUtils.getWrapperType(type);
     }
 
-    @Override public @NonNull String getName() {
+    @Override public String getName() {
         return name;
     }
 
-    @NonNull
     @Override
     public Class<P> getType() {
         return type;
     }
 
     @Override
-    @NonNull
     public Argument<P> asArgument() {
         if (typeArguments != null) {
             return Argument.of(type, name, getAnnotationMetadata(), typeArguments);
@@ -95,7 +92,6 @@ public abstract class AbstractBeanProperty<B, P> implements UnsafeBeanProperty<B
         }
     }
 
-    @NonNull
     @Override
     public final BeanIntrospection<B> getDeclaringBean() {
         return introspection;
@@ -108,7 +104,7 @@ public abstract class AbstractBeanProperty<B, P> implements UnsafeBeanProperty<B
 
     @Nullable
     @Override
-    public final P get(@NonNull B bean) {
+    public final P get(B bean) {
         ArgumentUtils.requireNonNull("bean", bean);
 
         if (!beanType.isInstance(bean)) {
@@ -126,7 +122,7 @@ public abstract class AbstractBeanProperty<B, P> implements UnsafeBeanProperty<B
     }
 
     @Override
-    public B withValue(@NonNull B bean, @Nullable P value) {
+    public B withValue(B bean, @Nullable P value) {
         ArgumentUtils.requireNonNull("bean", bean);
 
         if (!beanType.isInstance(bean)) {
@@ -145,7 +141,7 @@ public abstract class AbstractBeanProperty<B, P> implements UnsafeBeanProperty<B
     }
 
     @Override
-    public final void set(@NonNull B bean, @Nullable P value) {
+    public final void set(B bean, @Nullable P value) {
         ArgumentUtils.requireNonNull("bean", bean);
 
         if (!beanType.isInstance(bean)) {
@@ -192,7 +188,7 @@ public abstract class AbstractBeanProperty<B, P> implements UnsafeBeanProperty<B
     @SuppressWarnings("WeakerAccess")
     @UsedByGeneratedCode
     @Internal
-    protected abstract void writeInternal(@NonNull B bean, @Nullable P value);
+    protected abstract void writeInternal(B bean, @Nullable P value);
 
     /**
      * Reads the bean property.
@@ -202,7 +198,7 @@ public abstract class AbstractBeanProperty<B, P> implements UnsafeBeanProperty<B
     @SuppressWarnings("WeakerAccess")
     @UsedByGeneratedCode
     @Internal
-    protected abstract P readInternal(@NonNull B bean);
+    protected abstract P readInternal(B bean);
 
     @Override
     public boolean equals(Object o) {

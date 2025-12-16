@@ -15,8 +15,6 @@
  */
 package io.micronaut.core.naming;
 
-import org.jspecify.annotations.NonNull;
-
 /**
  * An interface for types that are described by a description.
  *
@@ -30,7 +28,7 @@ public interface Described {
      *
      * @return The description
      */
-    @NonNull String getDescription();
+    String getDescription();
 
     /**
      * Allows returning a more simple description if requested.
@@ -38,7 +36,7 @@ public interface Described {
      * @param simple True if a simple description is required
      * @return The simple description
      */
-    default @NonNull String getDescription(boolean simple) {
+    default String getDescription(boolean simple) {
         return getDescription();
     }
 }
