@@ -15,7 +15,6 @@
  */
 package io.micronaut.core.io.service;
 
-import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import io.micronaut.core.optim.StaticOptimizations;
 import io.micronaut.core.reflect.ClassUtils;
@@ -165,7 +164,7 @@ public final class SoftServiceLoader<S> implements Iterable<ServiceDefinition<S>
      * @param predicate The predicated to filter the instances or null if not needed.
      */
     @SuppressWarnings("unchecked")
-    public void collectAll(@NonNull Collection<S> values, @Nullable Predicate<S> predicate) {
+    public void collectAll(Collection<S> values, @Nullable Predicate<S> predicate) {
         String name = serviceType.getName();
         SoftServiceLoader.StaticServiceLoader<?> serviceLoader = STATIC_SERVICES.get(name);
         if (serviceLoader != null) {
@@ -208,7 +207,7 @@ public final class SoftServiceLoader<S> implements Iterable<ServiceDefinition<S>
      *
      * @param values The collection to be populated.
      */
-    public void collectAll(@NonNull Collection<S> values) {
+    public void collectAll(Collection<S> values) {
         collectAll(values, null);
     }
 
@@ -237,7 +236,7 @@ public final class SoftServiceLoader<S> implements Iterable<ServiceDefinition<S>
      * @return The iterator
      */
     @Override
-    @NonNull
+    
     public Iterator<ServiceDefinition<S>> iterator() {
         if (servicesForIterator == null) {
             if (STATIC_SERVICES.containsKey(serviceType.getName())) {

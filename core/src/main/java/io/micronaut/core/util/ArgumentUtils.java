@@ -15,7 +15,6 @@
  */
 package io.micronaut.core.util;
 
-import org.jspecify.annotations.NonNull;
 import io.micronaut.core.naming.Described;
 import io.micronaut.core.type.Argument;
 import io.micronaut.core.type.Executable;
@@ -38,7 +37,7 @@ public class ArgumentUtils {
      * @throws IllegalArgumentException if the argument is not positive
      * @return The value
      */
-    public static @NonNull Number requirePositive(String name, Number value) {
+    public static Number requirePositive(String name, Number value) {
         requireNonNull(name, value);
         requirePositive(name, value.intValue());
         return value;
@@ -104,9 +103,9 @@ public class ArgumentUtils {
      * @param values The values
      */
     public static void validateArguments(
-            @NonNull Described described,
-            @NonNull Argument<?>[] arguments,
-            @NonNull Object[] values) {
+            Described described,
+            Argument<?>[] arguments,
+            Object[] values) {
         int requiredCount = arguments.length;
         @SuppressWarnings("ConstantConditions") int actualCount = ArrayUtils.isEmpty(values) ? 0 : values.length;
         if (requiredCount != actualCount) {

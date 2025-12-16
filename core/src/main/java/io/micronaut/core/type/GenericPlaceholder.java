@@ -15,7 +15,6 @@
  */
 package io.micronaut.core.type;
 
-import org.jspecify.annotations.NonNull;
 
 /**
  * Extends {@link Argument} to allow differentiating the
@@ -30,7 +29,7 @@ public interface GenericPlaceholder<T> extends Argument<T> {
     /**
      * @return The variable name, never {@code null}.
      */
-    @NonNull
+    
     default String getVariableName() {
         return getName();
     }

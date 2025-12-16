@@ -15,7 +15,6 @@
  */
 package io.micronaut.core.type;
 
-import org.jspecify.annotations.NonNull;
 
 /**
  * An interface for types that can be represented as an {@link Argument}.
@@ -28,5 +27,5 @@ public interface ArgumentCoercible<T> {
     /**
      * @return The argument
      */
-    @NonNull Argument<T> asArgument();
+    Argument<T> asArgument();
 }

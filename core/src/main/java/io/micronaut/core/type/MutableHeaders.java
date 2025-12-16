@@ -16,7 +16,6 @@
 package io.micronaut.core.type;
 
 
-import org.jspecify.annotations.NonNull;
 
 /**
  * Common interface for all mutable header types.
@@ -50,8 +49,8 @@ public interface MutableHeaders extends Headers {
      * @return This headers
      * @since 1.3.3
      */
-    @NonNull
-    default MutableHeaders set(@NonNull CharSequence header, @NonNull CharSequence value) {
+    
+    default MutableHeaders set(CharSequence header, CharSequence value) {
         remove(header);
         add(header, value);
         return this;
@@ -65,8 +64,8 @@ public interface MutableHeaders extends Headers {
      * @return This headers
      * @since 4.6
      */
-    @NonNull
-    default MutableHeaders setIfMissing(@NonNull CharSequence header, @NonNull CharSequence value) {
+    
+    default MutableHeaders setIfMissing(CharSequence header, CharSequence value) {
         if (!contains(header.toString())) {
             add(header, value);
         }

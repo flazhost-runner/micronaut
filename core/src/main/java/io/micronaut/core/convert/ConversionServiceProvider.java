@@ -15,7 +15,6 @@
  */
 package io.micronaut.core.convert;
 
-import org.jspecify.annotations.NonNull;
 
 /**
  * Interface for a component to provide the access to its {@link ConversionService}.
@@ -30,7 +29,7 @@ public interface ConversionServiceProvider {
      *
      * @return the conversion service
      */
-    @NonNull
+    
     ConversionService getConversionService();
 
 }

@@ -17,7 +17,6 @@ package io.micronaut.core.type;
 
 import io.micronaut.core.annotation.AnnotatedElement;
 import io.micronaut.core.annotation.AnnotationMetadata;
-import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import io.micronaut.core.annotation.UsedByGeneratedCode;
 import io.micronaut.core.reflect.ReflectionUtils;
@@ -128,7 +127,7 @@ public interface Argument<T> extends TypeInformation<T>, AnnotatedElement, Type 
      * @return The name of the argument
      */
     @Override
-    @NonNull
+    
     String getName();
 
     /**
@@ -178,7 +177,7 @@ public interface Argument<T> extends TypeInformation<T>, AnnotatedElement, Type 
      * @return True if it is assignable from.
      * @since 3.0.0
      */
-    default boolean isAssignableFrom(@NonNull Class<?> candidateType) {
+    default boolean isAssignableFrom(Class<?> candidateType) {
         return getType().isAssignableFrom(Objects.requireNonNull(candidateType, "Candidate type cannot be null"));
     }
 
@@ -189,7 +188,7 @@ public interface Argument<T> extends TypeInformation<T>, AnnotatedElement, Type 
      * @return True if it is assignable from.
      * @since 3.0.0
      */
-    default boolean isAssignableFrom(@NonNull Argument<?> candidateArgument) {
+    default boolean isAssignableFrom(Argument<?> candidateArgument) {
         Objects.requireNonNull(candidateArgument, "Candidate type cannot be null");
         if (!isAssignableFrom(candidateArgument.getType())) {
             return false;
@@ -225,7 +224,7 @@ public interface Argument<T> extends TypeInformation<T>, AnnotatedElement, Type 
      * @return A new argument
      * @since 4.6
      */
-    @NonNull
+    
     default Argument<T> withName(@Nullable String name) {
         return Argument.of(getType(), name, getAnnotationMetadata(), getTypeParameters());
     }
@@ -236,8 +235,8 @@ public interface Argument<T> extends TypeInformation<T>, AnnotatedElement, Type 
      * @return A new argument
      * @since 4.6
      */
-    @NonNull
-    default Argument<T> withAnnotationMetadata(@NonNull AnnotationMetadata annotationMetadata) {
+    
+    default Argument<T> withAnnotationMetadata(AnnotationMetadata annotationMetadata) {
         return Argument.of(getType(), getName(), annotationMetadata, getTypeParameters());
     }
 
@@ -247,7 +246,7 @@ public interface Argument<T> extends TypeInformation<T>, AnnotatedElement, Type 
      * @param arguments The arguments
      * @return The class array
      */
-    static @NonNull
+    static 
     Class<?>[] toClassArray(@Nullable Argument<?>... arguments) {
         if (ArrayUtils.isEmpty(arguments)) {
             return ReflectionUtils.EMPTY_CLASS_ARRAY;
@@ -266,7 +265,7 @@ public interface Argument<T> extends TypeInformation<T>, AnnotatedElement, Type 
      * @param arguments The arguments
      * @return The String representation
      */
-    static @NonNull
+    static 
     String toString(@Nullable Argument<?>... arguments) {
         if (ArrayUtils.isNotEmpty(arguments)) {
             StringBuilder baseString = new StringBuilder();
@@ -293,9 +292,9 @@ public interface Argument<T> extends TypeInformation<T>, AnnotatedElement, Type 
      * @return The argument instance
      */
     @UsedByGeneratedCode
-    @NonNull
+    
     static <T> Argument<T> of(
-            @NonNull Class<T> type,
+            Class<T> type,
             @Nullable String name,
             @Nullable Argument<?>... typeParameters) {
         return new DefaultArgument<>(type, name, AnnotationMetadata.EMPTY_METADATA, typeParameters);
@@ -313,9 +312,9 @@ public interface Argument<T> extends TypeInformation<T>, AnnotatedElement, Type 
      * @since 3.0.0
      */
     @UsedByGeneratedCode
-    @NonNull
+    
     static <T> Argument<T> ofTypeVariable(
-            @NonNull Class<T> type,
+            Class<T> type,
             @Nullable String name,
             @Nullable AnnotationMetadata annotationMetadata,
             @Nullable Argument<?>... typeParameters) {
@@ -335,11 +334,11 @@ public interface Argument<T> extends TypeInformation<T>, AnnotatedElement, Type 
      * @since 3.2.0
      */
     @UsedByGeneratedCode
-    @NonNull
+    
     static <T> Argument<T> ofTypeVariable(
-            @NonNull Class<T> type,
+            Class<T> type,
             @Nullable String argumentName,
-            @NonNull String variableName,
+            String variableName,
             @Nullable AnnotationMetadata annotationMetadata,
             @Nullable Argument<?>... typeParameters) {
         Objects.requireNonNull(variableName, "Variable name cannot be null");
@@ -362,9 +361,9 @@ public interface Argument<T> extends TypeInformation<T>, AnnotatedElement, Type 
      * @since 3.0.0
      */
     @UsedByGeneratedCode
-    @NonNull
+    
     static <T> Argument<T> ofTypeVariable(
-            @NonNull Class<T> type,
+            Class<T> type,
             @Nullable String name) {
         return new DefaultGenericPlaceholder<>(type, name, AnnotationMetadata.EMPTY_METADATA);
     }
@@ -380,11 +379,11 @@ public interface Argument<T> extends TypeInformation<T>, AnnotatedElement, Type 
      * @since 3.2.0
      */
     @UsedByGeneratedCode
-    @NonNull
+    
     static <T> Argument<T> ofTypeVariable(
-            @NonNull Class<T> type,
+            Class<T> type,
             @Nullable String argumentName,
-            @NonNull String variableName) {
+            String variableName) {
         return new DefaultGenericPlaceholder<>(type, argumentName, variableName, AnnotationMetadata.EMPTY_METADATA);
     }
 
@@ -399,9 +398,9 @@ public interface Argument<T> extends TypeInformation<T>, AnnotatedElement, Type 
      * @return The argument instance
      */
     @UsedByGeneratedCode
-    @NonNull
+    
     static <T> Argument<T> of(
-            @NonNull Class<T> type,
+            Class<T> type,
             @Nullable String name,
             @Nullable AnnotationMetadata annotationMetadata,
             @Nullable Argument<?>... typeParameters) {
@@ -418,9 +417,9 @@ public interface Argument<T> extends TypeInformation<T>, AnnotatedElement, Type 
      * @return The argument instance
      */
     @UsedByGeneratedCode
-    @NonNull
+    
     static <T> Argument<T> of(
-            @NonNull Class<T> type,
+            Class<T> type,
             @Nullable AnnotationMetadata annotationMetadata,
             @Nullable Argument<?>... typeParameters) {
         return new DefaultArgument<>(type, annotationMetadata, typeParameters);
@@ -435,9 +434,9 @@ public interface Argument<T> extends TypeInformation<T>, AnnotatedElement, Type 
      * @return The argument instance
      */
     @UsedByGeneratedCode
-    @NonNull
+    
     static <T> Argument<T> of(
-            @NonNull Class<T> type,
+            Class<T> type,
             @Nullable String name) {
         return new DefaultArgument<>(type, name, AnnotationMetadata.EMPTY_METADATA, Argument.ZERO_ARGUMENTS);
     }
@@ -451,9 +450,9 @@ public interface Argument<T> extends TypeInformation<T>, AnnotatedElement, Type 
      * @return The argument instance
      */
     @UsedByGeneratedCode
-    @NonNull
+    
     static <T> Argument<T> of(
-            @NonNull Class<T> type,
+            Class<T> type,
             @Nullable Argument<?>... typeParameters) {
         if (ArrayUtils.isEmpty(typeParameters)) {
             return of(type);
@@ -469,8 +468,8 @@ public interface Argument<T> extends TypeInformation<T>, AnnotatedElement, Type 
      * @throws IllegalArgumentException If the type cannot be coerced
      * @since 3.0.0
      */
-    static @NonNull
-    Argument<?> of(@NonNull Type type) {
+    static 
+    Argument<?> of(Type type) {
         Objects.requireNonNull(type, "Type cannot be null");
         if (type instanceof Class class1) {
             return Argument.of(class1);
@@ -509,9 +508,9 @@ public interface Argument<T> extends TypeInformation<T>, AnnotatedElement, Type 
      * @return The argument instance
      */
     @UsedByGeneratedCode
-    @NonNull
+    
     static <T> Argument<T> of(
-            @NonNull Class<T> type) {
+            Class<T> type) {
         return new DefaultArgument<>(type, null, AnnotationMetadata.EMPTY_METADATA, Collections.emptyMap(), Argument.ZERO_ARGUMENTS);
     }
 
@@ -523,8 +522,8 @@ public interface Argument<T> extends TypeInformation<T>, AnnotatedElement, Type 
      * @return The argument instance
      * @since 4.6
      */
-    @NonNull
-    static <T> Argument<T> ofInstance(@NonNull T instance) {
+    
+    static <T> Argument<T> ofInstance(T instance) {
         return Argument.of((Class<T>) instance.getClass());
     }
 
@@ -537,8 +536,8 @@ public interface Argument<T> extends TypeInformation<T>, AnnotatedElement, Type 
      * @return The argument instance
      */
     @UsedByGeneratedCode
-    @NonNull
-    static <T> Argument<T> of(@NonNull Class<T> type, @Nullable Class<?>... typeParameters) {
+    
+    static <T> Argument<T> of(Class<T> type, @Nullable Class<?>... typeParameters) {
         return of(type, AnnotationMetadata.EMPTY_METADATA, typeParameters);
     }
 
@@ -554,8 +553,8 @@ public interface Argument<T> extends TypeInformation<T>, AnnotatedElement, Type 
      * @since 3.0.0
      */
     @UsedByGeneratedCode
-    @NonNull
-    static <T> Argument<T> of(@NonNull Class<T> type, @Nullable AnnotationMetadata annotationMetadata, @Nullable Class<?>[] typeParameters) {
+    
+    static <T> Argument<T> of(Class<T> type, @Nullable AnnotationMetadata annotationMetadata, @Nullable Class<?>[] typeParameters) {
         if (ArrayUtils.isEmpty(typeParameters)) {
             return of(type, annotationMetadata);
         }
@@ -580,8 +579,8 @@ public interface Argument<T> extends TypeInformation<T>, AnnotatedElement, Type 
      * @param <T>  list element type
      * @return The argument instance
      */
-    @NonNull
-    static <T> Argument<List<T>> listOf(@NonNull Class<T> type) {
+    
+    static <T> Argument<List<T>> listOf(Class<T> type) {
         return listOf(Argument.of(type, "E"));
     }
 
@@ -593,8 +592,8 @@ public interface Argument<T> extends TypeInformation<T>, AnnotatedElement, Type 
      * @return The argument instance
      * @since 2.0.1
      */
-    @NonNull
-    static <T> Argument<List<T>> listOf(@NonNull Argument<T> type) {
+    
+    static <T> Argument<List<T>> listOf(Argument<T> type) {
         //noinspection unchecked
         return of((Class<List<T>>) ((Class) List.class), "list", type);
     }
@@ -606,8 +605,8 @@ public interface Argument<T> extends TypeInformation<T>, AnnotatedElement, Type 
      * @param <T>  set element type
      * @return The argument instance
      */
-    @NonNull
-    static <T> Argument<Set<T>> setOf(@NonNull Class<T> type) {
+    
+    static <T> Argument<Set<T>> setOf(Class<T> type) {
         return setOf(Argument.of(type, "E"));
     }
 
@@ -619,8 +618,8 @@ public interface Argument<T> extends TypeInformation<T>, AnnotatedElement, Type 
      * @return The argument instance
      * @since 2.0.1
      */
-    @NonNull
-    static <T> Argument<Set<T>> setOf(@NonNull Argument<T> type) {
+    
+    static <T> Argument<Set<T>> setOf(Argument<T> type) {
         //noinspection unchecked
         return of((Class<Set<T>>) ((Class) Set.class), "set", type);
     }
@@ -634,8 +633,8 @@ public interface Argument<T> extends TypeInformation<T>, AnnotatedElement, Type 
      * @param <V>       The map value type
      * @return The argument instance
      */
-    @NonNull
-    static <K, V> Argument<Map<K, V>> mapOf(@NonNull Class<K> keyType, @NonNull Class<V> valueType) {
+    
+    static <K, V> Argument<Map<K, V>> mapOf(Class<K> keyType, Class<V> valueType) {
         return mapOf(Argument.of(keyType, "K"), Argument.of(valueType, "V"));
     }
 
@@ -649,8 +648,8 @@ public interface Argument<T> extends TypeInformation<T>, AnnotatedElement, Type 
      * @return The argument instance
      * @since 2.0.1
      */
-    @NonNull
-    static <K, V> Argument<Map<K, V>> mapOf(@NonNull Argument<K> keyType, @NonNull Argument<V> valueType) {
+    
+    static <K, V> Argument<Map<K, V>> mapOf(Argument<K> keyType, Argument<V> valueType) {
         //noinspection unchecked
         return of((Class<Map<K, V>>) ((Class) Map.class), "map", keyType, valueType);
     }
@@ -663,8 +662,8 @@ public interface Argument<T> extends TypeInformation<T>, AnnotatedElement, Type 
      * @return The argument instance
      * @since 4.0.0
      */
-    @NonNull
-    static <T> Argument<Optional<T>> optionalOf(@NonNull Class<T> optionalValueClass) {
+    
+    static <T> Argument<Optional<T>> optionalOf(Class<T> optionalValueClass) {
         return optionalOf(Argument.of(optionalValueClass, "T"));
     }
 
@@ -676,8 +675,8 @@ public interface Argument<T> extends TypeInformation<T>, AnnotatedElement, Type 
      * @return The argument instance
      * @since 4.0.0
      */
-    @NonNull
-    static <T> Argument<Optional<T>> optionalOf(@NonNull Argument<T> optionalValueArgument) {
+    
+    static <T> Argument<Optional<T>> optionalOf(Argument<T> optionalValueArgument) {
         //noinspection unchecked
         return of((Class<Optional<T>>) ((Class) Optional.class), "optional", optionalValueArgument);
     }
