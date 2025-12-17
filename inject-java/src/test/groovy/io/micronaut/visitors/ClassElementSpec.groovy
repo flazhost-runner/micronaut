@@ -40,7 +40,7 @@ import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Null
 import spock.lang.IgnoreIf
 import spock.lang.Issue
-import spock.lang.PendingFeature
+import spock.lang.Requires
 import spock.lang.Unroll
 import spock.util.environment.Jvm
 
@@ -50,7 +50,7 @@ import java.util.function.Supplier
 
 class ClassElementSpec extends AbstractTypeElementSpec {
 
-    @PendingFeature(reason = "Javac bug - missing type annotations in compiled class")
+    @Requires({Jvm.current.isJava22Compatible()})
     void "test external type annotation nullable property"() {
         expect:
         buildClassElement('''
