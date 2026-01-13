@@ -324,7 +324,7 @@ internal class KotlinAnnotationMetadataBuilder(
         }
     }
 
-    override fun isValidationRequired(member: KSAnnotated?): Boolean {
+    override fun isValidationRequired(member: KSAnnotated): Boolean {
         if (member != null) {
             return member.annotations.any {
                 val name = it.annotationType.resolve().declaration.qualifiedName?.asString()
@@ -352,7 +352,7 @@ internal class KotlinAnnotationMetadataBuilder(
         annotationName: String,
         memberName: String,
         annotationValue: Any
-    ): Any? {
+    ): Any {
         val property = member as KSPropertyDeclaration
         return when (annotationValue) {
             is Collection<*> -> {
@@ -380,7 +380,7 @@ internal class KotlinAnnotationMetadataBuilder(
         annotationValue: Collection<*>,
         element: KSAnnotated,
         type: KSTypeReference
-    ): Array<out Any>? {
+    ): Array<out Any> {
         var valueType = Any::class.java
         if (annotationValue.isEmpty()) {
             val arrayType = type.resolve()
@@ -392,11 +392,9 @@ internal class KotlinAnnotationMetadataBuilder(
                 }
             }
         }
-        val collection = annotationValue.mapNotNull {
+        val collection = annotationValue.filterNotNull().map {
             val v = readAnnotationValue(element, it)
-            if (v != null) {
-                valueType = v.javaClass
-            }
+            valueType = v.javaClass
             v
         } // annotation values can't be null
         return ArrayUtils.toArray(collection, valueType)
@@ -456,7 +454,7 @@ internal class KotlinAnnotationMetadataBuilder(
 
     override fun <K : Annotation> getAnnotationValues(
         originatingElement: KSAnnotated,
-        member: KSAnnotated?,
+        member: KSAnnotated,
         annotationType: Class<K>
     ): Optional<AnnotationValue<K>> {
         val annotationMirrors: MutableList<KSAnnotation> = (member as KSPropertyDeclaration).getter!!.annotations.toMutableList()
@@ -576,9 +574,11 @@ internal class KotlinAnnotationMetadataBuilder(
         var stringValue: String? = null
         if (retention != null) {
             val value = retention.arguments.find { it.name?.asString() == "value" }?.value
-            val retentionValue = readAnnotationValue(annotation, value)
-            if (retentionValue != null) {
-                stringValue = retentionValue.toString().replace(java.lang.annotation.Retention::class.java.name + ".", "")
+            if (value != null) {
+                stringValue =
+                    readAnnotationValue(annotation, value)
+                        .toString()
+                        .replace(java.lang.annotation.Retention::class.java.name + ".", "")
             }
         }
         if (stringValue == null) {
@@ -587,9 +587,11 @@ internal class KotlinAnnotationMetadataBuilder(
             }
             if (retention != null) {
                 val value = retention.arguments.find { it.name?.asString() == "value" }?.value
-                val retentionValue = readAnnotationValue(annotation, value)
-                if (retentionValue != null) {
-                    stringValue = retentionValue.toString().replace(Retention::class.java.name + ".", "")
+                if (value != null) {
+                    stringValue =
+                        readAnnotationValue(annotation, value)
+                            .toString()
+                            .replace(Retention::class.java.name + ".", "")
                 }
             }
         }
@@ -600,10 +602,7 @@ internal class KotlinAnnotationMetadataBuilder(
         }
     }
 
-    private fun readAnnotationValue(originatingElement: KSAnnotated, value: Any?): Any? {
-        if (value == null) {
-            return null
-        }
+    private fun readAnnotationValue(originatingElement: KSAnnotated, value: Any): Any {
         if (value is KSType) {
             return readKSType(value)
         }
@@ -616,7 +615,7 @@ internal class KotlinAnnotationMetadataBuilder(
         return value
     }
 
-    private fun readKSType(value: KSType): CharSequence? {
+    private fun readKSType(value: KSType): CharSequence {
         val declaration = value.declaration
         if (declaration is KSClassDeclaration) {
             return readKSClassDeclaration(declaration)
@@ -627,9 +626,9 @@ internal class KotlinAnnotationMetadataBuilder(
         throw IllegalStateException("Unknown annotation element: $value $declaration " + declaration.javaClass)
     }
 
-    private fun readKSClassDeclaration(declaration: KSClassDeclaration): CharSequence? {
+    private fun readKSClassDeclaration(declaration: KSClassDeclaration): CharSequence {
         if (declaration.classKind == ClassKind.ENUM_ENTRY) {
-            return declaration.qualifiedName?.getShortName()
+            return declaration.qualifiedName!!.getShortName()
         }
         if (declaration.classKind == ClassKind.CLASS ||
             declaration.classKind == ClassKind.OBJECT ||
