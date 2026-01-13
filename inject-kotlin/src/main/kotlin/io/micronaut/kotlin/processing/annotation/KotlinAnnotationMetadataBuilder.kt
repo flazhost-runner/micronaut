@@ -317,25 +317,16 @@ internal class KotlinAnnotationMetadataBuilder(
     ) {
         if (!annotationValues.containsKey(memberName)) {
             val value = readAnnotationValue(originatingElement, member, annotationName, memberName, annotationValue)
-            if (value != null) {
-                validateAnnotationValue(originatingElement, annotationName, member, memberName, value)
-                annotationValues[memberName] = value
-            }
+            validateAnnotationValue(originatingElement, annotationName, member, memberName, value)
+            annotationValues[memberName] = value
         }
     }
 
     override fun isValidationRequired(member: KSAnnotated): Boolean {
-        if (member != null) {
-            return member.annotations.any {
-                val name = it.annotationType.resolve().declaration.qualifiedName?.asString()
-                if (name != null) {
-                    return name.startsWith("jakarta.validation")
-                } else {
-                    return false
-                }
-            }
+        return member.annotations.any {
+            val name = it.annotationType.resolve().declaration.qualifiedName?.asString()
+            return name?.startsWith("jakarta.validation") ?: false
         }
-        return false
     }
 
     override fun addError(originatingElement: KSAnnotated, error: String) {
@@ -363,14 +354,14 @@ internal class KotlinAnnotationMetadataBuilder(
             }
             else -> {
                 if (isEvaluatedExpression(annotationValue)) {
-                    return buildEvaluatedExpressionReference(
+                    buildEvaluatedExpressionReference(
                         originatingElement,
                         annotationName,
                         memberName,
                         annotationValue
                     )
                 } else {
-                    return readAnnotationValue(originatingElement, annotationValue)
+                    readAnnotationValue(originatingElement, annotationValue)
                 }
             }
         }
