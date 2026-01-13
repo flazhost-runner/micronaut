@@ -17,7 +17,6 @@ package io.micronaut.annotation.processing.visitor;
 
 import io.micronaut.core.annotation.AnnotationMetadata;
 import io.micronaut.core.annotation.Internal;
-import org.jspecify.annotations.NonNull;
 import io.micronaut.inject.ast.ClassElement;
 import io.micronaut.inject.ast.FieldElement;
 import io.micronaut.inject.ast.MemberElement;
@@ -78,7 +77,7 @@ class JavaFieldElement extends AbstractJavaMemberElement implements FieldElement
     }
 
     @Override
-    public JavaNativeElement.@NonNull Variable getNativeType() {
+    public JavaNativeElement.Variable getNativeType() {
         return (JavaNativeElement.Variable) super.getNativeType();
     }
 
@@ -97,7 +96,6 @@ class JavaFieldElement extends AbstractJavaMemberElement implements FieldElement
         return variableElement.getConstantValue();
     }
 
-    @NonNull
     @Override
     public ClassElement getType() {
         if (type == null) {
@@ -109,7 +107,6 @@ class JavaFieldElement extends AbstractJavaMemberElement implements FieldElement
         return type;
     }
 
-    @NonNull
     @Override
     public ClassElement getGenericType() {
         if (genericType == null) {
@@ -157,7 +154,7 @@ class JavaFieldElement extends AbstractJavaMemberElement implements FieldElement
     }
 
     @Override
-    public boolean hides(@NonNull MemberElement hidden) {
+    public boolean hides(MemberElement hidden) {
         if (isStatic() && getDeclaringType().isInterface()) {
             return false;
         }

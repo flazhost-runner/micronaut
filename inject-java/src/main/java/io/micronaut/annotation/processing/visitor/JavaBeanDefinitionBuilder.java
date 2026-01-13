@@ -24,7 +24,6 @@ import io.micronaut.core.annotation.AnnotationMetadata;
 import io.micronaut.core.annotation.AnnotationValue;
 import io.micronaut.core.annotation.AnnotationValueBuilder;
 import io.micronaut.core.annotation.Internal;
-import org.jspecify.annotations.NonNull;
 import io.micronaut.core.util.ArgumentUtils;
 import io.micronaut.inject.annotation.AnnotationMetadataHierarchy;
 import io.micronaut.inject.ast.ClassElement;
@@ -77,7 +76,6 @@ class JavaBeanDefinitionBuilder extends AbstractBeanDefinitionBuilder {
         this.annotationMetadataBuilder = visitorContext.getAnnotationMetadataBuilder();
     }
 
-    @NonNull
     @Override
     protected AbstractBeanDefinitionBuilder createChildBean(FieldElement producerField) {
         final ClassElement parentType = getBeanType();
@@ -88,12 +86,12 @@ class JavaBeanDefinitionBuilder extends AbstractBeanDefinitionBuilder {
             (JavaVisitorContext) JavaBeanDefinitionBuilder.this.visitorContext
         ) {
             @Override
-            public @NonNull Element getProducingElement() {
+            public Element getProducingElement() {
                 return producerField;
             }
 
             @Override
-            public @NonNull ClassElement getDeclaringElement() {
+            public ClassElement getDeclaringElement() {
                 return producerField.getDeclaringType();
             }
 
@@ -112,7 +110,6 @@ class JavaBeanDefinitionBuilder extends AbstractBeanDefinitionBuilder {
         };
     }
 
-    @NonNull
     @Override
     protected BeanDefinitionVisitor createAopWriter(BeanDefinitionWriter beanDefinitionWriter, AnnotationMetadata annotationMetadata) {
         AnnotationValue<?>[] interceptorTypes =
@@ -126,7 +123,6 @@ class JavaBeanDefinitionBuilder extends AbstractBeanDefinitionBuilder {
         );
     }
 
-    @NonNull
     @Override
     protected BiConsumer<TypedElement, MethodElement> createAroundMethodVisitor(BeanDefinitionVisitor aopWriter) {
         AopProxyWriter aopProxyWriter = (AopProxyWriter) aopWriter;
@@ -140,7 +136,6 @@ class JavaBeanDefinitionBuilder extends AbstractBeanDefinitionBuilder {
         };
     }
 
-    @NonNull
     @Override
     protected AbstractBeanDefinitionBuilder createChildBean(MethodElement producerMethod) {
         final ClassElement parentType = getBeanType();
@@ -152,13 +147,11 @@ class JavaBeanDefinitionBuilder extends AbstractBeanDefinitionBuilder {
         ) {
             BeanParameterElement[] parameters;
 
-            @NonNull
             @Override
             public Element getProducingElement() {
                 return producerMethod;
             }
 
-            @NonNull
             @Override
             public ClassElement getDeclaringElement() {
                 return producerMethod.getDeclaringType();
@@ -190,7 +183,7 @@ class JavaBeanDefinitionBuilder extends AbstractBeanDefinitionBuilder {
     }
 
     @Override
-    protected <T extends Annotation> void annotate(@NonNull AnnotationMetadata annotationMetadata, @NonNull AnnotationValue<T> annotationValue) {
+    protected <T extends Annotation> void annotate(AnnotationMetadata annotationMetadata, AnnotationValue<T> annotationValue) {
         ArgumentUtils.requireNonNull("annotationMetadata", annotationMetadata);
         ArgumentUtils.requireNonNull("annotationValue", annotationValue);
         annotationMetadataBuilder.annotate(annotationMetadata, annotationValue);

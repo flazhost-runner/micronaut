@@ -20,7 +20,6 @@ import com.github.javaparser.javadoc.Javadoc;
 import com.github.javaparser.javadoc.JavadocBlockTag;
 import io.micronaut.core.annotation.AnnotationMetadata;
 import io.micronaut.core.annotation.Internal;
-import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import io.micronaut.core.util.ArrayUtils;
 import io.micronaut.core.util.CollectionUtils;
@@ -100,20 +99,18 @@ public class JavaMethodElement extends AbstractJavaMemberElement implements Meth
         return helper.getMethodAnnotationMetadata(presetAnnotationMetadata);
     }
 
-    @NonNull
     @Override
     public ElementAnnotationMetadata getMethodAnnotationMetadata() {
         return helper.getMethodAnnotationMetadata(presetAnnotationMetadata);
     }
 
-    @NonNull
     @Override
     public AnnotationMetadata getAnnotationMetadata() {
         return helper.getAnnotationMetadata(presetAnnotationMetadata);
     }
 
     @Override
-    public JavaNativeElement.@NonNull Method getNativeType() {
+    public JavaNativeElement.Method getNativeType() {
         return (JavaNativeElement.Method) super.getNativeType();
     }
 
@@ -134,7 +131,7 @@ public class JavaMethodElement extends AbstractJavaMemberElement implements Meth
     }
 
     @Override
-    public @NonNull MethodElement withParameters(ParameterElement... parameters) {
+    public MethodElement withParameters(ParameterElement... parameters) {
         JavaMethodElement methodElement = (JavaMethodElement) makeCopy();
         methodElement.parameters = parameters;
         return methodElement;
@@ -153,7 +150,7 @@ public class JavaMethodElement extends AbstractJavaMemberElement implements Meth
     }
 
     @Override
-    public ClassElement @NonNull [] getThrownTypes() {
+    public ClassElement[] getThrownTypes() {
         final List<? extends TypeMirror> thrownTypes = executableElement.getThrownTypes();
         if (!thrownTypes.isEmpty()) {
             return thrownTypes.stream()
@@ -175,7 +172,7 @@ public class JavaMethodElement extends AbstractJavaMemberElement implements Meth
     }
 
     @Override
-    public boolean overrides(@NonNull MethodElement overridden) {
+    public boolean overrides(MethodElement overridden) {
         if (equals(overridden) || isStatic() || overridden.isStatic() || isPrivate() || overridden.isPrivate()) {
             return false;
         }
@@ -205,7 +202,7 @@ public class JavaMethodElement extends AbstractJavaMemberElement implements Meth
     }
 
     @Override
-    public boolean hides(@NonNull MethodElement hiddenMethod) {
+    public boolean hides(MethodElement hiddenMethod) {
         if (isStatic() && getDeclaringType().isInterface()) {
             return false;
         }
@@ -215,7 +212,6 @@ public class JavaMethodElement extends AbstractJavaMemberElement implements Meth
         return MethodElement.super.hides(hiddenMethod);
     }
 
-    @NonNull
     @Override
     public ClassElement getGenericReturnType() {
         if (genericReturnType == null) {
@@ -225,7 +221,6 @@ public class JavaMethodElement extends AbstractJavaMemberElement implements Meth
     }
 
     @Override
-    @NonNull
     public ClassElement getReturnType() {
         if (returnType == null) {
             returnType = returnType(Collections.emptyMap());
@@ -241,7 +236,7 @@ public class JavaMethodElement extends AbstractJavaMemberElement implements Meth
     }
 
     @Override
-    public @NonNull Map<String, ClassElement> getTypeArguments() {
+    public Map<String, ClassElement> getTypeArguments() {
         if (typeArguments == null) {
             typeArguments = MethodElement.super.getTypeArguments();
         }
@@ -249,7 +244,7 @@ public class JavaMethodElement extends AbstractJavaMemberElement implements Meth
     }
 
     @Override
-    public @NonNull Map<String, ClassElement> getDeclaredTypeArguments() {
+    public Map<String, ClassElement> getDeclaredTypeArguments() {
         if (declaredTypeArguments == null) {
             declaredTypeArguments = resolveTypeArguments(executableElement, getDeclaringType().getTypeArguments());
         }
@@ -281,7 +276,7 @@ public class JavaMethodElement extends AbstractJavaMemberElement implements Meth
     }
 
     @Override
-    public @NonNull MethodElement withNewOwningType(@NonNull ClassElement owningType) {
+    public MethodElement withNewOwningType(ClassElement owningType) {
         JavaMethodElement javaMethodElement = new JavaMethodElement((JavaClassElement) owningType, getNativeType(), elementAnnotationMetadataFactory, visitorContext);
         copyValues(javaMethodElement);
         return javaMethodElement;
@@ -304,8 +299,7 @@ public class JavaMethodElement extends AbstractJavaMemberElement implements Meth
      * @param variableElement The variable element
      * @return The parameter element
      */
-    @NonNull
-    JavaParameterElement newParameterElement(@NonNull JavaMethodElement methodElement, @NonNull VariableElement variableElement) {
+    JavaParameterElement newParameterElement(JavaMethodElement methodElement, VariableElement variableElement) {
         return new JavaParameterElement(owningType, methodElement, new JavaNativeElement.Variable(variableElement), elementAnnotationMetadataFactory, visitorContext);
     }
 
