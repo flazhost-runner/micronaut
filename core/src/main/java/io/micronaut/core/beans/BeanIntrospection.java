@@ -16,15 +16,13 @@
 package io.micronaut.core.beans;
 
 import io.micronaut.core.annotation.AnnotationMetadataDelegate;
-import org.jspecify.annotations.Nullable;
 import io.micronaut.core.beans.exceptions.IntrospectionException;
 import io.micronaut.core.convert.ArgumentConversionContext;
 import io.micronaut.core.convert.ConversionService;
 import io.micronaut.core.reflect.exception.InstantiationException;
 import io.micronaut.core.type.Argument;
 import io.micronaut.core.util.ArgumentUtils;
-
-import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 import java.lang.annotation.Annotation;
 import java.util.Collection;
@@ -53,13 +51,12 @@ public interface BeanIntrospection<T> extends AnnotationMetadataDelegate, BeanIn
     /**
      * @return An immutable collection of properties.
      */
-    @NonNull Collection<BeanProperty<T, Object>> getBeanProperties();
+    Collection<BeanProperty<T, Object>> getBeanProperties();
 
     /**
      * @return An immutable collection of read properties.
      * @since 4.4.0
      */
-    @NonNull
     default List<BeanReadProperty<T, Object>> getBeanReadProperties() {
         return List.of();
     }
@@ -68,7 +65,6 @@ public interface BeanIntrospection<T> extends AnnotationMetadataDelegate, BeanIn
      * @return An immutable collection of write properties.
      * @since 4.4.0
      */
-    @NonNull
     default List<BeanWriteProperty<T, Object>> getBeanWriteProperties() {
         return List.of();
     }
@@ -81,16 +77,17 @@ public interface BeanIntrospection<T> extends AnnotationMetadataDelegate, BeanIn
      * @return An immutable collection of properties.
      * @see io.micronaut.core.annotation.Introspected#indexed()
      */
-    @NonNull Collection<BeanProperty<T, Object>> getIndexedProperties(@NonNull Class<? extends Annotation> annotationType);
+    Collection<BeanProperty<T, Object>> getIndexedProperties(Class<? extends Annotation> annotationType);
 
     /**
      * @return Obtain a builder for this introspection.
      * @since 4.1.0
      */
-    @NonNull Builder<T> builder();
+    Builder<T> builder();
 
     /**
      * Can the introspection be constructed with {@link #builder()}.
+     *
      * @return True if it can
      * @since 4.1.0
      */
@@ -116,7 +113,7 @@ public interface BeanIntrospection<T> extends AnnotationMetadataDelegate, BeanIn
      * @return An instance
      * @throws InstantiationException If the bean cannot be instantiated or the arguments are not satisfied.
      */
-    @NonNull T instantiate() throws InstantiationException;
+    T instantiate() throws InstantiationException;
 
     /**
      * Instantiates an instance of the bean, throwing an exception is instantiation is not possible.
@@ -125,7 +122,7 @@ public interface BeanIntrospection<T> extends AnnotationMetadataDelegate, BeanIn
      * @return An instance
      * @throws InstantiationException If the bean cannot be instantiated.
      */
-    default @NonNull T instantiate(Object... arguments) throws InstantiationException {
+    default T instantiate(@Nullable Object @Nullable... arguments) throws InstantiationException {
         return instantiate(true, arguments);
     }
 
@@ -137,7 +134,7 @@ public interface BeanIntrospection<T> extends AnnotationMetadataDelegate, BeanIn
      * @return An instance
      * @throws InstantiationException If the bean cannot be instantiated.
      */
-    @NonNull T instantiate(boolean strictNullable, Object... arguments) throws InstantiationException;
+    T instantiate(boolean strictNullable, @Nullable Object @Nullable... arguments) throws InstantiationException;
 
     /**
      * The bean type.
@@ -145,7 +142,7 @@ public interface BeanIntrospection<T> extends AnnotationMetadataDelegate, BeanIn
      * @return The bean type
      */
     @Override
-    @NonNull Class<T> getBeanType();
+    Class<T> getBeanType();
 
     /**
      * Get all the bean properties annotated for the given type.
@@ -155,9 +152,9 @@ public interface BeanIntrospection<T> extends AnnotationMetadataDelegate, BeanIn
      * @return An immutable collection of properties.
      * @see io.micronaut.core.annotation.Introspected#indexed()
      */
-    @NonNull Optional<BeanProperty<T, Object>> getIndexedProperty(
-        @NonNull Class<? extends Annotation> annotationType,
-        @NonNull String annotationValue);
+    Optional<BeanProperty<T, Object>> getIndexedProperty(
+        Class<? extends Annotation> annotationType,
+        String annotationValue);
 
     /**
      * Returns the {@link BeanMethod} instances for this introspection.
@@ -166,10 +163,8 @@ public interface BeanIntrospection<T> extends AnnotationMetadataDelegate, BeanIn
      * of the actual methods of the class and do not include any methods that are exposed as {@link BeanProperty} instances.</p>
      *
      * @return An immutable collection of methods.
-     *
      * @since 2.3.0
      */
-    @NonNull
     default Collection<BeanMethod<T, Object>> getBeanMethods() {
         return Collections.emptyList();
     }
@@ -181,8 +176,8 @@ public interface BeanIntrospection<T> extends AnnotationMetadataDelegate, BeanIn
      * @return An immutable collection of properties.
      * @see io.micronaut.core.annotation.Introspected#indexed()
      */
-    default @NonNull Optional<BeanProperty<T, Object>> getIndexedProperty(
-        @NonNull Class<? extends Annotation> annotationType) {
+    default Optional<BeanProperty<T, Object>> getIndexedProperty(
+        Class<? extends Annotation> annotationType) {
         return getIndexedProperties(annotationType).stream().findFirst();
     }
 
@@ -191,7 +186,7 @@ public interface BeanIntrospection<T> extends AnnotationMetadataDelegate, BeanIn
      *
      * @return An argument array
      */
-    default @NonNull Argument<?>[] getConstructorArguments() {
+    default Argument<?>[] getConstructorArguments() {
         return Argument.ZERO_ARGUMENTS;
     }
 
@@ -201,8 +196,7 @@ public interface BeanIntrospection<T> extends AnnotationMetadataDelegate, BeanIn
      * @param name The name of the property
      * @return A bean property if found
      */
-    @NonNull
-    default Optional<BeanProperty<T, Object>> getProperty(@NonNull String name) {
+    default Optional<BeanProperty<T, Object>> getProperty(String name) {
         return getBeanProperties().stream().filter(p -> p.getName().equals(name)).findFirst();
     }
 
@@ -213,8 +207,7 @@ public interface BeanIntrospection<T> extends AnnotationMetadataDelegate, BeanIn
      * @return A bean read property if found
      * @since 4.4.0
      */
-    @NonNull
-    default Optional<BeanReadProperty<T, Object>> getReadProperty(@NonNull String name) {
+    default Optional<BeanReadProperty<T, Object>> getReadProperty(String name) {
         return getBeanReadProperties().stream().filter(p -> p.getName().equals(name)).findFirst();
     }
 
@@ -225,8 +218,7 @@ public interface BeanIntrospection<T> extends AnnotationMetadataDelegate, BeanIn
      * @return A bean write property if found
      * @since 4.4.0
      */
-    @NonNull
-    default Optional<BeanWriteProperty<T, Object>> getWriteProperty(@NonNull String name) {
+    default Optional<BeanWriteProperty<T, Object>> getWriteProperty(String name) {
         return getBeanWriteProperties().stream().filter(p -> p.getName().equals(name)).findFirst();
     }
 
@@ -237,7 +229,7 @@ public interface BeanIntrospection<T> extends AnnotationMetadataDelegate, BeanIn
      * @return A property index or -1 of not found.
      * @since 3.1
      */
-    default int propertyIndexOf(@NonNull String name) {
+    default int propertyIndexOf(String name) {
         int index = 0;
         for (BeanProperty<T, Object> property : getBeanProperties()) {
             if (property.getName().equals(name)) {
@@ -256,7 +248,7 @@ public interface BeanIntrospection<T> extends AnnotationMetadataDelegate, BeanIn
      * @param <P>  The property generic type
      * @return The property
      */
-    default @NonNull <P> BeanProperty<T, P> getRequiredProperty(@NonNull String name, @NonNull Class<P> type) {
+    default <P> BeanProperty<T, P> getRequiredProperty(String name, Class<P> type) {
         return getProperty(name, type)
             .orElseThrow(() -> new IntrospectionException("No property [" + name + "] of type [" + type + "] present"));
     }
@@ -270,8 +262,7 @@ public interface BeanIntrospection<T> extends AnnotationMetadataDelegate, BeanIn
      * @return The property
      * @since 4.4.0
      */
-    @NonNull
-    default <P> BeanReadProperty<T, P> getRequiredReadProperty(@NonNull String name, @NonNull Class<P> type) {
+    default <P> BeanReadProperty<T, P> getRequiredReadProperty(String name, Class<P> type) {
         return getReadProperty(name, type)
             .orElseThrow(() -> new IntrospectionException("No read property [" + name + "] of type [" + type + "] present"));
     }
@@ -285,8 +276,7 @@ public interface BeanIntrospection<T> extends AnnotationMetadataDelegate, BeanIn
      * @return The property
      * @since 4.4.0
      */
-    @NonNull
-    default <P> BeanWriteProperty<T, P> getRequiredWriteProperty(@NonNull String name, @NonNull Class<P> type) {
+    default <P> BeanWriteProperty<T, P> getRequiredWriteProperty(String name, Class<P> type) {
         return getWriteProperty(name, type)
             .orElseThrow(() -> new IntrospectionException("No write property [" + name + "] of type [" + type + "] present"));
     }
@@ -299,7 +289,7 @@ public interface BeanIntrospection<T> extends AnnotationMetadataDelegate, BeanIn
      * @param <P>  The property type
      * @return A bean property if found
      */
-    default @NonNull <P> Optional<BeanProperty<T, P>> getProperty(@NonNull String name, @NonNull Class<P> type) {
+    default <P> Optional<BeanProperty<T, P>> getProperty(String name, Class<P> type) {
         ArgumentUtils.requireNonNull("name", name);
         ArgumentUtils.requireNonNull("type", type);
 
@@ -319,7 +309,7 @@ public interface BeanIntrospection<T> extends AnnotationMetadataDelegate, BeanIn
      * @param <P>  The property type
      * @return A bean read property if found
      */
-    default @NonNull <P> Optional<BeanReadProperty<T, P>> getReadProperty(@NonNull String name, @NonNull Class<P> type) {
+    default <P> Optional<BeanReadProperty<T, P>> getReadProperty(String name, Class<P> type) {
         ArgumentUtils.requireNonNull("name", name);
         ArgumentUtils.requireNonNull("type", type);
 
@@ -340,7 +330,7 @@ public interface BeanIntrospection<T> extends AnnotationMetadataDelegate, BeanIn
      * @return A bean write property if found
      * @since 4.4.0
      */
-    default @NonNull <P> Optional<BeanWriteProperty<T, P>> getWriteProperty(@NonNull String name, @NonNull Class<P> type) {
+    default <P> Optional<BeanWriteProperty<T, P>> getWriteProperty(String name, Class<P> type) {
         ArgumentUtils.requireNonNull("name", name);
         ArgumentUtils.requireNonNull("type", type);
 
@@ -357,7 +347,7 @@ public interface BeanIntrospection<T> extends AnnotationMetadataDelegate, BeanIn
      *
      * @return The property names
      */
-    default @NonNull String[] getPropertyNames() {
+    default String[] getPropertyNames() {
         return getBeanProperties().stream().map(BeanProperty::getName).toArray(String[]::new);
     }
 
@@ -367,7 +357,7 @@ public interface BeanIntrospection<T> extends AnnotationMetadataDelegate, BeanIn
      * @return The property names
      * @since 4.4.0
      */
-    default @NonNull String[] getReadPropertyNames() {
+    default String[] getReadPropertyNames() {
         return getBeanReadProperties().stream().map(BeanReadProperty::getName).toArray(String[]::new);
     }
 
@@ -375,20 +365,20 @@ public interface BeanIntrospection<T> extends AnnotationMetadataDelegate, BeanIn
      * @return The bean constructor.
      * @since 3.0.0
      */
-    default @NonNull BeanConstructor<T> getConstructor() {
+    default BeanConstructor<T> getConstructor() {
         return new BeanConstructor<T>() {
             @Override
-            public @NonNull Class<T> getDeclaringBeanType() {
+            public Class<T> getDeclaringBeanType() {
                 return getBeanType();
             }
 
             @Override
-            public @NonNull Argument<?>[] getArguments() {
+            public Argument<?>[] getArguments() {
                 return getConstructorArguments();
             }
 
             @Override
-            public @NonNull T instantiate(Object... parameterValues) {
+            public T instantiate(Object... parameterValues) {
                 return BeanIntrospection.this.instantiate(parameterValues);
             }
         };
@@ -418,14 +408,14 @@ public interface BeanIntrospection<T> extends AnnotationMetadataDelegate, BeanIn
          *
          * @return The arguments
          */
-        @NonNull Argument<?>[] getBuilderArguments();
+        Argument<?>[] getBuilderArguments();
 
         /**
          * Any arguments required by the build method. If the build method has arguments these should be provided by {@link #build()}.
          *
          * @return The arguments
          */
-        @NonNull Argument<?>[] getBuildMethodArguments();
+        Argument<?>[] getBuildMethodArguments();
 
         /**
          * @param name The argument name
@@ -436,11 +426,11 @@ public interface BeanIntrospection<T> extends AnnotationMetadataDelegate, BeanIn
         /**
          * Create the instance with the given value for the given property.
          *
-         * @param name     The name of the argument
-         * @param value    The value
+         * @param name  The name of the argument
+         * @param value The value
          * @return This builder
          */
-        @NonNull Builder<T> with(@NonNull String name, @Nullable Object value);
+        Builder<T> with(String name, @Nullable Object value);
 
         /**
          * Create the instance copying properties from the given instance to start.
@@ -448,7 +438,7 @@ public interface BeanIntrospection<T> extends AnnotationMetadataDelegate, BeanIn
          * @param existing The existing bean
          * @return This builder
          */
-        @NonNull Builder<T> with(T existing);
+        Builder<T> with(T existing);
 
         /**
          * Create the instance with the given value for the given property.
@@ -459,7 +449,7 @@ public interface BeanIntrospection<T> extends AnnotationMetadataDelegate, BeanIn
          * @param <A>      The generic type
          * @return This builder
          */
-        <A> @NonNull Builder<T> with(int index, @NonNull Argument<A> argument, @Nullable A value);
+        <A> Builder<T> with(int index, Argument<A> argument, @Nullable A value);
 
         /**
          * Create the instance with the given value for the given property.
@@ -471,7 +461,7 @@ public interface BeanIntrospection<T> extends AnnotationMetadataDelegate, BeanIn
          * @param <A>               The generic type
          * @return This builder
          */
-        <A> @NonNull Builder<T> convert(int index, @NonNull ArgumentConversionContext<A> argument, @Nullable Object value, @NonNull ConversionService conversionService);
+        <A> Builder<T> convert(int index, ArgumentConversionContext<A> argument, @Nullable Object value, ConversionService conversionService);
 
         /**
          * Build the instance from the current state.
@@ -479,7 +469,7 @@ public interface BeanIntrospection<T> extends AnnotationMetadataDelegate, BeanIn
          * @return The built instance.
          * @throws IllegalArgumentException If one of the supplied inputs is invalid
          */
-        @NonNull T build();
+        T build();
 
         /**
          * Build the instance from the current state and given parameters to the build method.
@@ -488,6 +478,6 @@ public interface BeanIntrospection<T> extends AnnotationMetadataDelegate, BeanIn
          * @return The built instance.
          * @throws IllegalArgumentException If one of the supplied inputs is invalid
          */
-        @NonNull T build(Object... params);
+        T build(Object... params);
     }
 }

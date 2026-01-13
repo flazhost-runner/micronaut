@@ -26,6 +26,7 @@ import io.micronaut.core.util.ArgumentUtils;
 import io.micronaut.core.util.ArrayUtils;
 import io.micronaut.core.util.CollectionUtils;
 import io.micronaut.core.util.StringUtils;
+import org.jspecify.annotations.Nullable;
 
 import java.lang.annotation.Annotation;
 import java.lang.annotation.RetentionPolicy;
@@ -253,7 +254,6 @@ public class AnnotationValue<A extends Annotation> implements AnnotationValueRes
     /**
      * @return The retention policy.
      */
-    @NonNull
     public final RetentionPolicy getRetentionPolicy() {
         return retentionPolicy;
     }
@@ -299,8 +299,7 @@ public class AnnotationValue<A extends Annotation> implements AnnotationValueRes
      * @param member The member
      * @return The properties as an immutable map.
      */
-    @NonNull
-    public Map<String, String> getProperties(@NonNull String member) {
+    public Map<String, String> getProperties(String member) {
         return getProperties(member, "name");
     }
 
@@ -312,7 +311,7 @@ public class AnnotationValue<A extends Annotation> implements AnnotationValueRes
      * @return The properties.
      * @see #getProperties(String)
      */
-    public Map<String, String> getProperties(@NonNull String member, String keyMember) {
+    public Map<String, String> getProperties(String member, String keyMember) {
         ArgumentUtils.requireNonNull("keyMember", keyMember);
         if (StringUtils.isEmpty(member)) {
             return Collections.emptyMap();
@@ -340,7 +339,7 @@ public class AnnotationValue<A extends Annotation> implements AnnotationValueRes
      * @return An {@link Optional} of the enum value
      */
     @Override
-    public <E extends Enum> Optional<E> enumValue(@NonNull String member, @NonNull Class<E> enumType) {
+    public <E extends Enum> Optional<E> enumValue(String member, Class<E> enumType) {
         return enumValue(member, enumType, valueMapper);
     }
 
@@ -353,7 +352,7 @@ public class AnnotationValue<A extends Annotation> implements AnnotationValueRes
      * @param <E>         The enum type
      * @return An {@link Optional} of the enum value
      */
-    public <E extends Enum> Optional<E> enumValue(@NonNull String member, @NonNull Class<E> enumType, Function<Object, Object> valueMapper) {
+    public <E extends Enum> Optional<E> enumValue(String member, Class<E> enumType, Function<Object, Object> valueMapper) {
         ArgumentUtils.requireNonNull("enumType", enumType);
         if (StringUtils.isEmpty(member)) {
             return Optional.empty();
@@ -375,7 +374,7 @@ public class AnnotationValue<A extends Annotation> implements AnnotationValueRes
      */
     @Override
     @SuppressWarnings("unchecked")
-    public <E extends Enum> E[] enumValues(@NonNull String member, @NonNull Class<E> enumType) {
+    public <E extends Enum> E[] enumValues(String member, Class<E> enumType) {
         ArgumentUtils.requireNonNull("enumType", enumType);
         if (StringUtils.isEmpty(member)) {
             return (E[]) Array.newInstance(enumType, 0);
@@ -390,7 +389,6 @@ public class AnnotationValue<A extends Annotation> implements AnnotationValueRes
      * @return An {@link Optional} class
      */
     @Override
-    @NonNull
     public Optional<Class<?>> classValue() {
         return classValue(AnnotationMetadata.VALUE_MEMBER);
     }
@@ -402,7 +400,7 @@ public class AnnotationValue<A extends Annotation> implements AnnotationValueRes
      * @return An {@link Optional} class
      */
     @Override
-    public Optional<Class<?>> classValue(@NonNull String member) {
+    public Optional<Class<?>> classValue(String member) {
         return classValue(member, valueMapper);
     }
 
@@ -416,7 +414,7 @@ public class AnnotationValue<A extends Annotation> implements AnnotationValueRes
      */
     @Override
     @SuppressWarnings("unchecked")
-    public <T> Optional<Class<? extends T>> classValue(@NonNull String member, @NonNull Class<T> requiredType) {
+    public <T> Optional<Class<? extends T>> classValue(String member, Class<T> requiredType) {
         ArgumentUtils.requireNonNull("requiredType", requiredType);
         if (StringUtils.isEmpty(member)) {
             return Optional.empty();
@@ -451,7 +449,7 @@ public class AnnotationValue<A extends Annotation> implements AnnotationValueRes
      * @param valueMapper The raw value mapper
      * @return An {@link Optional} class
      */
-    public Optional<Class<?>> classValue(@NonNull String member, @Nullable Function<Object, Object> valueMapper) {
+    public Optional<Class<?>> classValue(String member, @Nullable Function<Object, Object> valueMapper) {
         if (StringUtils.isEmpty(member)) {
             return Optional.empty();
         }
@@ -464,9 +462,8 @@ public class AnnotationValue<A extends Annotation> implements AnnotationValueRes
         return Optional.empty();
     }
 
-    @NonNull
     @Override
-    public String[] stringValues(@NonNull String member) {
+    public String[] stringValues(String member) {
         Function<Object, Object> valueMapper = this.valueMapper;
         return stringValues(member, valueMapper);
     }
@@ -669,7 +666,7 @@ public class AnnotationValue<A extends Annotation> implements AnnotationValueRes
      * @param valueMapper The mapper
      * @return The string values
      */
-    public String[] stringValues(@NonNull String member, Function<Object, Object> valueMapper) {
+    public String[] stringValues(String member, Function<Object, Object> valueMapper) {
         if (StringUtils.isEmpty(member)) {
             return StringUtils.EMPTY_STRING_ARRAY;
         }
@@ -682,7 +679,7 @@ public class AnnotationValue<A extends Annotation> implements AnnotationValueRes
     }
 
     @Override
-    public Class<?>[] classValues(@NonNull String member) {
+    public Class<?>[] classValues(String member) {
         if (StringUtils.isEmpty(member)) {
             return EMPTY_CLASS_ARRAY;
         }
@@ -694,9 +691,8 @@ public class AnnotationValue<A extends Annotation> implements AnnotationValueRes
         return EMPTY_CLASS_ARRAY;
     }
 
-    @NonNull
     @Override
-    public AnnotationClassValue<?>[] annotationClassValues(@NonNull String member) {
+    public AnnotationClassValue<?>[] annotationClassValues(String member) {
         if (StringUtils.isEmpty(member)) {
             return AnnotationClassValue.ZERO_ANNOTATION_CLASS_VALUES;
         }
@@ -717,7 +713,7 @@ public class AnnotationValue<A extends Annotation> implements AnnotationValueRes
     }
 
     @Override
-    public Optional<AnnotationClassValue<?>> annotationClassValue(@NonNull String member) {
+    public Optional<AnnotationClassValue<?>> annotationClassValue(String member) {
         if (StringUtils.isEmpty(member)) {
             return Optional.empty();
         }
@@ -749,7 +745,7 @@ public class AnnotationValue<A extends Annotation> implements AnnotationValueRes
      * @return An {@link OptionalInt}
      */
     @Override
-    public OptionalInt intValue(@NonNull String member) {
+    public OptionalInt intValue(String member) {
         return intValue(member, valueMapper);
     }
 
@@ -760,7 +756,7 @@ public class AnnotationValue<A extends Annotation> implements AnnotationValueRes
      * @param valueMapper The value mapper
      * @return An {@link OptionalInt}
      */
-    public OptionalInt intValue(@NonNull String member, @Nullable Function<Object, Object> valueMapper) {
+    public OptionalInt intValue(String member, @Nullable Function<Object, Object> valueMapper) {
         if (StringUtils.isEmpty(member)) {
             return OptionalInt.empty();
         }
@@ -827,7 +823,7 @@ public class AnnotationValue<A extends Annotation> implements AnnotationValueRes
     }
 
     @Override
-    public OptionalLong longValue(@NonNull String member) {
+    public OptionalLong longValue(String member) {
         return longValue(member, valueMapper);
     }
 
@@ -838,7 +834,7 @@ public class AnnotationValue<A extends Annotation> implements AnnotationValueRes
      * @param valueMapper The value mapper
      * @return An {@link OptionalLong}
      */
-    public OptionalLong longValue(@NonNull String member, @Nullable Function<Object, Object> valueMapper) {
+    public OptionalLong longValue(String member, @Nullable Function<Object, Object> valueMapper) {
         if (StringUtils.isEmpty(member)) {
             return OptionalLong.empty();
         }
@@ -864,7 +860,7 @@ public class AnnotationValue<A extends Annotation> implements AnnotationValueRes
     }
 
     @Override
-    public Optional<Short> shortValue(@NonNull String member) {
+    public Optional<Short> shortValue(String member) {
         return shortValue(member, valueMapper);
     }
 
@@ -875,7 +871,7 @@ public class AnnotationValue<A extends Annotation> implements AnnotationValueRes
      * @param valueMapper The value mapper
      * @return An {@link Optional} of {@link Short}
      */
-    public Optional<Short> shortValue(@NonNull String member, @Nullable Function<Object, Object> valueMapper) {
+    public Optional<Short> shortValue(String member, @Nullable Function<Object, Object> valueMapper) {
         if (StringUtils.isEmpty(member)) {
             return Optional.empty();
         }
@@ -900,7 +896,7 @@ public class AnnotationValue<A extends Annotation> implements AnnotationValueRes
      * @param valueMapper The value mapper
      * @return An {@link Optional} boolean
      */
-    public Optional<Boolean> booleanValue(@NonNull String member, @Nullable Function<Object, Object> valueMapper) {
+    public Optional<Boolean> booleanValue(String member, @Nullable Function<Object, Object> valueMapper) {
         if (StringUtils.isEmpty(member)) {
             return Optional.empty();
         }
@@ -924,7 +920,7 @@ public class AnnotationValue<A extends Annotation> implements AnnotationValueRes
      * @return An {@link OptionalDouble}
      */
     @Override
-    public OptionalDouble doubleValue(@NonNull String member) {
+    public OptionalDouble doubleValue(String member) {
         return doubleValue(member, valueMapper);
     }
 
@@ -935,7 +931,7 @@ public class AnnotationValue<A extends Annotation> implements AnnotationValueRes
      * @param valueMapper The value mapper
      * @return An {@link OptionalDouble}
      */
-    public OptionalDouble doubleValue(@NonNull String member, @Nullable Function<Object, Object> valueMapper) {
+    public OptionalDouble doubleValue(String member, @Nullable Function<Object, Object> valueMapper) {
         if (StringUtils.isEmpty(member)) {
             return OptionalDouble.empty();
         }
@@ -972,7 +968,7 @@ public class AnnotationValue<A extends Annotation> implements AnnotationValueRes
      * @param valueMapper The value mapper
      * @return An {@link OptionalDouble}
      */
-    public Optional<Float> floatValue(@NonNull String member, @Nullable Function<Object, Object> valueMapper) {
+    public Optional<Float> floatValue(String member, @Nullable Function<Object, Object> valueMapper) {
         if (StringUtils.isEmpty(member)) {
             return Optional.empty();
         }
@@ -1007,7 +1003,7 @@ public class AnnotationValue<A extends Annotation> implements AnnotationValueRes
      * @return An {@link OptionalInt}
      */
     @Override
-    public Optional<String> stringValue(@NonNull String member) {
+    public Optional<String> stringValue(String member) {
         if (StringUtils.isEmpty(member)) {
             return Optional.empty();
         }
@@ -1025,7 +1021,7 @@ public class AnnotationValue<A extends Annotation> implements AnnotationValueRes
      * @param valueMapper An optional raw value mapper
      * @return An {@link OptionalInt}
      */
-    public Optional<String> stringValue(@NonNull String member, @Nullable Function<Object, Object> valueMapper) {
+    public Optional<String> stringValue(String member, @Nullable Function<Object, Object> valueMapper) {
         if (StringUtils.isEmpty(member)) {
             return Optional.empty();
         }
@@ -1047,7 +1043,7 @@ public class AnnotationValue<A extends Annotation> implements AnnotationValueRes
     }
 
     @Override
-    public Optional<Boolean> booleanValue(@NonNull String member) {
+    public Optional<Boolean> booleanValue(String member) {
         return booleanValue(member, valueMapper);
     }
 
@@ -1087,7 +1083,7 @@ public class AnnotationValue<A extends Annotation> implements AnnotationValueRes
      * @param valueMapper The value mapper
      * @return Is the value of the annotation true.
      */
-    public boolean isTrue(@NonNull String member, @Nullable Function<Object, Object> valueMapper) {
+    public boolean isTrue(String member, @Nullable Function<Object, Object> valueMapper) {
         if (StringUtils.isEmpty(member)) {
             return false;
         }
@@ -1123,7 +1119,6 @@ public class AnnotationValue<A extends Annotation> implements AnnotationValueRes
      *
      * @return The annotation name
      */
-    @NonNull
     public final String getAnnotationName() {
         return annotationName;
     }
@@ -1143,7 +1138,6 @@ public class AnnotationValue<A extends Annotation> implements AnnotationValueRes
      *
      * @return The names of the members
      */
-    @NonNull
     public final Set<CharSequence> getMemberNames() {
         return values.keySet();
     }
@@ -1152,7 +1146,6 @@ public class AnnotationValue<A extends Annotation> implements AnnotationValueRes
      * @return The attribute values
      */
     @Override
-    @NonNull
     public Map<CharSequence, Object> getValues() {
         return Collections.unmodifiableMap(values);
     }
@@ -1160,7 +1153,6 @@ public class AnnotationValue<A extends Annotation> implements AnnotationValueRes
     /**
      * @return The convertible values
      */
-    @NonNull
     public ConvertibleValues<Object> getConvertibleValues() {
         return convertibleValues;
     }
@@ -1222,7 +1214,6 @@ public class AnnotationValue<A extends Annotation> implements AnnotationValueRes
      * @return The result
      * @throws IllegalStateException If no member is available that conforms to the given type
      */
-    @NonNull
     public final <T> T getRequiredValue(Class<T> type) {
         return getRequiredValue(AnnotationMetadata.VALUE_MEMBER, type);
     }
@@ -1236,7 +1227,6 @@ public class AnnotationValue<A extends Annotation> implements AnnotationValueRes
      * @return The result
      * @throws IllegalStateException If no member is available that conforms to the given name and type
      */
-    @NonNull
     public final <T> T  getRequiredValue(String member, Class<T> type) {
         return get(member, ConversionContext.of(type)).orElseThrow(() -> new IllegalStateException("No value available for annotation member @" + annotationName + "[" + member + "] of type: " + type));
     }
@@ -1250,7 +1240,6 @@ public class AnnotationValue<A extends Annotation> implements AnnotationValueRes
      * @return The result
      * @throws IllegalStateException If no member is available that conforms to the given name and type
      */
-    @NonNull
     @SuppressWarnings("java:S2259") // false positive
     public <T extends Annotation> List<AnnotationValue<T>> getAnnotations(String member, Class<T> type) {
         ArgumentUtils.requireNonNull("type", type);
@@ -1297,7 +1286,6 @@ public class AnnotationValue<A extends Annotation> implements AnnotationValueRes
      * @throws IllegalStateException If no member is available that conforms to the given name and type
      */
     @SuppressWarnings("unchecked")
-    @NonNull
     public <T extends Annotation> List<AnnotationValue<T>> getAnnotations(String member) {
         ArgumentUtils.requireNonNull("member", member);
         Object v = values.get(member);
@@ -1328,7 +1316,6 @@ public class AnnotationValue<A extends Annotation> implements AnnotationValueRes
      * @return The result
      * @throws IllegalStateException If no member is available that conforms to the given name and type
      */
-    @NonNull
     public <T extends Annotation> Optional<AnnotationValue<T>> getAnnotation(String member, Class<T> type) {
         ArgumentUtils.requireNonNull("type", type);
         String typeName = type.getName();
@@ -1362,8 +1349,7 @@ public class AnnotationValue<A extends Annotation> implements AnnotationValueRes
      * @throws IllegalStateException If no member is available that conforms to the given name and type
      * @since 3.3.0
      */
-    @NonNull
-    public <T extends Annotation> Optional<AnnotationValue<T>> getAnnotation(@NonNull String member) {
+    public <T extends Annotation> Optional<AnnotationValue<T>> getAnnotation(String member) {
         ArgumentUtils.requireNonNull("member", member);
         Object v = values.get(member);
         if (v instanceof AnnotationValue av) {
@@ -1492,7 +1478,7 @@ public class AnnotationValue<A extends Annotation> implements AnnotationValueRes
      * @return The builder
      * @since 4.0.0
      */
-    public static <T extends Annotation> AnnotationValueBuilder<T> builder(@NonNull AnnotationValue<T> annotation) {
+    public static <T extends Annotation> AnnotationValueBuilder<T> builder(AnnotationValue<T> annotation) {
         ArgumentUtils.requireNonNull("annotation", annotation);
         return new AnnotationValueBuilder<>(annotation, annotation.getRetentionPolicy());
     }
@@ -1505,7 +1491,7 @@ public class AnnotationValue<A extends Annotation> implements AnnotationValueRes
      * @param <T>             The annotation type
      * @return The builder
      */
-    public static <T extends Annotation> AnnotationValueBuilder<T> builder(@NonNull AnnotationValue<T> annotation, @Nullable RetentionPolicy retentionPolicy) {
+    public static <T extends Annotation> AnnotationValueBuilder<T> builder(AnnotationValue<T> annotation, @Nullable RetentionPolicy retentionPolicy) {
         ArgumentUtils.requireNonNull("annotation", annotation);
         return new AnnotationValueBuilder<>(annotation, retentionPolicy);
     }
@@ -1518,8 +1504,7 @@ public class AnnotationValue<A extends Annotation> implements AnnotationValueRes
      * @return The string[] or null
      */
     @Internal
-    @Nullable
-    public static String[] resolveStringValues(@Nullable Object value, @Nullable Function<Object, Object> valueMapper) {
+    public static String @Nullable[] resolveStringValues(@Nullable Object value, @Nullable Function<Object, Object> valueMapper) {
         if (value == null) {
             return null;
         }
@@ -1562,8 +1547,7 @@ public class AnnotationValue<A extends Annotation> implements AnnotationValueRes
      * @return An array of enum values
      */
     @Internal
-    @NonNull
-    public static <E extends Enum> E[] resolveEnumValues(@NonNull Class<E> enumType, @Nullable Object rawValue) {
+    public static <E extends Enum> E[] resolveEnumValues(Class<E> enumType, @Nullable Object rawValue) {
         if (rawValue == null) {
             return (E[]) Array.newInstance(enumType, 0);
         }
@@ -1613,8 +1597,7 @@ public class AnnotationValue<A extends Annotation> implements AnnotationValueRes
      * @return The class values or null
      */
     @Internal
-    @Nullable
-    public static Class<?>[] resolveClassValues(@Nullable Object value) {
+    public static Class<?> @Nullable[] resolveClassValues(@Nullable Object value) {
         // conditional branches ordered from most likely to least likely
         // generally at runtime values are always AnnotationClassValue
         // A class can be present at compilation time
@@ -1685,7 +1668,7 @@ public class AnnotationValue<A extends Annotation> implements AnnotationValueRes
     }
 
     @Nullable
-    private Object getRawSingleValue(@NonNull String member, Function<Object, Object> valueMapper) {
+    private Object getRawSingleValue(String member, Function<Object, Object> valueMapper) {
         Object rawValue = values.get(member);
         if (rawValue != null) {
             if (rawValue.getClass().isArray()) {

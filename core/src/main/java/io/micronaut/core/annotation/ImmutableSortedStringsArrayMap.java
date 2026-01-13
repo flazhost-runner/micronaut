@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 package io.micronaut.core.annotation;
+import org.jspecify.annotations.Nullable;
 
 import java.util.AbstractCollection;
 import java.util.AbstractMap;
@@ -151,13 +152,11 @@ final class ImmutableSortedStringsArrayMap<V> implements Map<String, V> {
         throw new UnsupportedOperationException();
     }
 
-    @NonNull
     @Override
     public Set<String> keySet() {
         return new HashSet<>(Arrays.asList(keys));
     }
 
-    @NonNull
     @Override
     public Collection<V> values() {
         return new AbstractCollection<>() {
@@ -217,7 +216,6 @@ final class ImmutableSortedStringsArrayMap<V> implements Map<String, V> {
         }
     }
 
-    @NonNull
     @Override
     public Set<Entry<String, V>> entrySet() {
         Set<Entry<String, V>> set = new HashSet<>();

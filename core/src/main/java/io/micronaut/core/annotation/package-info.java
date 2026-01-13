@@ -19,5 +19,5 @@
  * @author Sergio del Amo
  * @since 1.0
  */
+@NullMarked
 package io.micronaut.core.annotation;
-

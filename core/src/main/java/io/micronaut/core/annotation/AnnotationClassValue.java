@@ -74,7 +74,7 @@ public final class AnnotationClassValue<T> implements CharSequence, Named {
      */
     @UsedByGeneratedCode
     @Internal
-    public AnnotationClassValue(@NonNull String name, boolean instantiated) {
+    public AnnotationClassValue(String name, boolean instantiated) {
         ArgumentUtils.requireNonNull("name", name);
         this.name = name;
         this.theClass = null;
@@ -90,7 +90,7 @@ public final class AnnotationClassValue<T> implements CharSequence, Named {
      */
     @SuppressWarnings("unchecked")
     @UsedByGeneratedCode
-    public AnnotationClassValue(@NonNull T instance) {
+    public AnnotationClassValue(T instance) {
         ArgumentUtils.requireNonNull("instance", instance);
         this.theClass = (Class<T>) instance.getClass();
         this.name = theClass.getName();
@@ -106,7 +106,7 @@ public final class AnnotationClassValue<T> implements CharSequence, Named {
      * @return The instance
      * @since 1.1
      */
-    public @NonNull Optional<T> getInstance() {
+    public Optional<T> getInstance() {
         if (instance instanceof AnnotationClassValue.UnresolvedClass unresolvedClass) {
             throw unresolvedClass.error;
         }
