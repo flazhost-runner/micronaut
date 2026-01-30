@@ -46,7 +46,7 @@ public final class UriTemplateMatcher implements UriMatcher, Comparable<UriTempl
     private final List<UriMatchVariable> variables;
     private final Segment[] segments;
     private final boolean isRoot;
-    private final int rawSegmentsCount;
+    private final int rawSegmentLength;
     private final int pathVariableCount;
     private final Set<String> variableNames;
 
@@ -74,9 +74,9 @@ public final class UriTemplateMatcher implements UriMatcher, Comparable<UriTempl
         this.templateString = templateString;
         this.parts = parts;
         List<UriMatchVariable> variables = new ArrayList<>();
-        int[] rawSegmentsCounter = new int[1];
-        this.segments = provideMatchSegments(parts, variables, rawSegmentsCounter);
-        this.rawSegmentsCount = rawSegmentsCounter[0];
+        int[] rawSegmentLength = new int[1];
+        this.segments = provideMatchSegments(parts, variables, rawSegmentLength);
+        this.rawSegmentLength = rawSegmentLength[0];
         this.isRoot = segments.length == 0 || segments.length == 1 && segments[0].type == SegmentType.LITERAL && isRoot(Objects.requireNonNull(segments[0].value));
         this.variables = Collections.unmodifiableList(variables);
         int varCount = 0;
@@ -111,13 +111,15 @@ public final class UriTemplateMatcher implements UriMatcher, Comparable<UriTempl
     }
 
     /**
-     * @return The number of segments that are raw
+     * @return The length of the raw segments
+     * @see 5.0
      */
-    public long getRawSegmentCount() {
-        return rawSegmentsCount;
+    public long getRawSegmentLength() {
+        return rawSegmentLength;
     }
 
-    private static Segment[] provideMatchSegments(List<UriTemplateParser.Part> parts, List<UriMatchVariable> variables, int[] rawSegmentsCount) {
+
+    private static Segment[] provideMatchSegments(List<UriTemplateParser.Part> parts, List<UriMatchVariable> variables, int[] rawSegmentLength) {
         List<Segment> segments = new ArrayList<>();
         List<String> regexpVariables = new ArrayList<>();
         StringBuilder regexp = null;
@@ -129,7 +131,7 @@ public final class UriTemplateMatcher implements UriMatcher, Comparable<UriTempl
                 } else {
                     regexp.append(Pattern.quote(text));
                 }
-                rawSegmentsCount[0]++;
+                rawSegmentLength[0] += text.length();
             } else if (part instanceof UriTemplateParser.Expression expression) {
                 if (regexp == null && allowPathSegment(expression, parts, i)) {
                     for (UriTemplateParser.Variable variable : expression.variables()) {

@@ -341,7 +341,7 @@ public class DefaultRouter implements Router, HttpServerFilterResolver<RouteMatc
                 UriRouteMatch<T, R> match = uriRoutes.get(i);
                 UriRouteInfo<T, R> routeInfo = match.getRouteInfo();
                 long variable = routeInfo.getPathVariableSegmentCount();
-                long raw = routeInfo.getRawSegmentCount();
+                long raw = routeInfo.getRawSegmentLength();
                 if (i == 0) {
                     variableCount = variable;
                     rawLength = raw;

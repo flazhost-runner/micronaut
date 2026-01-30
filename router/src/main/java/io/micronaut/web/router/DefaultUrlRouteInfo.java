@@ -91,8 +91,8 @@ public final class DefaultUrlRouteInfo<T, R> extends DefaultRequestMatcher<T, R>
     }
 
     @Override
-    public long getRawSegmentCount() {
-        return uriMatchTemplate.getRawSegmentCount();
+    public long getRawSegmentLength() {
+        return uriMatchTemplate.getRawSegmentLength();
     }
 
     @Override

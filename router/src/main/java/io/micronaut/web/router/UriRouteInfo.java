@@ -46,10 +46,10 @@ public interface UriRouteInfo<T, R> extends MethodBasedRouteInfo<T, R>, RequestM
     long getPathVariableSegmentCount();
 
     /**
-     * @return The number of segments that are raw
+     * @return The length of the raw segments
      * @see 5.0
      */
-    long getRawSegmentCount();
+    long getRawSegmentLength();
 
     /**
      * @return The HTTP method for this route
