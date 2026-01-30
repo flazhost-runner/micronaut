@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 
 /**
  * Implementation of the paths matching <a href="https://tools.ietf.org/html/rfc6570">rfc6570</a>.
- * NOTE: Matcher doesn't support resolving query parameters, that's is done by HTTP layer
+ * NOTE: Matcher doesn't support resolving query parameters, that is done by HTTP layer
  * @author Denis Stepanov
  * @since 4.6.0
  */
