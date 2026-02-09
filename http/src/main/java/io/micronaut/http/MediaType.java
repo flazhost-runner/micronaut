@@ -1118,7 +1118,10 @@ public class MediaType implements CharSequence {
         if (charset == null) {
             return Optional.empty();
         }
-        return Optional.of(Charset.forName(charset));
+
+        String charsetWithoutQuotationMarks = charset.replace("\"", "");
+
+        return Optional.of(Charset.forName(charsetWithoutQuotationMarks));
     }
 
     @Override
