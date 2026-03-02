@@ -15,9 +15,11 @@
  */
 package io.micronaut.scheduling.executor;
 
+import io.micronaut.core.execution.ImmediateExecutor;
 import io.micronaut.inject.MethodReference;
 
 import java.util.Optional;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 
 /**
@@ -45,4 +47,18 @@ public interface ExecutorSelector {
      * @since 3.1.0
      */
     Optional<ExecutorService> select(String name);
+
+    /**
+     * Select an {@link Executor} for the given {@link MethodReference}.
+     *
+     * @param method The {@link MethodReference}
+     * @param configuration The thread selection configuration
+     * @return An optional {@link Executor}. If an {@link Executor} cannot be established, an
+     * {@link ImmediateExecutor} is returned.
+     */
+    @SuppressWarnings("resource")
+    default Executor selectExecutor(MethodReference<?, ?> method, ThreadSelectionConfiguration configuration) {
+        ExecutorService es = select(method, configuration.getThreadSelection()).orElse(null);
+        return es == null ? ImmediateExecutor.INSTANCE : es;
+    }
 }

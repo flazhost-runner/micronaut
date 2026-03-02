@@ -27,6 +27,7 @@ import io.micronaut.http.server.cors.CorsOriginConfiguration;
 import io.micronaut.http.server.util.locale.HttpLocaleResolutionConfiguration;
 import io.micronaut.runtime.ApplicationConfiguration;
 import io.micronaut.scheduling.executor.ThreadSelection;
+import io.micronaut.scheduling.executor.ThreadSelectionConfiguration;
 import jakarta.inject.Inject;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -53,7 +54,7 @@ import java.util.regex.Pattern;
  * @since 1.0
  */
 @ConfigurationProperties(value = HttpServerConfiguration.PREFIX, cliPrefix = "")
-public class HttpServerConfiguration implements ServerContextPathProvider {
+public class HttpServerConfiguration implements ServerContextPathProvider, ThreadSelectionConfiguration {
 
     /**
      * The default port value.
@@ -224,6 +225,7 @@ public class HttpServerConfiguration implements ServerContextPathProvider {
     /**
      * @return The {@link ThreadSelection} model to use for the server.
      */
+    @Override
     public ThreadSelection getThreadSelection() {
         return threadSelection;
     }

@@ -17,16 +17,14 @@ package io.micronaut.http.server;
 
 import io.micronaut.context.BeanContext;
 import io.micronaut.context.exceptions.BeanCreationException;
-import io.micronaut.context.propagation.instrument.execution.ContextPropagatingExecutorService;
-import io.micronaut.context.propagation.instrument.execution.ContextPropagatingScheduledExecutorService;
 import io.micronaut.core.annotation.Internal;
-import org.jspecify.annotations.Nullable;
 import io.micronaut.core.async.propagation.ReactivePropagation;
 import io.micronaut.core.async.propagation.ReactorPropagation;
 import io.micronaut.core.async.publisher.Publishers;
 import io.micronaut.core.convert.ConversionService;
 import io.micronaut.core.execution.CompletableFutureExecutionFlow;
 import io.micronaut.core.execution.ExecutionFlow;
+import io.micronaut.core.execution.ImmediateExecutor;
 import io.micronaut.core.io.buffer.ReferenceCounted;
 import io.micronaut.core.propagation.PropagatedContext;
 import io.micronaut.core.type.Argument;
@@ -63,6 +61,7 @@ import io.micronaut.web.router.Router;
 import io.micronaut.web.router.UriRouteMatch;
 import io.micronaut.web.router.exceptions.UnsatisfiedRouteException;
 import jakarta.inject.Singleton;
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -80,8 +79,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
@@ -360,38 +358,19 @@ public final class RouteExecutor {
         return statusRoute;
     }
 
-    @Nullable
-    ExecutorService findExecutor(RouteInfo<?> routeInfo) {
+    Executor findExecutor(RouteInfo<?> routeInfo) {
         // Select the most appropriate Executor
-        ExecutorService executor;
         if (routeInfo instanceof MethodReference<?, ?> methodReference) {
-            executor = executorSelector.select(methodReference, serverConfiguration.getThreadSelection()).orElse(null);
+            return executorSelector.selectExecutor(methodReference, serverConfiguration);
         } else if (routeInfo instanceof MethodBasedRouteInfo<?, ?> methodBasedRouteInfo) {
-            executor = executorSelector.select(methodBasedRouteInfo.getTargetMethod().getExecutableMethod(), serverConfiguration.getThreadSelection()).orElse(null);
+            return executorSelector.selectExecutor(methodBasedRouteInfo.getTargetMethod().getExecutableMethod(), serverConfiguration);
         } else {
-            executor = null;
+            return ImmediateExecutor.INSTANCE;
         }
-        return executor;
     }
 
-    private <T> Flux<T> applyExecutorToPublisher(Publisher<T> publisher, @Nullable ExecutorService executor, PropagatedContext propagatedContext) {
-        if (executor == null) {
-            return Flux.from(publisher).subscribeOn(Schedulers.fromExecutor(command -> propagatedContext.wrap(command).run()));
-        }
-        Optional<ExecutorService> wrappedTarget = ContextPropagatingExecutorService.unwrap(executor);
-        if (wrappedTarget.isPresent()) {
-            executor = wrappedTarget.get();
-        }
-        if (executor instanceof ScheduledExecutorService scheduledExecutorService) {
-            executor = new ContextPropagatingScheduledExecutorService(
-                scheduledExecutorService,
-                propagatedContext
-            );
-        } else {
-            ExecutorService finalExecutor = executor;
-            executor = new ContextPropagatingExecutorService(finalExecutor, propagatedContext);
-        }
-        final Scheduler scheduler = Schedulers.fromExecutorService(executor);
+    private <T> Flux<T> applyExecutorToPublisher(Publisher<T> publisher, Executor executor, PropagatedContext propagatedContext) {
+        final Scheduler scheduler = Schedulers.fromExecutor(r -> executor.execute(propagatedContext.wrap(r)));
         return Flux.from(publisher)
             .subscribeOn(scheduler)
             .publishOn(scheduler);
@@ -429,36 +408,19 @@ public final class RouteExecutor {
 
     ExecutionFlow<HttpResponse<?>> callRoute(PropagatedContext propagatedContext, RouteMatch<?> routeMatch, HttpRequest<?> request) {
         RouteInfo<?> routeInfo = routeMatch.getRouteInfo();
-        ExecutorService executorService = routeInfo.getExecutor(serverConfiguration.getThreadSelection());
-        ExecutionFlow<HttpResponse<?>> executeMethodResponseFlow;
-        if (executorService != null) {
-            if (routeInfo.isSuspended()) {
-                executeMethodResponseFlow = ReactiveExecutionFlow.fromPublisher(Mono.deferContextual(contextView -> {
-                        coroutineHelper.ifPresent(helper -> helper.setupCoroutineContext(request, contextView, propagatedContext));
-                        return Mono.from(
-                            ReactiveExecutionFlow.fromFlow(executeRouteAndConvertBody(propagatedContext, routeMatch, request)).toPublisher()
-                        );
-                    }));
-            } else if (routeInfo.isReactive()) {
-                executeMethodResponseFlow = ReactiveExecutionFlow.async(executorService, () -> executeRouteAndConvertBody(propagatedContext, routeMatch, request));
-            } else {
-                executeMethodResponseFlow = ExecutionFlow.async(executorService, () -> executeRouteAndConvertBody(propagatedContext, routeMatch, request));
-            }
+        Executor executorService = routeInfo.getExecutor(serverConfiguration);
+        if (routeInfo.isSuspended()) {
+            return ReactiveExecutionFlow.fromPublisher(Mono.deferContextual(contextView -> {
+                    coroutineHelper.ifPresent(helper -> helper.setupCoroutineContext(request, contextView, propagatedContext));
+                    return Mono.from(
+                        ReactiveExecutionFlow.fromFlow(executeRouteAndConvertBody(propagatedContext, routeMatch, request)).toPublisher()
+                    );
+                }));
+        } else if (routeInfo.isReactive()) {
+            return ReactiveExecutionFlow.async(executorService, () -> executeRouteAndConvertBody(propagatedContext, routeMatch, request));
         } else {
-            if (routeInfo.isSuspended()) {
-                executeMethodResponseFlow = ReactiveExecutionFlow.fromPublisher(Mono.deferContextual(contextView -> {
-                        coroutineHelper.ifPresent(helper -> helper.setupCoroutineContext(request, contextView, propagatedContext));
-                        return Mono.from(
-                            ReactiveExecutionFlow.fromFlow(executeRouteAndConvertBody(propagatedContext, routeMatch, request)).toPublisher()
-                        );
-                    }));
-            } else if (routeInfo.isReactive()) {
-                executeMethodResponseFlow = ReactiveExecutionFlow.fromFlow(executeRouteAndConvertBody(propagatedContext, routeMatch, request));
-            } else {
-                executeMethodResponseFlow = executeRouteAndConvertBody(propagatedContext, routeMatch, request);
-            }
+            return ExecutionFlow.async(executorService, () -> executeRouteAndConvertBody(propagatedContext, routeMatch, request));
         }
-        return executeMethodResponseFlow;
     }
 
     private ExecutionFlow<HttpResponse<?>> executeRouteAndConvertBody(PropagatedContext propagatedContext, RouteMatch<?> routeMatch, HttpRequest<?> httpRequest) {

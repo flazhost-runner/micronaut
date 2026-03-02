@@ -16,7 +16,6 @@
 package io.micronaut.http.server.netty.websocket;
 
 import io.micronaut.core.annotation.Internal;
-import org.jspecify.annotations.Nullable;
 import io.micronaut.core.convert.ConversionService;
 import io.micronaut.core.execution.ExecutionFlow;
 import io.micronaut.core.propagation.PropagatedContext;
@@ -64,6 +63,7 @@ import io.netty.handler.codec.http.websocketx.WebSocketServerHandshaker;
 import io.netty.handler.codec.http.websocketx.WebSocketServerHandshakerFactory;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.util.AsciiString;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -202,7 +202,7 @@ public final class NettyServerWebSocketUpgradeHandler implements RequestHandler 
                     msg,
                     routeMatch,
                     ctx,
-                    serverConfiguration.getThreadSelection(),
+                    serverConfiguration,
                     routeExecutor.getExecutorSelector(),
                     routeExecutor.getCoroutineHelper().orElse(null));
                 pipeline.addBefore(ctx.name(), NettyServerWebSocketHandler.ID, webSocketHandler);
