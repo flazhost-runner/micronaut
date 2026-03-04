@@ -109,6 +109,36 @@ class ThreadSelectionSpec extends Specification {
 
         where:
         strategy                 | controller                              | handler                              | scheduledHandler
+        ThreadSelection.AUTO     | "controller: ${jdkSwitch(IO, VIRTUAL)}" | "handler: ${jdkSwitch(IO, VIRTUAL)}" | "handler: ${jdkSwitch(IO, VIRTUAL)}"
+        ThreadSelection.BLOCKING | "controller: ${jdkSwitch(IO, VIRTUAL)}" | "handler: ${jdkSwitch(IO, VIRTUAL)}" | "handler: ${jdkSwitch(IO, VIRTUAL)}"
+        ThreadSelection.IO       | "controller: $IO"                       | "handler: $IO"                       | "handler: $IO"
+        ThreadSelection.MANUAL   | "controller: $LOOP"                     | "handler: $LOOP"                     | "handler: $IO"
+    }
+
+    void "test thread selection for exception handlers with redispatch disabled #strategy"() {
+        given:
+        EmbeddedServer embeddedServer = ApplicationContext.run(EmbeddedServer, [
+            'spec': getClass().getSimpleName(),
+            'micronaut.server.thread-selection': strategy,
+            'micronaut.server.redispatch-non-blocking-only': false
+        ])
+        ThreadSelectionClient client = embeddedServer.applicationContext.getBean(ThreadSelectionClient)
+
+        when:
+        String exResult = client.exception()
+        String scheduledResult = client.scheduleException()
+
+        then:
+        exResult.contains(controller)
+        exResult.contains(handler)
+        scheduledResult.contains(controller)
+        scheduledResult.contains(scheduledHandler)
+
+        cleanup:
+        embeddedServer.close()
+
+        where:
+        strategy                 | controller                              | handler                              | scheduledHandler
         ThreadSelection.AUTO     | "controller: ${jdkSwitch(IO, VIRTUAL)}" | "handler: ${jdkSwitch(IO, VIRTUAL)}" | "handler: $IO"
         ThreadSelection.BLOCKING | "controller: ${jdkSwitch(IO, VIRTUAL)}" | "handler: ${jdkSwitch(IO, VIRTUAL)}" | "handler: $IO"
         ThreadSelection.IO       | "controller: $IO"                       | "handler: $IO"                       | "handler: $IO"

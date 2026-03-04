@@ -28,4 +28,11 @@ public interface ThreadSelectionConfiguration {
      * @return The target executor
      */
     ThreadSelection getThreadSelection();
+
+    /**
+     * Whether executor redispatch should only happen on non-blocking threads.
+     *
+     * @return {@code true} if redispatch is restricted to non-blocking threads
+     */
+    boolean isRedispatchNonBlockingOnly();
 }

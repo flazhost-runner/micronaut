@@ -15,36 +15,22 @@
  */
 package io.micronaut.core.execution;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.micronaut.core.annotation.Internal;
 
 import java.util.concurrent.Executor;
 
 /**
- * An executor that immediately executes its tasks.
+ * Internal executor contract that can determine whether execution can be inlined on the calling thread.
  *
  * @since 5.0.0
- * @author Jonas Konrad
  */
-public final class ImmediateExecutor implements ConditionalExecutionExecutor {
-    public static final Executor INSTANCE = new ImmediateExecutor();
+@Internal
+public interface ConditionalExecutionExecutor extends Executor {
 
-    private static final Logger LOG = LoggerFactory.getLogger(ImmediateExecutor.class);
-
-    private ImmediateExecutor() {
-    }
-
-    @Override
-    public void execute(Runnable command) {
-        try {
-            command.run();
-        } catch (Exception e) {
-            LOG.error("Error in immediate executor", e);
-        }
-    }
-
-    @Override
-    public boolean canExecuteImmediately() {
-        return true;
-    }
+    /**
+     * Returns {@code true} if the current task may execute immediately on the calling thread.
+     *
+     * @return {@code true} when execution can be inlined
+     */
+    boolean canExecuteImmediately();
 }

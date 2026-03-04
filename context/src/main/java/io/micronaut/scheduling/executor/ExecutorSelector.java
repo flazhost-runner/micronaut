@@ -16,7 +16,10 @@
 package io.micronaut.scheduling.executor;
 
 import io.micronaut.core.execution.ImmediateExecutor;
+import io.micronaut.core.execution.ConditionalExecutionExecutor;
 import io.micronaut.inject.MethodReference;
+import reactor.core.scheduler.NonBlocking;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.Optional;
 import java.util.concurrent.Executor;
@@ -59,6 +62,57 @@ public interface ExecutorSelector {
     @SuppressWarnings("resource")
     default Executor selectExecutor(MethodReference<?, ?> method, ThreadSelectionConfiguration configuration) {
         ExecutorService es = select(method, configuration.getThreadSelection()).orElse(null);
-        return es == null ? ImmediateExecutor.INSTANCE : es;
+        if (es == null) {
+            return ImmediateExecutor.INSTANCE;
+        }
+        if (!configuration.isRedispatchNonBlockingOnly()) {
+            return es;
+        }
+        return new ConditionalExecutionExecutor() {
+            @Override
+            public void execute(Runnable command) {
+                if (isOnNonBlockingThread()) {
+                    es.execute(command);
+                } else {
+                    ImmediateExecutor.INSTANCE.execute(command);
+                }
+            }
+
+            @Override
+            public boolean canExecuteImmediately() {
+                return !isOnNonBlockingThread();
+            }
+        };
+    }
+
+    private static boolean isOnNonBlockingThread() {
+        if (NonBlockingThreadTypeHolder.reactorAvailable) {
+            try {
+                return ReactorNonBlockingDetector.isOnNonBlockingThread();
+            } catch (LinkageError e) {
+                NonBlockingThreadTypeHolder.reactorAvailable = false;
+            }
+        }
+        return false;
+    }
+
+}
+
+final class NonBlockingThreadTypeHolder {
+    static boolean reactorAvailable = true;
+}
+
+@SuppressWarnings("ReturnValueIgnored")
+final class ReactorNonBlockingDetector {
+    static {
+        Schedulers.class.getName();
+        NonBlocking.class.getName();
+    }
+
+    private ReactorNonBlockingDetector() {
+    }
+
+    static boolean isOnNonBlockingThread() {
+        return Schedulers.isInNonBlockingThread() || Thread.currentThread() instanceof NonBlocking;
     }
 }

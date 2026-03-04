@@ -179,6 +179,7 @@ public class HttpServerConfiguration implements ServerContextPathProvider, Threa
     @Nullable
     private Charset defaultCharset;
     private ThreadSelection threadSelection = ThreadSelection.MANUAL;
+    private boolean redispatchNonBlockingOnly = true;
     private boolean validateUrl = true;
     private boolean escapeHtmlUrl = false;
     private boolean notFoundOnMissingBody = true;
@@ -231,6 +232,14 @@ public class HttpServerConfiguration implements ServerContextPathProvider, Threa
     }
 
     /**
+     * @return Whether executor redispatch should only happen on non-blocking threads
+     */
+    @Override
+    public boolean isRedispatchNonBlockingOnly() {
+        return redispatchNonBlockingOnly;
+    }
+
+    /**
      * Sets the {@link io.micronaut.scheduling.executor.ThreadSelection} model to use for the server. Default value MANUAL.
      * @param threadSelection The thread selection model
      */
@@ -238,6 +247,15 @@ public class HttpServerConfiguration implements ServerContextPathProvider, Threa
         if (threadSelection != null) {
             this.threadSelection = threadSelection;
         }
+    }
+
+    /**
+     * Sets whether configured executors are used only for calls from non-blocking threads.
+     *
+     * @param redispatchNonBlockingOnly {@code true} to redispatch only from non-blocking threads
+     */
+    public void setRedispatchNonBlockingOnly(boolean redispatchNonBlockingOnly) {
+        this.redispatchNonBlockingOnly = redispatchNonBlockingOnly;
     }
 
     /**

@@ -85,7 +85,7 @@ public interface ExecutionFlow<T> {
      * @return a new flow
      */
     static <T> ExecutionFlow<T> async(Executor executor, Supplier<? extends ExecutionFlow<T>> supplier) {
-        if (executor == ImmediateExecutor.INSTANCE) {
+        if (executor instanceof ConditionalExecutionExecutor conditionalExecutionExecutor && conditionalExecutionExecutor.canExecuteImmediately()) {
             try {
                 return supplier.get();
             } catch (Throwable e) {
@@ -292,4 +292,3 @@ public interface ExecutionFlow<T> {
         cancel();
     }
 }
-
