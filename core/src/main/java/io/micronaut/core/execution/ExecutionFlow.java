@@ -85,8 +85,21 @@ public interface ExecutionFlow<T> {
      * @return a new flow
      */
     static <T> ExecutionFlow<T> async(Executor executor, Supplier<? extends ExecutionFlow<T>> supplier) {
+        if (executor == ImmediateExecutor.INSTANCE) {
+            try {
+                return supplier.get();
+            } catch (Throwable e) {
+                return ExecutionFlow.error(e);
+            }
+        }
         DelayedExecutionFlow<T> completableFuture = DelayedExecutionFlow.create();
-        executor.execute(PropagatedContext.wrapCurrent(() -> supplier.get().onComplete(completableFuture::complete)));
+        executor.execute(PropagatedContext.wrapCurrent(() -> {
+            try {
+                supplier.get().onComplete(completableFuture::complete);
+            } catch (Throwable e) {
+                completableFuture.completeExceptionally(e);
+            }
+        }));
         return completableFuture;
     }
 

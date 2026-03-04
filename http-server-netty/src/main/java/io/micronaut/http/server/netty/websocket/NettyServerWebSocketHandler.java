@@ -74,6 +74,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -374,15 +375,20 @@ public class NettyServerWebSocketHandler extends AbstractNettyWebSocketHandler {
     private ExecutionFlow<?> invokeExecutable0(BoundExecutable boundExecutable, MethodExecutionHandle<?, ?> messageHandler) {
         Executor executor = executorSelector.selectExecutor(messageHandler.getExecutableMethod(), threadSelection);
         ReturnType<?> returnType = messageHandler.getExecutableMethod().getReturnType();
-
-        if (returnType.isReactive()) {
-            return ReactiveExecutionFlow.fromPublisher((Publisher<?>) Objects.requireNonNull(boundExecutable.invoke(messageHandler.getTarget())))
-                .putInContext(ServerRequestContext.KEY, originatingRequest);
-        } else if (returnType.isAsync()) {
-            return ExecutionFlow.async(executor, () -> CompletableFutureExecutionFlow.just((CompletableFuture<?>) invokeWithContext(boundExecutable, messageHandler).get()));
-        } else {
-            return ExecutionFlow.async(executor, () -> ExecutionFlow.just(invokeWithContext(boundExecutable, messageHandler).get()));
-        }
+        return ExecutionFlow.async(executor, () -> {
+            Object result = invokeWithContext(boundExecutable, messageHandler).get();
+            if (returnType.isReactive() || Publishers.isConvertibleToPublisher(result)) {
+                return ReactiveExecutionFlow.fromPublisher(Publishers.convertToPublisher(conversionService, result))
+                    .putInContext(ServerRequestContext.KEY, originatingRequest);
+            }
+            if (returnType.isAsync()) {
+                CompletionStage<Object> future = result instanceof CompletionStage<?> stage
+                    ? stage.thenApply(v -> v)
+                    : ((CompletableFuture<?>) result).thenApply(v -> v);
+                return CompletableFutureExecutionFlow.just(future);
+            }
+            return ExecutionFlow.just(result);
+        });
     }
 
     private Supplier<?> invokeWithContext(BoundExecutable boundExecutable, MethodExecutionHandle<?, ?> messageHandler) {
