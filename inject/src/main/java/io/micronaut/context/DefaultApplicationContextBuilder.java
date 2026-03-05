@@ -16,6 +16,7 @@
 package io.micronaut.context;
 
 import io.micronaut.context.env.CommandLinePropertySource;
+import io.micronaut.core.io.ResourceLoadStrategy;
 import io.micronaut.context.env.Environment;
 import io.micronaut.context.env.PropertySource;
 import io.micronaut.context.env.PropertySourcesLocator;
@@ -39,6 +40,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -85,6 +87,7 @@ public class DefaultApplicationContextBuilder implements ApplicationContextBuild
     private Boolean bootstrapEnvironment = null;
     private boolean enableDefaultPropertySources = true;
     private BeanResolutionTraceConfiguration traceConfiguration = new BeanResolutionTraceConfiguration();
+    private ResourceLoadStrategy configurationLoadStrategy = ResourceLoadStrategy.defaultStrategy();
     private BeanDefinitionsProvider beanDefinitionsProvider = new DefaultBeanDefinitionsProvider();
     private boolean eagerBeansEnabled = true;
     private boolean eventsEnabled = true;
@@ -122,6 +125,11 @@ public class DefaultApplicationContextBuilder implements ApplicationContextBuild
         return this.traceConfiguration;
     }
 
+    @Override
+    public ResourceLoadStrategy getConfigurationLoadingStrategy() {
+        return configurationLoadStrategy;
+    }
+
     private ClassLoader resolveClassLoader() {
         final ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
         if (contextClassLoader != null) {
@@ -143,6 +151,13 @@ public class DefaultApplicationContextBuilder implements ApplicationContextBuild
     @Override
     public ApplicationContextBuilder enableDefaultPropertySources(boolean areEnabled) {
         this.enableDefaultPropertySources = areEnabled;
+        return this;
+    }
+
+    @Override
+    public ApplicationContextBuilder configurationLoadingStrategy(ResourceLoadStrategy.Builder builder) {
+        Objects.requireNonNull(builder, "builder");
+        this.configurationLoadStrategy = builder.build();
         return this;
     }
 
