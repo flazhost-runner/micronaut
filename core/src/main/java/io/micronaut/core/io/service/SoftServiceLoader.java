@@ -18,6 +18,8 @@ import org.jspecify.annotations.Nullable;
 import io.micronaut.core.optim.StaticOptimizations;
 import io.micronaut.core.reflect.ClassUtils;
 
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -43,6 +45,8 @@ import java.util.stream.Stream;
  */
 public final class SoftServiceLoader<S> implements Iterable<ServiceDefinition<S>> {
     public static final String META_INF_SERVICES = "META-INF/services";
+    private static final MethodHandles.Lookup LOOKUP = MethodHandles.publicLookup();
+    private static final MethodType VOID_TYPE = MethodType.methodType(void.class);
     static final Map<String, SoftServiceLoader.StaticServiceLoader<?>> STATIC_SERVICES =
             StaticOptimizations.get(Optimizations.class)
                     .map(Optimizations::getServiceLoaders)
@@ -178,11 +182,7 @@ public final class SoftServiceLoader<S> implements Iterable<ServiceDefinition<S>
             try {
                 @SuppressWarnings("unchecked") final Class<S> loadedClass =
                         (Class<S>) Class.forName(className, false, classLoader);
-                Constructor<S> constructor = loadedClass.getDeclaredConstructor();
-                if (!constructor.canAccess(null)) {
-                    constructor.setAccessible(true);
-                }
-                S result = constructor.newInstance();
+                S result = instantiate(loadedClass);
                 if (predicate != null && !predicate.test(result)) {
                     return null;
                 }
@@ -317,15 +317,32 @@ public final class SoftServiceLoader<S> implements Iterable<ServiceDefinition<S>
         @SuppressWarnings({"unchecked"})
         private static <S> S doCreate(Class<S> clazz) {
             try {
-                Constructor<S> constructor = clazz.getDeclaredConstructor();
-                if (!constructor.canAccess(null)) {
-                    constructor.setAccessible(true);
-                }
-                return constructor.newInstance();
+                return instantiate(clazz);
             } catch (Throwable e) {
                 throw new ServiceLoadingException(e);
             }
         }
+    }
+
+    private static <S> S instantiate(Class<S> clazz) throws Throwable {
+        try {
+            return instantiateUsingMethodHandle(clazz);
+        } catch (NoSuchMethodException | IllegalAccessException | IllegalAccessError e) {
+            return instantiateUsingReflection(clazz);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <S> S instantiateUsingMethodHandle(Class<S> clazz) throws Throwable {
+        return (S) LOOKUP.findConstructor(clazz, VOID_TYPE).invoke();
+    }
+
+    private static <S> S instantiateUsingReflection(Class<S> clazz) throws ReflectiveOperationException {
+        Constructor<S> constructor = clazz.getDeclaredConstructor();
+        if (!constructor.canAccess(null)) {
+            constructor.setAccessible(true);
+        }
+        return constructor.newInstance();
     }
 
     /**
