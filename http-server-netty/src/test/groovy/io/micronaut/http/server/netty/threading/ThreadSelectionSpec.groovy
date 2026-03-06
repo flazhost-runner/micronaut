@@ -176,8 +176,8 @@ class ThreadSelectionSpec extends Specification {
         strategy                 | listenerThread          | controllerThread
         ThreadSelection.AUTO     | jdkSwitch(IO, VIRTUAL) | jdkSwitch(IO, VIRTUAL)
         ThreadSelection.BLOCKING | jdkSwitch(IO, VIRTUAL) | jdkSwitch(IO, VIRTUAL)
-        ThreadSelection.IO       | jdkSwitch(IO, VIRTUAL) | IO
-        ThreadSelection.MANUAL   | jdkSwitch(IO, VIRTUAL) | LOOP
+        ThreadSelection.IO       | IO                     | IO
+        ThreadSelection.MANUAL   | LOOP                   | LOOP
     }
 
     void "test thread selection for request terminated event listeners #strategy"() {
@@ -202,8 +202,8 @@ class ThreadSelectionSpec extends Specification {
         strategy                 | listenerThread
         ThreadSelection.AUTO     | jdkSwitch(IO, VIRTUAL)
         ThreadSelection.BLOCKING | jdkSwitch(IO, VIRTUAL)
-        ThreadSelection.IO       | jdkSwitch(IO, VIRTUAL)
-        ThreadSelection.MANUAL   | jdkSwitch(IO, VIRTUAL)
+        ThreadSelection.IO       | IO
+        ThreadSelection.MANUAL   | LOOP
     }
 
     void "test thread selection for server filters #strategy"() {

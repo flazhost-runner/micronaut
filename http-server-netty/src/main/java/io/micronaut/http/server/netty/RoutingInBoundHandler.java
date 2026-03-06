@@ -56,6 +56,7 @@ import javax.net.ssl.SSLException;
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
 import java.util.Optional;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
@@ -82,10 +83,13 @@ public final class RoutingInBoundHandler implements RequestHandler {
     final NettyHttpServerConfiguration serverConfiguration;
     final RequestArgumentSatisfier requestArgumentSatisfier;
     final Supplier<ExecutorService> ioExecutorSupplier;
+    final Supplier<Executor> requestEventExecutorSupplier;
     final boolean multipartEnabled;
     final MessageBodyHandlerRegistry messageBodyHandlerRegistry;
     @Nullable
     ExecutorService ioExecutor;
+    @Nullable
+    Executor requestEventExecutor;
     final ApplicationEventPublisher<HttpRequestTerminatedEvent> terminateEventPublisher;
     final ApplicationEventPublisher<HttpRequestReceivedEvent> receivedPublisher;
     final RouteExecutor routeExecutor;
@@ -100,6 +104,7 @@ public final class RoutingInBoundHandler implements RequestHandler {
      * @param serverConfiguration               The Netty HTTP server configuration
      * @param embeddedServerContext             The embedded server context
      * @param ioExecutor                        The IO executor
+     * @param requestEventExecutor              The request event executor
      * @param terminateEventPublisher           The terminate event publisher
      * @param receivedPublisher                 The received publisher
      * @param conversionService                 The conversion service
@@ -108,11 +113,13 @@ public final class RoutingInBoundHandler implements RequestHandler {
         NettyHttpServerConfiguration serverConfiguration,
         NettyEmbeddedServices embeddedServerContext,
         Supplier<ExecutorService> ioExecutor,
+        Supplier<Executor> requestEventExecutor,
         ApplicationEventPublisher<HttpRequestTerminatedEvent> terminateEventPublisher,
         ApplicationEventPublisher<HttpRequestReceivedEvent> receivedPublisher, ConversionService conversionService) {
         this.staticResourceResolver = embeddedServerContext.getStaticResourceResolver();
         this.messageBodyHandlerRegistry = embeddedServerContext.getMessageBodyHandlerRegistry();
         this.ioExecutorSupplier = ioExecutor;
+        this.requestEventExecutorSupplier = requestEventExecutor;
         this.requestArgumentSatisfier = embeddedServerContext.getRequestArgumentSatisfier();
         this.serverConfiguration = serverConfiguration;
         this.terminateEventPublisher = terminateEventPublisher;
@@ -131,7 +138,7 @@ public final class RoutingInBoundHandler implements RequestHandler {
             if (terminateEventPublisher.isEmpty()) {
                 terminatedFlow = ExecutionFlow.empty();
             } else {
-                terminatedFlow = ExecutionFlow.async(getIoExecutor(), () -> {
+                terminatedFlow = ExecutionFlow.async(getRequestEventExecutor(), () -> {
                     try (PropagatedContext.Scope ignore = PropagatedContext.getOrEmpty()
                         .plus(new ServerHttpRequestContext(request))
                         .propagate()) {
@@ -247,7 +254,7 @@ public final class RoutingInBoundHandler implements RequestHandler {
         if (receivedPublisher.isEmpty()) {
             return ExecutionFlow.empty();
         }
-        return ExecutionFlow.async(getIoExecutor(), () -> {
+        return ExecutionFlow.async(getRequestEventExecutor(), () -> {
             try (PropagatedContext.Scope ignore = PropagatedContext.getOrEmpty()
                 .plus(new ServerHttpRequestContext(request))
                                 .propagate()) {
@@ -327,6 +334,20 @@ public final class RoutingInBoundHandler implements RequestHandler {
                 if (executor == null) {
                     executor = this.ioExecutorSupplier.get();
                     this.ioExecutor = executor;
+                }
+            }
+        }
+        return executor;
+    }
+
+    Executor getRequestEventExecutor() {
+        Executor executor = this.requestEventExecutor;
+        if (executor == null) {
+            synchronized (this) { // double check
+                executor = this.requestEventExecutor;
+                if (executor == null) {
+                    executor = this.requestEventExecutorSupplier.get();
+                    this.requestEventExecutor = executor;
                 }
             }
         }

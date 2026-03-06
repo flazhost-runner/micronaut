@@ -18,6 +18,7 @@ package io.micronaut.scheduling.executor;
 import io.micronaut.core.execution.ImmediateExecutor;
 import io.micronaut.core.execution.ConditionalExecutionExecutor;
 import io.micronaut.inject.MethodReference;
+import org.jspecify.annotations.Nullable;
 import reactor.core.scheduler.NonBlocking;
 import reactor.core.scheduler.Schedulers;
 
@@ -41,7 +42,7 @@ public interface ExecutorSelector {
      * @return An optional {@link ExecutorService}. If an {@link ExecutorService} cannot be established
      * {@link Optional#empty()} is returned
      */
-    Optional<ExecutorService> select(MethodReference<?, ?> method, ThreadSelection threadSelection);
+    Optional<ExecutorService> select(@Nullable MethodReference<?, ?> method, ThreadSelection threadSelection);
 
     /**
      * Obtain executor for the given name.
@@ -60,7 +61,7 @@ public interface ExecutorSelector {
      * {@link ImmediateExecutor} is returned.
      */
     @SuppressWarnings("resource")
-    default Executor selectExecutor(MethodReference<?, ?> method, ThreadSelectionConfiguration configuration) {
+    default Executor selectExecutor(@Nullable MethodReference<?, ?> method, ThreadSelectionConfiguration configuration) {
         ExecutorService es = select(method, configuration.getThreadSelection()).orElse(null);
         if (es == null) {
             return ImmediateExecutor.INSTANCE;

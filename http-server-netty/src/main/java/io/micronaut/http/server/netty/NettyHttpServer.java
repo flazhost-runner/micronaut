@@ -108,6 +108,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -189,10 +190,14 @@ public class NettyHttpServer implements NettyEmbeddedServer {
             nettyEmbeddedServices.getExecutorSelector()
                 .select(TaskExecutors.BLOCKING).orElse(null)
         );
+        final Supplier<Executor> requestEventExecutor = SupplierUtil.memoized(() ->
+            nettyEmbeddedServices.getExecutorSelector().selectExecutor(null, serverConfiguration)
+        );
         this.routingHandler = new RoutingInBoundHandler(
             serverConfiguration,
             nettyEmbeddedServices,
             ioExecutor,
+            requestEventExecutor,
             httpRequestTerminatedEventPublisher,
             httpRequestReceivedEventPublisher,
             applicationContext.getConversionService()
