@@ -152,11 +152,6 @@ public class TypeElementVisitorProcessor extends AbstractInjectAnnotationProcess
 
         OrderUtil.reverseSort(loadedVisitors);
 
-        System.out.println("[TypeElementVisitorProcessor] Loaded visitors count=" + loadedVisitors.size());
-        for (LoadedVisitor loadedVisitor : loadedVisitors) {
-            System.out.println("[TypeElementVisitorProcessor] Loaded visitor=" + loadedVisitor.getVisitor().getClass().getName());
-        }
-
         for (LoadedVisitor loadedVisitor : loadedVisitors) {
             try {
                 loadedVisitor.getVisitor().start(javaVisitorContext);
@@ -452,15 +447,9 @@ public class TypeElementVisitorProcessor extends AbstractInjectAnnotationProcess
         if (classLoader == null) {
             classLoader = TypeElementVisitorProcessor.class.getClassLoader();
         }
-        System.out.println("[TypeElementVisitorProcessor] ServiceLoader classLoader=" + classLoader);
         return ServiceLoader.load(TypeElementVisitor.class, classLoader)
             .stream()
-            .peek(provider -> System.out.println("[TypeElementVisitorProcessor] Service provider=" + provider.type().getName()))
-            .map(provider -> {
-                TypeElementVisitor<?, ?> visitor = provider.get();
-                System.out.println("[TypeElementVisitorProcessor] Instantiated visitor=" + visitor.getClass().getName());
-                return visitor;
-            })
+            .map(provider -> (TypeElementVisitor<?, ?>) provider.get())
             .filter(visitor -> {
                 if (!visitor.isEnabled()) {
                     return false;
@@ -491,8 +480,6 @@ public class TypeElementVisitorProcessor extends AbstractInjectAnnotationProcess
                 }
                 return true;
             })
-            .filter(Objects::nonNull)
-            .<TypeElementVisitor<?, ?>>map(e -> e)
             // remove duplicate classes
             .collect(Collectors.toMap(Object::getClass, v -> v, (a, b) -> a)).values();
     }
