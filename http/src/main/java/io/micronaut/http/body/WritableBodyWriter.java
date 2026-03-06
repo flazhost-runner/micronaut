@@ -75,6 +75,8 @@ public final class WritableBodyWriter implements TypedMessageBodyHandler<Writabl
             outputStream.flush();
         } catch (IOException e) {
             throw new CodecException("Error writing body text: " + e.getMessage(), e);
+        } catch (RuntimeException e) {
+            throw new CodecException("Error writing body text: " + e.getMessage(), e);
         }
     }
 
@@ -112,6 +114,8 @@ public final class WritableBodyWriter implements TypedMessageBodyHandler<Writabl
         try {
             return bodyFactory.buffer(o -> object.writeTo(o, MessageBodyWriter.getCharset(mediaType, response.getHeaders())));
         } catch (IOException e) {
+            throw new CodecException("Failed to buffer Writable", e);
+        } catch (RuntimeException e) {
             throw new CodecException("Failed to buffer Writable", e);
         }
     }
