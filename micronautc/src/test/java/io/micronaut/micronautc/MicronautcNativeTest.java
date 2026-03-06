@@ -206,6 +206,78 @@ class MicronautcNativeTest {
         }
     }
 
+    @Test
+    void nativeMicronautcGeneratesIntrospectionForIntrospectedTypes(@TempDir Path tempDir) throws Exception {
+        String executable = System.getProperty("micronautc.executable");
+        String compileClasspath = System.getProperty("micronautc.compile.classpath");
+        assertTrue(executable != null && !executable.isBlank(), "micronautc.executable must be set");
+        assertTrue(compileClasspath != null && !compileClasspath.isBlank(), "micronautc.compile.classpath must be set");
+
+        Path sourcesDir = tempDir.resolve("src").resolve("example");
+        Path classesDir = tempDir.resolve("classes");
+        Files.createDirectories(sourcesDir);
+        Files.createDirectories(classesDir);
+
+        Path introspectedBeanSource = sourcesDir.resolve("IntrospectedBean.java");
+        Files.writeString(introspectedBeanSource, """
+            package example;
+
+            import io.micronaut.core.annotation.Introspected;
+
+            @Introspected
+            public class IntrospectedBean {
+                private String name;
+
+                public String getName() {
+                    return name;
+                }
+
+                public void setName(String name) {
+                    this.name = name;
+                }
+            }
+            """);
+
+        List<String> command = new ArrayList<>();
+        command.add(executable);
+        command.add("-d");
+        command.add(classesDir.toString());
+        command.add("-classpath");
+        command.add(compileClasspath);
+        command.add(introspectedBeanSource.toString());
+
+        ProcessBuilder processBuilder = new ProcessBuilder(command);
+        processBuilder.environment().put("MICRONAUTC_JAVA_HOME", System.getProperty("java.home"));
+        processBuilder.redirectErrorStream(true);
+        Process process = processBuilder.start();
+        String output = readOutput(process.getInputStream());
+        int exitCode = process.waitFor();
+        assertEquals(0, exitCode, () -> "micronautc failed:\n" + output);
+
+        Path introspectionRefPath = classesDir.resolve("META-INF/micronaut/io.micronaut.core.beans.BeanIntrospectionReference");
+        assertTrue(Files.isDirectory(introspectionRefPath), "BeanIntrospectionReference metadata directory must exist");
+        try (Stream<Path> files = Files.list(introspectionRefPath)) {
+            assertFalse(files.findAny().isEmpty(), "BeanIntrospectionReference metadata must be generated");
+        }
+
+        try (URLClassLoader classLoader = new URLClassLoader(new URL[]{classesDir.toUri().toURL()}, getClass().getClassLoader())) {
+            Class<?> beanClass = classLoader.loadClass("example.IntrospectedBean");
+            Class<?> beanIntrospectorClass = classLoader.loadClass("io.micronaut.core.beans.BeanIntrospector");
+            Class<?> beanIntrospectionClass = classLoader.loadClass("io.micronaut.core.beans.BeanIntrospection");
+            Object beanIntrospector = beanIntrospectorClass.getMethod("forClassLoader", ClassLoader.class).invoke(null, classLoader);
+            Object beanIntrospection = beanIntrospectorClass.getMethod("getIntrospection", Class.class).invoke(beanIntrospector, beanClass);
+            assertEquals(beanClass, beanIntrospectionClass.getMethod("getBeanType").invoke(beanIntrospection));
+
+            Object bean = beanIntrospectionClass.getMethod("instantiate").invoke(beanIntrospection);
+            Object beanProperty = beanIntrospectionClass
+                .getMethod("getRequiredProperty", String.class, Class.class)
+                .invoke(beanIntrospection, "name", String.class);
+            Class<?> beanPropertyClass = classLoader.loadClass("io.micronaut.core.beans.BeanProperty");
+            beanPropertyClass.getMethod("set", Object.class, Object.class).invoke(beanProperty, bean, "micronautc");
+            assertEquals("micronautc", beanPropertyClass.getMethod("get", Object.class).invoke(beanProperty, bean));
+        }
+    }
+
     private static String readOutput(InputStream inputStream) throws IOException {
         return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
     }
