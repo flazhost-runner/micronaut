@@ -18,8 +18,7 @@ import org.jspecify.annotations.Nullable;
 import io.micronaut.core.optim.StaticOptimizations;
 import io.micronaut.core.reflect.ClassUtils;
 
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
+import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -48,8 +47,6 @@ public final class SoftServiceLoader<S> implements Iterable<ServiceDefinition<S>
             StaticOptimizations.get(Optimizations.class)
                     .map(Optimizations::getServiceLoaders)
                     .orElse(Collections.emptyMap());
-    private static final MethodHandles.Lookup LOOKUP = MethodHandles.publicLookup();
-    private static final MethodType VOID_TYPE = MethodType.methodType(void.class);
     private final Class<S> serviceType;
     private final ClassLoader classLoader;
     private @Nullable Collection<ServiceDefinition<S>> servicesForIterator;
@@ -181,8 +178,11 @@ public final class SoftServiceLoader<S> implements Iterable<ServiceDefinition<S>
             try {
                 @SuppressWarnings("unchecked") final Class<S> loadedClass =
                         (Class<S>) Class.forName(className, false, classLoader);
-                // MethodHandler should more performant than the basic reflection
-                S result = (S) LOOKUP.findConstructor(loadedClass, VOID_TYPE).invoke();
+                Constructor<S> constructor = loadedClass.getDeclaredConstructor();
+                if (!constructor.canAccess(null)) {
+                    constructor.setAccessible(true);
+                }
+                S result = constructor.newInstance();
                 if (predicate != null && !predicate.test(result)) {
                     return null;
                 }
@@ -317,7 +317,11 @@ public final class SoftServiceLoader<S> implements Iterable<ServiceDefinition<S>
         @SuppressWarnings({"unchecked"})
         private static <S> S doCreate(Class<S> clazz) {
             try {
-                return (S) LOOKUP.findConstructor(clazz, VOID_TYPE).invoke();
+                Constructor<S> constructor = clazz.getDeclaredConstructor();
+                if (!constructor.canAccess(null)) {
+                    constructor.setAccessible(true);
+                }
+                return constructor.newInstance();
             } catch (Throwable e) {
                 throw new ServiceLoadingException(e);
             }
