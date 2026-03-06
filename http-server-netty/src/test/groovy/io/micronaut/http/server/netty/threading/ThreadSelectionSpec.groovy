@@ -14,6 +14,9 @@ import io.micronaut.http.annotation.Error
 import io.micronaut.http.annotation.Filter
 import io.micronaut.http.annotation.Get
 import io.micronaut.http.annotation.Post
+import io.micronaut.http.annotation.RequestFilter
+import io.micronaut.http.annotation.ResponseFilter
+import io.micronaut.http.annotation.ServerFilter
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.http.filter.HttpServerFilter
 import io.micronaut.http.filter.ServerFilterChain
@@ -145,6 +148,31 @@ class ThreadSelectionSpec extends Specification {
         ThreadSelection.MANUAL   | "controller: $LOOP"                     | "handler: $LOOP"                     | "handler: $IO"
     }
 
+    void "test thread selection for server filters #strategy"() {
+        given:
+        EmbeddedServer embeddedServer = ApplicationContext.run(EmbeddedServer, ['spec': getClass().getSimpleName(), 'micronaut.server.thread-selection': strategy])
+        ThreadSelectionClient client = embeddedServer.applicationContext.getBean(ThreadSelectionClient)
+
+        when:
+        HttpResponse<String> blockingResponse = client.filterThreadBlocking()
+        HttpResponse<String> requestResponse = client.filterThreadRequest()
+
+        then:
+        blockingResponse.header("X-Filter-Thread").contains(blocking)
+        requestResponse.header("X-Request-Filter-Thread").contains(blocking)
+
+        cleanup:
+        embeddedServer.close()
+
+        where:
+        strategy                 | blocking
+        ThreadSelection.AUTO     | jdkSwitch(IO, VIRTUAL)
+        ThreadSelection.BLOCKING | jdkSwitch(IO, VIRTUAL)
+        ThreadSelection.IO       | IO
+        ThreadSelection.MANUAL   | LOOP
+    }
+
+
     @Ignore // pending feature, only works sometimes: https://github.com/micronaut-projects/micronaut-core/pull/10104
     void "test thread selection for error route #strategy"() {
         given:
@@ -219,6 +247,13 @@ class ThreadSelectionSpec extends Specification {
 
         @Get("/scheduleexception")
         String scheduleException()
+
+        @Get("/filter-thread/blocking")
+        HttpResponse<String> filterThreadBlocking()
+
+        @Get("/filter-thread/request")
+        HttpResponse<String> filterThreadRequest()
+
     }
 
     @Requires(property = "spec", value = "ThreadSelectionSpec")
@@ -294,6 +329,11 @@ class ThreadSelectionSpec extends Specification {
             throw new MyExceptionScheduled()
         }
 
+        @Get("/filter-thread/blocking")
+        String filterThreadBlocking() {
+            return "ok"
+        }
+
         @Error(MyExceptionWithErrorRoute.class)
         HttpResponse errorRoute(MyExceptionWithErrorRoute e) {
             return HttpResponse.ok("handler: ${Thread.currentThread().name}, controller: " + e.getMessage())
@@ -312,6 +352,24 @@ class ThreadSelectionSpec extends Specification {
             }, FluxSink.OverflowStrategy.LATEST).switchMap({ String it ->
                 return chain.proceed(request)
             })
+        }
+    }
+
+    @Requires(property = "spec", value = "ThreadSelectionSpec")
+    @ServerFilter("/thread-selection/filter-thread/blocking")
+    static class ThreadSelectionServerFilter {
+        @ResponseFilter
+        void filter(MutableHttpResponse<?> response) {
+            response.header("X-Filter-Thread", Thread.currentThread().name)
+        }
+    }
+
+    @Requires(property = "spec", value = "ThreadSelectionSpec")
+    @ServerFilter("/thread-selection/filter-thread/request")
+    static class ThreadSelectionRequestServerFilter {
+        @RequestFilter
+        HttpResponse<?> filter() {
+            return HttpResponse.ok("ok").header("X-Request-Filter-Thread", Thread.currentThread().name)
         }
     }
 
