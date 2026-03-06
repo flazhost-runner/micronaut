@@ -22,6 +22,7 @@ import io.micronaut.context.annotation.Requires;
 import io.micronaut.context.visitor.VisitorUtils;
 import io.micronaut.core.annotation.NextMajorVersion;
 import org.jspecify.annotations.Nullable;
+import io.micronaut.core.io.service.SoftServiceLoader;
 import io.micronaut.core.order.OrderUtil;
 import io.micronaut.core.util.CollectionUtils;
 import io.micronaut.core.util.StringUtils;
@@ -81,6 +82,8 @@ import static io.micronaut.core.util.StringUtils.EMPTY_STRING;
     VisitorContext.MICRONAUT_PROCESSING_MODULE
 })
 public class TypeElementVisitorProcessor extends AbstractInjectAnnotationProcessor {
+    private static final String USE_CONTEXT_CLASSLOADER_PROPERTY = "micronaut.processing.use.context.classloader";
+
     private static final Set<String> VISITOR_WARNINGS;
     private static final Set<String> SUPPORTED_ANNOTATION_NAMES;
 
@@ -443,13 +446,15 @@ public class TypeElementVisitorProcessor extends AbstractInjectAnnotationProcess
     }
 
     private static Collection<? extends TypeElementVisitor<?, ?>> findCoreTypeElementVisitors(@Nullable Set<String> warnings) {
-        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        if (classLoader == null) {
-            classLoader = TypeElementVisitorProcessor.class.getClassLoader();
+        ClassLoader classLoader = TypeElementVisitorProcessor.class.getClassLoader();
+        if (Boolean.getBoolean(USE_CONTEXT_CLASSLOADER_PROPERTY)) {
+            ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+            if (contextClassLoader != null) {
+                classLoader = contextClassLoader;
+            }
         }
-        return ServiceLoader.load(TypeElementVisitor.class, classLoader)
+        return loadTypeElementVisitors(classLoader)
             .stream()
-            .map(provider -> (TypeElementVisitor<?, ?>) provider.get())
             .filter(visitor -> {
                 if (!visitor.isEnabled()) {
                     return false;
@@ -482,5 +487,26 @@ public class TypeElementVisitorProcessor extends AbstractInjectAnnotationProcess
             })
             // remove duplicate classes
             .collect(Collectors.toMap(Object::getClass, v -> v, (a, b) -> a)).values();
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<TypeElementVisitor<?, ?>> loadTypeElementVisitors(ClassLoader classLoader) {
+        List<TypeElementVisitor<?, ?>> visitors = (List) SoftServiceLoader.load(TypeElementVisitor.class, classLoader)
+            .disableFork()
+            .collectAll();
+        if (!visitors.isEmpty()) {
+            return visitors;
+        }
+        visitors = new ArrayList<>();
+        for (ServiceLoader.Provider<TypeElementVisitor> provider : ServiceLoader.load(TypeElementVisitor.class, classLoader).stream().toList()) {
+            try {
+                visitors.add(provider.get());
+            } catch (Throwable e) {
+                if (e instanceof VirtualMachineError virtualMachineError) {
+                    throw virtualMachineError;
+                }
+            }
+        }
+        return visitors;
     }
 }

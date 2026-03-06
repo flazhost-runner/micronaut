@@ -40,14 +40,21 @@ class MicronautcNativeTest {
 
         Path sourcesDir = tempDir.resolve("src").resolve("example");
         Path probeClassesDir = tempDir.resolve("probe-classes");
+        Path mapperProbeClassesDir = tempDir.resolve("mapper-probe-classes");
+        Path transformerProbeClassesDir = tempDir.resolve("transformer-probe-classes");
         Path classesDir = tempDir.resolve("classes");
         Files.createDirectories(sourcesDir);
         Files.createDirectories(probeClassesDir);
+        Files.createDirectories(mapperProbeClassesDir);
+        Files.createDirectories(transformerProbeClassesDir);
         Files.createDirectories(classesDir);
 
         Path greeterSource = sourcesDir.resolve("Greeter.java");
         Path helloServiceSource = sourcesDir.resolve("HelloService.java");
+        Path mapperProbeSource = sourcesDir.resolve("MapperProbe.java");
+        Path transformerProbeSource = sourcesDir.resolve("TransformerProbe.java");
         Path customVisitorJar = createCustomVisitorJar(tempDir, compileClasspath);
+        Path customAnnotationServicesJar = createCustomAnnotationServicesJar(tempDir, compileClasspath);
 
         Files.writeString(greeterSource, """
             package example;
@@ -81,6 +88,34 @@ class MicronautcNativeTest {
             }
             """);
 
+        Files.writeString(mapperProbeSource, """
+            package example;
+
+            import jakarta.inject.Singleton;
+
+            @Singleton
+            @TriggerMapper
+            class MapperProbe {
+            }
+
+            @interface TriggerMapper {
+            }
+            """);
+
+        Files.writeString(transformerProbeSource, """
+            package example;
+
+            import jakarta.inject.Singleton;
+
+            @Singleton
+            @TriggerTransformer
+            class TransformerProbe {
+            }
+
+            @interface TriggerTransformer {
+            }
+            """);
+
         List<String> probeCommand = new ArrayList<>();
         probeCommand.add(executable);
         probeCommand.add("-d");
@@ -100,6 +135,44 @@ class MicronautcNativeTest {
         int probeExitCode = process.waitFor();
         assertTrue(probeOutput.contains("CUSTOM_VISITOR_RAN"), () -> "custom visitor did not run:\n" + probeOutput);
         assertNotEquals(0, probeExitCode, () -> "custom visitor probe should fail compilation:\n" + probeOutput);
+
+        List<String> mapperProbeCommand = new ArrayList<>();
+        mapperProbeCommand.add(executable);
+        mapperProbeCommand.add("-d");
+        mapperProbeCommand.add(mapperProbeClassesDir.toString());
+        mapperProbeCommand.add("-processorpath");
+        mapperProbeCommand.add(customAnnotationServicesJar.toString());
+        mapperProbeCommand.add("-classpath");
+        mapperProbeCommand.add(compileClasspath);
+        mapperProbeCommand.add(mapperProbeSource.toString());
+
+        processBuilder = new ProcessBuilder(mapperProbeCommand);
+        processBuilder.environment().put("MICRONAUTC_JAVA_HOME", System.getProperty("java.home"));
+        processBuilder.redirectErrorStream(true);
+        process = processBuilder.start();
+        String mapperProbeOutput = readOutput(process.getInputStream());
+        int mapperProbeExitCode = process.waitFor();
+        assertTrue(mapperProbeOutput.contains("CUSTOM_MAPPER_RAN"), () -> "custom mapper did not run:\n" + mapperProbeOutput);
+        assertNotEquals(0, mapperProbeExitCode, () -> "custom mapper probe should fail compilation:\n" + mapperProbeOutput);
+
+        List<String> transformerProbeCommand = new ArrayList<>();
+        transformerProbeCommand.add(executable);
+        transformerProbeCommand.add("-d");
+        transformerProbeCommand.add(transformerProbeClassesDir.toString());
+        transformerProbeCommand.add("-processorpath");
+        transformerProbeCommand.add(customAnnotationServicesJar.toString());
+        transformerProbeCommand.add("-classpath");
+        transformerProbeCommand.add(compileClasspath);
+        transformerProbeCommand.add(transformerProbeSource.toString());
+
+        processBuilder = new ProcessBuilder(transformerProbeCommand);
+        processBuilder.environment().put("MICRONAUTC_JAVA_HOME", System.getProperty("java.home"));
+        processBuilder.redirectErrorStream(true);
+        process = processBuilder.start();
+        String transformerProbeOutput = readOutput(process.getInputStream());
+        int transformerProbeExitCode = process.waitFor();
+        assertTrue(transformerProbeOutput.contains("CUSTOM_TRANSFORMER_RAN"), () -> "custom transformer did not run:\n" + transformerProbeOutput);
+        assertNotEquals(0, transformerProbeExitCode, () -> "custom transformer probe should fail compilation:\n" + transformerProbeOutput);
 
         List<String> command = new ArrayList<>();
         command.add(executable);
@@ -186,6 +259,85 @@ class MicronautcNativeTest {
         Path visitorJar = tempDir.resolve("custom-visitor.jar");
         createJar(visitorClassesDir, visitorJar);
         return visitorJar;
+    }
+
+    private static Path createCustomAnnotationServicesJar(Path tempDir, String compileClasspath) throws IOException {
+        Path annotationSourcesDir = tempDir.resolve("annotation-service-src").resolve("custom").resolve("annotation");
+        Path annotationClassesDir = tempDir.resolve("annotation-service-classes");
+        Path mapperSource = annotationSourcesDir.resolve("MarkerMapper.java");
+        Path transformerSource = annotationSourcesDir.resolve("MarkerTransformer.java");
+
+        Files.createDirectories(annotationSourcesDir);
+        Files.createDirectories(annotationClassesDir);
+        Files.writeString(mapperSource, """
+            package custom.annotation;
+
+            import io.micronaut.core.annotation.AnnotationValue;
+            import io.micronaut.inject.annotation.NamedAnnotationMapper;
+            import io.micronaut.inject.visitor.VisitorContext;
+
+            import java.lang.annotation.Annotation;
+            import java.util.List;
+
+            public final class MarkerMapper implements NamedAnnotationMapper {
+                @Override
+                public String getName() {
+                    return "example.TriggerMapper";
+                }
+
+                @Override
+                public List<AnnotationValue<?>> map(AnnotationValue<Annotation> annotation, VisitorContext visitorContext) {
+                    throw new IllegalStateException("CUSTOM_MAPPER_RAN");
+                }
+            }
+            """);
+
+        Files.writeString(transformerSource, """
+            package custom.annotation;
+
+            import io.micronaut.core.annotation.AnnotationValue;
+            import io.micronaut.inject.annotation.NamedAnnotationTransformer;
+            import io.micronaut.inject.visitor.VisitorContext;
+
+            import java.lang.annotation.Annotation;
+            import java.util.List;
+
+            public final class MarkerTransformer implements NamedAnnotationTransformer {
+                @Override
+                public String getName() {
+                    return "example.TriggerTransformer";
+                }
+
+                @Override
+                public List<AnnotationValue<?>> transform(AnnotationValue<Annotation> annotation, VisitorContext visitorContext) {
+                    throw new IllegalStateException("CUSTOM_TRANSFORMER_RAN");
+                }
+            }
+            """);
+
+        JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+        assertTrue(compiler != null, "System Java compiler not available for annotation service compilation");
+        try (StandardJavaFileManager fileManager = compiler.getStandardFileManager(null, null, null)) {
+            Iterable<? extends JavaFileObject> compilationUnits = fileManager.getJavaFileObjects(mapperSource.toFile(), transformerSource.toFile());
+            List<String> options = List.of(
+                "-classpath", compileClasspath,
+                "-d", annotationClassesDir.toString()
+            );
+            Boolean compiled = compiler.getTask(null, fileManager, null, options, null, compilationUnits).call();
+            assertTrue(Boolean.TRUE.equals(compiled), "Failed to compile custom annotation services");
+        }
+
+        Path mapperServiceFile = annotationClassesDir.resolve("META-INF/services/io.micronaut.inject.annotation.AnnotationMapper");
+        Files.createDirectories(mapperServiceFile.getParent());
+        Files.writeString(mapperServiceFile, "custom.annotation.MarkerMapper\n");
+
+        Path transformerServiceFile = annotationClassesDir.resolve("META-INF/services/io.micronaut.inject.annotation.AnnotationTransformer");
+        Files.createDirectories(transformerServiceFile.getParent());
+        Files.writeString(transformerServiceFile, "custom.annotation.MarkerTransformer\n");
+
+        Path serviceJar = tempDir.resolve("custom-annotation-services.jar");
+        createJar(annotationClassesDir, serviceJar);
+        return serviceJar;
     }
 
     private static void createJar(Path inputDir, Path jarFile) throws IOException {

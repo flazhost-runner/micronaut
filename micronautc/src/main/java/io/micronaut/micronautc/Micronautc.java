@@ -35,6 +35,8 @@ import java.util.regex.Pattern;
  */
 public final class Micronautc {
 
+    private static final String USE_CONTEXT_CLASSLOADER_PROPERTY = "micronaut.processing.use.context.classloader";
+
     private static final String PROCESSORS = String.join(",",
         "io.micronaut.annotation.processing.MixinVisitorProcessor",
         "io.micronaut.annotation.processing.PackageElementVisitorProcessor",
@@ -77,7 +79,17 @@ public final class Micronautc {
             }
             try (processorClassLoader) {
                 Thread.currentThread().setContextClassLoader(processorClassLoader);
-                return compiler.run(System.in, System.out, System.err, compilerArgs);
+                String previousUseContextClassLoader = System.getProperty(USE_CONTEXT_CLASSLOADER_PROPERTY);
+                System.setProperty(USE_CONTEXT_CLASSLOADER_PROPERTY, Boolean.TRUE.toString());
+                try {
+                    return compiler.run(System.in, System.out, System.err, compilerArgs);
+                } finally {
+                    if (previousUseContextClassLoader == null) {
+                        System.clearProperty(USE_CONTEXT_CLASSLOADER_PROPERTY);
+                    } else {
+                        System.setProperty(USE_CONTEXT_CLASSLOADER_PROPERTY, previousUseContextClassLoader);
+                    }
+                }
             } finally {
                 Thread.currentThread().setContextClassLoader(originalClassLoader);
             }
