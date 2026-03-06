@@ -217,13 +217,21 @@ public class TypeElementVisitorProcessor extends AbstractInjectAnnotationProcess
             .flatMap(Collection::stream);
         Stream<String> visitorsAnnotationsOptions = typeElementVisitors
             .stream()
-            .filter(tev -> tev.getClass().isAnnotationPresent(SupportedOptions.class))
+            .filter(this::hasSupportedOptionsAnnotation)
             .map(TypeElementVisitor::getClass)
             .map(cls -> (SupportedOptions) cls.getAnnotation(SupportedOptions.class))
             .flatMap((SupportedOptions supportedOptions) -> Arrays.stream(supportedOptions.value()));
         return Stream.of(baseOption, visitorsAnnotationsOptions, visitorsOptions)
             .flatMap(Stream::sequential)
             .collect(Collectors.toSet());
+    }
+
+    private boolean hasSupportedOptionsAnnotation(TypeElementVisitor<?, ?> visitor) {
+        try {
+            return visitor.getClass().isAnnotationPresent(SupportedOptions.class);
+        } catch (UnsupportedOperationException e) {
+            return false;
+        }
     }
 
     @NextMajorVersion("`roundEnv.getRootElements()` should be removed in Micronaut 4. " +
@@ -450,7 +458,13 @@ public class TypeElementVisitorProcessor extends AbstractInjectAnnotationProcess
                     return false;
                 }
 
-                final Requires requires = visitor.getClass().getAnnotation(Requires.class);
+                final Requires requires;
+                try {
+                    requires = visitor.getClass().getAnnotation(Requires.class);
+                } catch (UnsupportedOperationException e) {
+                    // Crema can throw UnsupportedOperationException for runtime annotation lookup; ignore @Requires checks in that case.
+                    return true;
+                }
                 if (requires != null) {
                     final Requires.Sdk sdk = requires.sdk();
                     if (sdk == Requires.Sdk.MICRONAUT) {
@@ -480,7 +494,6 @@ public class TypeElementVisitorProcessor extends AbstractInjectAnnotationProcess
         if (additionalVisitors == null || additionalVisitors.isBlank()) {
             return;
         }
-        TypeElementVisitor.VisitorKind.values();
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         if (classLoader == null) {
             classLoader = TypeElementVisitorProcessor.class.getClassLoader();
