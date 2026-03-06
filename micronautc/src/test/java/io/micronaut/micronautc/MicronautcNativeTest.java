@@ -20,6 +20,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import java.util.stream.Stream;
@@ -30,6 +31,17 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MicronautcNativeTest {
+
+    @Test
+    void nativeMicronautcHelpMatchesJavacHelp() throws Exception {
+        String executable = System.getProperty("micronautc.executable");
+        assertTrue(executable != null && !executable.isBlank(), "micronautc.executable must be set");
+
+        String micronautcHelp = runCommand(List.of(executable, "--help"));
+        String javacHelp = runCommand(List.of(resolveJavacExecutable(), "--help"));
+
+        assertEquals(normalizeOutput(javacHelp), normalizeOutput(micronautcHelp));
+    }
 
     @Test
     void nativeMicronautcCompilesAndProducesInjectableBeans(@TempDir Path tempDir) throws Exception {
@@ -280,6 +292,32 @@ class MicronautcNativeTest {
 
     private static String readOutput(InputStream inputStream) throws IOException {
         return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+    }
+
+    private static String runCommand(List<String> command) throws Exception {
+        ProcessBuilder processBuilder = new ProcessBuilder(command);
+        processBuilder.environment().put("MICRONAUTC_JAVA_HOME", System.getProperty("java.home"));
+        processBuilder.redirectErrorStream(true);
+        Process process = processBuilder.start();
+        String output = readOutput(process.getInputStream());
+        int exitCode = process.waitFor();
+        assertEquals(0, exitCode, () -> "command failed " + command + ":\n" + output);
+        return output;
+    }
+
+    private static String resolveJavacExecutable() {
+        String javaHome = System.getProperty("java.home");
+        String javac = isWindows() ? "javac.exe" : "javac";
+        Path javacPath = Path.of(javaHome, "bin", javac);
+        return javacPath.toString();
+    }
+
+    private static boolean isWindows() {
+        return System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("win");
+    }
+
+    private static String normalizeOutput(String output) {
+        return output.replace("\r\n", "\n").trim();
     }
 
     private static Path createCustomVisitorJar(Path tempDir, String compileClasspath) throws IOException {

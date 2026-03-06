@@ -100,6 +100,9 @@ public final class Micronautc {
     }
 
     private static String[] prepareCompilerArgs(String[] args) {
+        if (hasHelpArgument(args)) {
+            return args;
+        }
         List<String> compilerArgs = new ArrayList<>(Arrays.asList(args));
         extendProcessorPathWithClassPath(compilerArgs);
         if (!hasProcessorConfiguration(args) && !hasProcNone(args)) {
@@ -107,6 +110,15 @@ public final class Micronautc {
             compilerArgs.add(PROCESSORS);
         }
         return compilerArgs.toArray(String[]::new);
+    }
+
+    private static boolean hasHelpArgument(String[] args) {
+        for (String arg : args) {
+            if ("--help".equals(arg) || "-help".equals(arg) || "-?".equals(arg)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static void extendProcessorPathWithClassPath(List<String> compilerArgs) {
