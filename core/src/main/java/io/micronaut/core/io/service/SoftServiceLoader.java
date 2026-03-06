@@ -45,12 +45,12 @@ import java.util.stream.Stream;
  */
 public final class SoftServiceLoader<S> implements Iterable<ServiceDefinition<S>> {
     public static final String META_INF_SERVICES = "META-INF/services";
-    private static final MethodHandles.Lookup LOOKUP = MethodHandles.publicLookup();
-    private static final MethodType VOID_TYPE = MethodType.methodType(void.class);
     static final Map<String, SoftServiceLoader.StaticServiceLoader<?>> STATIC_SERVICES =
             StaticOptimizations.get(Optimizations.class)
                     .map(Optimizations::getServiceLoaders)
                     .orElse(Collections.emptyMap());
+    private static final MethodHandles.Lookup LOOKUP = MethodHandles.publicLookup();
+    private static final MethodType VOID_TYPE = MethodType.methodType(void.class);
     private final Class<S> serviceType;
     private final ClassLoader classLoader;
     private @Nullable Collection<ServiceDefinition<S>> servicesForIterator;
@@ -276,6 +276,27 @@ public final class SoftServiceLoader<S> implements Iterable<ServiceDefinition<S>
         return new ServiceScanner<>(classLoader, serviceName, lineCondition, transformer).createCollector();
     }
 
+    private static <S> S instantiate(Class<S> clazz) throws Throwable {
+        try {
+            return instantiateUsingMethodHandle(clazz);
+        } catch (NoSuchMethodException | IllegalAccessException | IllegalAccessError e) {
+            return instantiateUsingReflection(clazz);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <S> S instantiateUsingMethodHandle(Class<S> clazz) throws Throwable {
+        return (S) LOOKUP.findConstructor(clazz, VOID_TYPE).invoke();
+    }
+
+    private static <S> S instantiateUsingReflection(Class<S> clazz) throws ReflectiveOperationException {
+        Constructor<S> constructor = clazz.getDeclaredConstructor();
+        if (!constructor.canAccess(null)) {
+            constructor.setAccessible(true);
+        }
+        return constructor.newInstance();
+    }
+
     /**
      * A {@link ServiceDefinition} implementation that uses a {@link MethodHandles.Lookup} object to find a public constructor.
      *
@@ -322,27 +343,6 @@ public final class SoftServiceLoader<S> implements Iterable<ServiceDefinition<S>
                 throw new ServiceLoadingException(e);
             }
         }
-    }
-
-    private static <S> S instantiate(Class<S> clazz) throws Throwable {
-        try {
-            return instantiateUsingMethodHandle(clazz);
-        } catch (NoSuchMethodException | IllegalAccessException | IllegalAccessError e) {
-            return instantiateUsingReflection(clazz);
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private static <S> S instantiateUsingMethodHandle(Class<S> clazz) throws Throwable {
-        return (S) LOOKUP.findConstructor(clazz, VOID_TYPE).invoke();
-    }
-
-    private static <S> S instantiateUsingReflection(Class<S> clazz) throws ReflectiveOperationException {
-        Constructor<S> constructor = clazz.getDeclaredConstructor();
-        if (!constructor.canAccess(null)) {
-            constructor.setAccessible(true);
-        }
-        return constructor.newInstance();
     }
 
     /**
