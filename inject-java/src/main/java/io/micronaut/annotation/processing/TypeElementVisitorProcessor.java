@@ -81,7 +81,6 @@ import static io.micronaut.core.util.StringUtils.EMPTY_STRING;
     VisitorContext.MICRONAUT_PROCESSING_MODULE
 })
 public class TypeElementVisitorProcessor extends AbstractInjectAnnotationProcessor {
-    private static final String ADDITIONAL_VISITORS_OPTION = "micronaut.processing.additional.type.element.visitors";
     private static final Set<String> VISITOR_WARNINGS;
     private static final Set<String> SUPPORTED_ANNOTATION_NAMES;
 
@@ -151,9 +150,12 @@ public class TypeElementVisitorProcessor extends AbstractInjectAnnotationProcess
             }
         }
 
-        addAdditionalVisitors(processingEnv);
-
         OrderUtil.reverseSort(loadedVisitors);
+
+        System.out.println("[TypeElementVisitorProcessor] Loaded visitors count=" + loadedVisitors.size());
+        for (LoadedVisitor loadedVisitor : loadedVisitors) {
+            System.out.println("[TypeElementVisitorProcessor] Loaded visitor=" + loadedVisitor.getVisitor().getClass().getName());
+        }
 
         for (LoadedVisitor loadedVisitor : loadedVisitors) {
             try {
@@ -450,9 +452,15 @@ public class TypeElementVisitorProcessor extends AbstractInjectAnnotationProcess
         if (classLoader == null) {
             classLoader = TypeElementVisitorProcessor.class.getClassLoader();
         }
+        System.out.println("[TypeElementVisitorProcessor] ServiceLoader classLoader=" + classLoader);
         return ServiceLoader.load(TypeElementVisitor.class, classLoader)
             .stream()
-            .map(ServiceLoader.Provider::get)
+            .peek(provider -> System.out.println("[TypeElementVisitorProcessor] Service provider=" + provider.type().getName()))
+            .map(provider -> {
+                TypeElementVisitor<?, ?> visitor = provider.get();
+                System.out.println("[TypeElementVisitorProcessor] Instantiated visitor=" + visitor.getClass().getName());
+                return visitor;
+            })
             .filter(visitor -> {
                 if (!visitor.isEnabled()) {
                     return false;
@@ -487,56 +495,5 @@ public class TypeElementVisitorProcessor extends AbstractInjectAnnotationProcess
             .<TypeElementVisitor<?, ?>>map(e -> e)
             // remove duplicate classes
             .collect(Collectors.toMap(Object::getClass, v -> v, (a, b) -> a)).values();
-    }
-
-    private void addAdditionalVisitors(ProcessingEnvironment processingEnv) {
-        String additionalVisitors = processingEnv.getOptions().get(ADDITIONAL_VISITORS_OPTION);
-        if (additionalVisitors == null || additionalVisitors.isBlank()) {
-            return;
-        }
-        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        if (classLoader == null) {
-            classLoader = TypeElementVisitorProcessor.class.getClassLoader();
-        }
-        TypeElementVisitor.VisitorKind incrementalProcessorKind = getIncrementalProcessorKind();
-        for (String candidate : additionalVisitors.split(",")) {
-            String visitorClassName = candidate.trim();
-            if (visitorClassName.isEmpty()) {
-                continue;
-            }
-            TypeElementVisitor<?, ?> visitor = instantiateVisitor(visitorClassName, classLoader);
-            if (visitor == null) {
-                continue;
-            }
-            TypeElementVisitor.VisitorKind visitorKind;
-            try {
-                visitorKind = visitor.getVisitorKind();
-            } catch (Throwable e) {
-                warning("Additional TypeElementVisitor [%s] failed to provide visitor kind: %s", visitorClassName, e.getMessage());
-                continue;
-            }
-            if (visitorKind != incrementalProcessorKind) {
-                continue;
-            }
-            try {
-                loadedVisitors.add(new LoadedVisitor(visitor, processingEnv));
-            } catch (TypeNotPresentException | NoClassDefFoundError e) {
-                warning("Additional TypeElementVisitor [%s] could not be loaded: %s", visitorClassName, e.getMessage());
-            }
-        }
-    }
-
-    private @Nullable TypeElementVisitor<?, ?> instantiateVisitor(String visitorClassName, ClassLoader classLoader) {
-        try {
-            Class<?> visitorClass = Class.forName(visitorClassName, false, classLoader);
-            if (!TypeElementVisitor.class.isAssignableFrom(visitorClass)) {
-                warning("Additional TypeElementVisitor [%s] does not implement TypeElementVisitor", visitorClassName);
-                return null;
-            }
-            return (TypeElementVisitor<?, ?>) visitorClass.getDeclaredConstructor().newInstance();
-        } catch (ReflectiveOperationException | LinkageError e) {
-            warning("Additional TypeElementVisitor [%s] could not be instantiated: %s", visitorClassName, e.getMessage());
-            return null;
-        }
     }
 }
