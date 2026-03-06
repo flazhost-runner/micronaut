@@ -127,15 +127,24 @@ public final class RoutingInBoundHandler implements RequestHandler {
         try {
             request.release();
         } finally {
-            if (!terminateEventPublisher.isEmpty()) {
-                try {
-                    terminateEventPublisher.publishEvent(new HttpRequestTerminatedEvent(request));
-                } catch (Exception e) {
-                    if (LOG.isErrorEnabled()) {
-                        LOG.error("Error publishing request terminated event: {}", e.getMessage(), e);
+            ExecutionFlow<Void> terminatedFlow;
+            if (terminateEventPublisher.isEmpty()) {
+                terminatedFlow = ExecutionFlow.empty();
+            } else {
+                terminatedFlow = ExecutionFlow.async(getIoExecutor(), () -> {
+                    try (PropagatedContext.Scope ignore = PropagatedContext.getOrEmpty()
+                        .plus(new ServerHttpRequestContext(request))
+                        .propagate()) {
+                        terminateEventPublisher.publishEvent(new HttpRequestTerminatedEvent(request));
                     }
-                }
+                    return ExecutionFlow.empty();
+                });
             }
+            terminatedFlow.onComplete((ignore, throwable) -> {
+                if (throwable != null && LOG.isErrorEnabled()) {
+                    LOG.error("Error publishing request terminated event: {}", throwable.getMessage(), throwable);
+                }
+            });
         }
     }
 
@@ -184,27 +193,68 @@ public final class RoutingInBoundHandler implements RequestHandler {
                 conversionService,
                 serverConfiguration
             );
-            outboundAccess.attachment(errorRequest);
-            if (receivedPublisher != ApplicationEventPublisher.NO_OP) {
-                receivedPublisher.publishEvent(new HttpRequestReceivedEvent(errorRequest));
-            }
-            try (PropagatedContext.Scope ignore = PropagatedContext.getOrEmpty().plus(new ServerHttpRequestContext(errorRequest)).propagate()) {
-                new NettyRequestLifecycle(this, outboundAccess).handleException(errorRequest, e.getCause() == null ? e : e.getCause());
-            }
+            prepareRequest(ctx, outboundAccess, errorRequest);
+            Throwable error = e.getCause() == null ? e : e.getCause();
+            executionFlowForReceivedEvent(errorRequest).onComplete((ignore, throwable) -> {
+                if (throwable != null) {
+                    error.addSuppressed(throwable);
+                }
+                handleException(ctx, outboundAccess, errorRequest, error);
+            });
             return;
         }
-        if (receivedPublisher != ApplicationEventPublisher.NO_OP) {
-            receivedPublisher.publishEvent(new HttpRequestReceivedEvent(mnRequest));
-        }
+        prepareRequest(ctx, outboundAccess, mnRequest);
+        ExecutionFlow<Void> receivedFlow = executionFlowForReceivedEvent(mnRequest);
+        receivedFlow.onComplete((ignore, throwable) -> {
+            if (throwable != null) {
+                handleException(ctx, outboundAccess, mnRequest, throwable);
+            } else {
+                executeOnEventLoopIfNeeded(ctx, () -> {
+                    try (PropagatedContext.Scope propagated = PropagatedContext.getOrEmpty().plus(new ServerHttpRequestContext(mnRequest)).propagate()) {
+                        new NettyRequestLifecycle(this, outboundAccess).handleNormal(mnRequest);
+                    }
+                });
+            }
+        });
+    }
+
+    private void prepareRequest(ChannelHandlerContext ctx, OutboundAccess outboundAccess, NettyHttpRequest<Object> mnRequest) {
         if (supportLoggingHandler && ctx.pipeline().get(ChannelPipelineCustomizer.HANDLER_ACCESS_LOGGER) != null) {
             // Micronaut Session needs this to extract values from the Micronaut Http Request for logging
             AttributeKey<NettyHttpRequest> key = AttributeKey.valueOf(NettyHttpRequest.class.getSimpleName());
             ctx.channel().attr(key).set(mnRequest);
         }
         outboundAccess.attachment(mnRequest);
-        try (PropagatedContext.Scope ignore = PropagatedContext.getOrEmpty().plus(new ServerHttpRequestContext(mnRequest)).propagate()) {
-            new NettyRequestLifecycle(this, outboundAccess).handleNormal(mnRequest);
+    }
+
+    private void handleException(ChannelHandlerContext ctx, OutboundAccess outboundAccess, NettyHttpRequest<Object> request, Throwable throwable) {
+        executeOnEventLoopIfNeeded(ctx, () -> {
+            try (PropagatedContext.Scope ignored = PropagatedContext.getOrEmpty().plus(new ServerHttpRequestContext(request)).propagate()) {
+                new NettyRequestLifecycle(this, outboundAccess).handleException(request, throwable);
+            }
+        });
+    }
+
+    private void executeOnEventLoopIfNeeded(ChannelHandlerContext ctx, Runnable runnable) {
+        if (ctx.executor().inEventLoop()) {
+            runnable.run();
+        } else {
+            ctx.executor().execute(PropagatedContext.wrapCurrent(runnable));
         }
+    }
+
+    private ExecutionFlow<Void> executionFlowForReceivedEvent(NettyHttpRequest<?> request) {
+        if (receivedPublisher.isEmpty()) {
+            return ExecutionFlow.empty();
+        }
+        return ExecutionFlow.async(getIoExecutor(), () -> {
+            try (PropagatedContext.Scope ignore = PropagatedContext.getOrEmpty()
+                .plus(new ServerHttpRequestContext(request))
+                                .propagate()) {
+                receivedPublisher.publishEvent(new HttpRequestReceivedEvent(request));
+            }
+            return ExecutionFlow.empty();
+        });
     }
 
     public void writeResponse(OutboundAccess outboundAccess,

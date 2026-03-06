@@ -2,11 +2,14 @@ package io.micronaut.http.server.netty.threading
 
 import io.micronaut.context.ApplicationContext
 import io.micronaut.context.annotation.Requires
+import io.micronaut.context.event.ApplicationEventListener
 import io.micronaut.core.annotation.Blocking
 import io.micronaut.core.annotation.NonBlocking
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.MediaType
+import io.micronaut.http.context.event.HttpRequestReceivedEvent
+import io.micronaut.http.context.event.HttpRequestTerminatedEvent
 import io.micronaut.http.MutableHttpResponse
 import io.micronaut.http.annotation.Body
 import io.micronaut.http.annotation.Controller
@@ -35,7 +38,10 @@ import reactor.core.publisher.Mono
 import spock.lang.Ignore
 import spock.lang.Specification
 
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 
 class ThreadSelectionSpec extends Specification {
 
@@ -148,6 +154,58 @@ class ThreadSelectionSpec extends Specification {
         ThreadSelection.MANUAL   | "controller: $LOOP"                     | "handler: $LOOP"                     | "handler: $IO"
     }
 
+    void "test thread selection for request event listeners #strategy"() {
+        given:
+        EmbeddedServer embeddedServer = ApplicationContext.run(EmbeddedServer, ['spec': getClass().getSimpleName(), 'micronaut.server.thread-selection': strategy])
+        ThreadSelectionClient client = embeddedServer.applicationContext.getBean(ThreadSelectionClient)
+        RequestEventListener listener = embeddedServer.applicationContext.getBean(RequestEventListener)
+        listener.reset()
+
+        when:
+        String body = client.requestListener()
+
+        then:
+        body.contains("controller: ${controllerThread}")
+        listener.listenerThread().contains(listenerThread)
+        listener.awaitControllerObservation()
+
+        cleanup:
+        embeddedServer.close()
+
+        where:
+        strategy                 | listenerThread          | controllerThread
+        ThreadSelection.AUTO     | jdkSwitch(IO, VIRTUAL) | jdkSwitch(IO, VIRTUAL)
+        ThreadSelection.BLOCKING | jdkSwitch(IO, VIRTUAL) | jdkSwitch(IO, VIRTUAL)
+        ThreadSelection.IO       | jdkSwitch(IO, VIRTUAL) | IO
+        ThreadSelection.MANUAL   | jdkSwitch(IO, VIRTUAL) | LOOP
+    }
+
+    void "test thread selection for request terminated event listeners #strategy"() {
+        given:
+        EmbeddedServer embeddedServer = ApplicationContext.run(EmbeddedServer, ['spec': getClass().getSimpleName(), 'micronaut.server.thread-selection': strategy])
+        ThreadSelectionClient client = embeddedServer.applicationContext.getBean(ThreadSelectionClient)
+        RequestTerminatedEventListener listener = embeddedServer.applicationContext.getBean(RequestTerminatedEventListener)
+        listener.reset()
+
+        when:
+        String body = client.requestTerminated()
+
+        then:
+        body == "ok"
+        listener.awaitEvent()
+        listener.listenerThread().contains(listenerThread)
+
+        cleanup:
+        embeddedServer.close()
+
+        where:
+        strategy                 | listenerThread
+        ThreadSelection.AUTO     | jdkSwitch(IO, VIRTUAL)
+        ThreadSelection.BLOCKING | jdkSwitch(IO, VIRTUAL)
+        ThreadSelection.IO       | jdkSwitch(IO, VIRTUAL)
+        ThreadSelection.MANUAL   | jdkSwitch(IO, VIRTUAL)
+    }
+
     void "test thread selection for server filters #strategy"() {
         given:
         EmbeddedServer embeddedServer = ApplicationContext.run(EmbeddedServer, ['spec': getClass().getSimpleName(), 'micronaut.server.thread-selection': strategy])
@@ -254,11 +312,22 @@ class ThreadSelectionSpec extends Specification {
         @Get("/filter-thread/request")
         HttpResponse<String> filterThreadRequest()
 
+        @Get("/request-listener")
+        String requestListener()
+
+        @Get("/request-terminated")
+        String requestTerminated()
+
     }
 
     @Requires(property = "spec", value = "ThreadSelectionSpec")
     @Controller("/thread-selection")
     static class ThreadSelectionController {
+        private final RequestEventListener requestEventListener
+
+        ThreadSelectionController(RequestEventListener requestEventListener) {
+            this.requestEventListener = requestEventListener
+        }
         @Get("/blocking")
         String blocking() {
             return "thread: ${Thread.currentThread().name}"
@@ -331,6 +400,17 @@ class ThreadSelectionSpec extends Specification {
 
         @Get("/filter-thread/blocking")
         String filterThreadBlocking() {
+            return "ok"
+        }
+
+        @Get("/request-listener")
+        String requestListener() {
+            requestEventListener.onController(Thread.currentThread().name)
+            return "controller: ${Thread.currentThread().name}"
+        }
+
+        @Get("/request-terminated")
+        String requestTerminated() {
             return "ok"
         }
 
@@ -416,4 +496,70 @@ class ThreadSelectionSpec extends Specification {
             return HttpResponse.ok("handler: ${Thread.currentThread().name}, controller: " + exception.getMessage())
         }
     }
+
+    @Requires(property = "spec", value = "ThreadSelectionSpec")
+    @Singleton
+    static class RequestEventListener implements ApplicationEventListener<HttpRequestReceivedEvent> {
+        private final AtomicReference<String> listenerThread = new AtomicReference<>()
+        private final AtomicReference<String> controllerThread = new AtomicReference<>()
+        private final AtomicReference<CountDownLatch> listenerStartedLatch = new AtomicReference<>(new CountDownLatch(1))
+        private final AtomicReference<CountDownLatch> controllerObservedLatch = new AtomicReference<>(new CountDownLatch(1))
+
+        void reset() {
+            listenerThread.set(null)
+            controllerThread.set(null)
+            listenerStartedLatch.set(new CountDownLatch(1))
+            controllerObservedLatch.set(new CountDownLatch(1))
+        }
+
+        @Override
+        void onApplicationEvent(HttpRequestReceivedEvent event) {
+            listenerThread.set(Thread.currentThread().name)
+            listenerStartedLatch.get().countDown()
+            assert controllerObservedLatch.get().await(100, TimeUnit.MILLISECONDS) == false
+        }
+
+        void onController(String controllerThread) {
+            this.controllerThread.set(controllerThread)
+            controllerObservedLatch.get().countDown()
+        }
+
+        String listenerThread() {
+            return listenerThread.get()
+        }
+
+        boolean awaitControllerObservation() {
+            return listenerStartedLatch.get().await(5, TimeUnit.SECONDS) &&
+                controllerObservedLatch.get().await(5, TimeUnit.SECONDS) &&
+                listenerThread.get() != null &&
+                controllerThread.get() != null
+        }
+    }
+
+    @Requires(property = "spec", value = "ThreadSelectionSpec")
+    @Singleton
+    static class RequestTerminatedEventListener implements ApplicationEventListener<HttpRequestTerminatedEvent> {
+        private final AtomicReference<String> listenerThread = new AtomicReference<>()
+        private final AtomicReference<CountDownLatch> eventObservedLatch = new AtomicReference<>(new CountDownLatch(1))
+
+        void reset() {
+            listenerThread.set(null)
+            eventObservedLatch.set(new CountDownLatch(1))
+        }
+
+        @Override
+        void onApplicationEvent(HttpRequestTerminatedEvent event) {
+            listenerThread.set(Thread.currentThread().name)
+            eventObservedLatch.get().countDown()
+        }
+
+        boolean awaitEvent() {
+            return eventObservedLatch.get().await(5, TimeUnit.SECONDS) && listenerThread.get() != null
+        }
+
+        String listenerThread() {
+            return listenerThread.get()
+        }
+    }
+
 }
