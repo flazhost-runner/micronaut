@@ -98,8 +98,8 @@ class MicronautcNativeTest {
         Process process = processBuilder.start();
         String probeOutput = readOutput(process.getInputStream());
         int probeExitCode = process.waitFor();
-        assertNotEquals(0, probeExitCode, () -> "custom visitor probe should fail compilation:\n" + probeOutput);
         assertTrue(probeOutput.contains("CUSTOM_VISITOR_RAN"), () -> "custom visitor did not run:\n" + probeOutput);
+        assertNotEquals(0, probeExitCode, () -> "custom visitor probe should fail compilation:\n" + probeOutput);
 
         List<String> command = new ArrayList<>();
         command.add(executable);
@@ -159,10 +159,10 @@ class MicronautcNativeTest {
 
                 @Override
                 public void visitClass(ClassElement element, VisitorContext context) {
-                    if (!\"example.HelloService\".equals(element.getName())) {
+                    if (!"example.HelloService".equals(element.getName())) {
                         return;
                     }
-                    context.fail("CUSTOM_VISITOR_RAN", element);
+                    throw new IllegalStateException("CUSTOM_VISITOR_RAN");
                 }
             }
             """);

@@ -19,15 +19,23 @@ import org.jspecify.annotations.Nullable;
 
 import javax.tools.JavaCompiler;
 import javax.tools.ToolProvider;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 import java.util.regex.Pattern;
 
 /**
@@ -42,6 +50,8 @@ public final class Micronautc {
         "io.micronaut.annotation.processing.AggregatingTypeElementVisitorProcessor",
         "io.micronaut.annotation.processing.BeanDefinitionInjectProcessor"
     );
+    private static final String TYPE_ELEMENT_VISITOR_SERVICE = "META-INF/services/io.micronaut.inject.visitor.TypeElementVisitor";
+    private static final String ADDITIONAL_VISITORS_OPTION = "micronaut.processing.additional.type.element.visitors";
 
     private Micronautc() {
     }
@@ -91,6 +101,7 @@ public final class Micronautc {
     private static String[] prepareCompilerArgs(String[] args) {
         List<String> compilerArgs = new ArrayList<>(Arrays.asList(args));
         extendProcessorPathWithClassPath(compilerArgs);
+        addAdditionalTypeElementVisitorsOption(compilerArgs);
         if (!hasProcessorConfiguration(args) && !hasProcNone(args)) {
             compilerArgs.add("-processor");
             compilerArgs.add(PROCESSORS);
@@ -192,6 +203,84 @@ public final class Micronautc {
             args.set(pathOption.index, pathOption.name + "=" + newValue);
         } else if (pathOption.index + 1 < args.size()) {
             args.set(pathOption.index + 1, newValue);
+        }
+    }
+
+    private static void addAdditionalTypeElementVisitorsOption(List<String> compilerArgs) {
+        if (hasAdditionalVisitorsOption(compilerArgs)) {
+            return;
+        }
+        String processorPath = getPathOptionValue(compilerArgs, "-processorpath", "--processor-path");
+        if (processorPath == null || processorPath.isBlank()) {
+            return;
+        }
+        Set<String> visitors = discoverTypeElementVisitorsFromProcessorPath(processorPath);
+        if (visitors.isEmpty()) {
+            return;
+        }
+        compilerArgs.add("-A" + ADDITIONAL_VISITORS_OPTION + "=" + String.join(",", visitors));
+    }
+
+    private static boolean hasAdditionalVisitorsOption(List<String> compilerArgs) {
+        String option = "-A" + ADDITIONAL_VISITORS_OPTION;
+        for (String arg : compilerArgs) {
+            if (arg.equals(option) || arg.startsWith(option + "=")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static Set<String> discoverTypeElementVisitorsFromProcessorPath(String processorPath) {
+        Set<String> visitors = new LinkedHashSet<>();
+        for (String pathEntry : processorPath.split(Pattern.quote(File.pathSeparator))) {
+            if (pathEntry.isBlank()) {
+                continue;
+            }
+            Path path = Path.of(pathEntry);
+            if (Files.isDirectory(path)) {
+                readServiceFile(path.resolve(TYPE_ELEMENT_VISITOR_SERVICE), visitors);
+            } else if (Files.isRegularFile(path) && pathEntry.endsWith(".jar")) {
+                readJarServiceFile(path, visitors);
+            }
+        }
+        return visitors;
+    }
+
+    private static void readJarServiceFile(Path jarPath, Set<String> visitors) {
+        try (JarFile jarFile = new JarFile(jarPath.toFile())) {
+            JarEntry entry = jarFile.getJarEntry(TYPE_ELEMENT_VISITOR_SERVICE);
+            if (entry == null) {
+                return;
+            }
+            try (InputStream inputStream = jarFile.getInputStream(entry)) {
+                readServiceEntries(inputStream, visitors);
+            }
+        } catch (IOException e) {
+        }
+    }
+
+    private static void readServiceFile(Path serviceFile, Set<String> visitors) {
+        if (!Files.isRegularFile(serviceFile)) {
+            return;
+        }
+        try (InputStream inputStream = Files.newInputStream(serviceFile)) {
+            readServiceEntries(inputStream, visitors);
+        } catch (IOException e) {
+        }
+    }
+
+    private static void readServiceEntries(InputStream inputStream, Set<String> visitors) throws IOException {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                int comment = line.indexOf('#');
+                String candidate = comment >= 0 ? line.substring(0, comment) : line;
+                String className = candidate.trim();
+                if (!className.isEmpty()) {
+                    visitors.add(className);
+                }
+            }
         }
     }
 
