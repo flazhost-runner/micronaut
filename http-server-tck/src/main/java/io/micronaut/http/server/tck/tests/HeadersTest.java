@@ -16,6 +16,7 @@
 package io.micronaut.http.server.tck.tests;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.micronaut.context.annotation.Requires;
 import io.micronaut.core.annotation.Introspected;
 import io.micronaut.core.annotation.ReflectiveAccess;
@@ -162,12 +163,12 @@ public class HeadersTest {
         }
 
         @JsonCreator
-        static MyAppId valueOf(String value) {
+        public static MyAppId valueOf(@JsonProperty String value) {
             return new MyAppId(value);
         }
 
         @JsonCreator
-        static MyAppId of(String value) {
+        public static MyAppId of(@JsonProperty String value) {
             return valueOf(value);
         }
     }
