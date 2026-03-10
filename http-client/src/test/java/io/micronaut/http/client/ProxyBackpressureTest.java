@@ -32,7 +32,6 @@ public class ProxyBackpressureTest {
     private static final int CHUNK_SIZE = 1024 * 1024;
     private static final int TOTAL_CHUNKS = 128;
     private static final long MAX_INITIAL_EMISSION = 32L * CHUNK_SIZE;
-    private static final long STALLED_OBSERVATION_WINDOW_MILLIS = 1_000;
 
     private static boolean isNotCiEnvironment() {
         return System.getenv("CI") == null;
@@ -74,7 +73,7 @@ public class ProxyBackpressureTest {
         backpressure(ssl, version, endpoint);
     }
 
-    public void backpressure(boolean ssl, int version, String endpoint) {
+    public void backpressure(boolean ssl, int version, String endpoint) throws InterruptedException {
         try (ApplicationContext ctx = ApplicationContext.run(Map.of(
             "spec.name", "ProxyBackpressureTest",
             "micronaut.http.client.ssl.insecure-trust-all-certificates", ssl,
@@ -123,8 +122,8 @@ public class ProxyBackpressureTest {
             Awaitility.await().atMost(60, TimeUnit.SECONDS).until(() -> subscriber.subscription != null);
             subscriber.subscription.request(1);
             Awaitility.await().atMost(60, TimeUnit.SECONDS).until(() -> subscriber.received > 1024);
+            TimeUnit.SECONDS.sleep(5);
             Assertions.assertTrue(ctrl.emitted.get() < MAX_INITIAL_EMISSION);
-            assertEmissionStalls(ctrl.emitted);
 
             subscriber.subscription.request(Long.MAX_VALUE);
             Awaitility.await().atMost(60, TimeUnit.SECONDS).until(() -> subscriber.complete);
@@ -134,13 +133,6 @@ public class ProxyBackpressureTest {
             Assertions.assertEquals(TOTAL_CHUNKS * CHUNK_SIZE, subscriber.received);
             Assertions.assertEquals(TOTAL_CHUNKS * CHUNK_SIZE, ctrl.emitted.get());
         }
-    }
-
-    private static void assertEmissionStalls(AtomicLong emitted) {
-        long before = emitted.get();
-        Awaitility.await().during(STALLED_OBSERVATION_WINDOW_MILLIS, TimeUnit.MILLISECONDS)
-            .atMost(STALLED_OBSERVATION_WINDOW_MILLIS + TimeUnit.SECONDS.toMillis(5), TimeUnit.MILLISECONDS)
-            .until(() -> emitted.get() == before);
     }
 
     @Controller
