@@ -17,6 +17,7 @@ package io.micronaut.aop.util
 
 import io.micronaut.core.annotation.Experimental
 import io.micronaut.core.annotation.Internal
+import io.micronaut.core.propagation.PropagatedContext
 import java.util.concurrent.CompletionException
 import java.util.concurrent.CompletionStage
 import kotlin.coroutines.resumeWithException
@@ -34,17 +35,25 @@ internal object KotlinInterceptedMethodHelper {
     @JvmStatic
     suspend fun handleResult(result: CompletionStage<*>, isUnitValueType: Boolean): Any? =
         suspendCoroutine { continuation ->
+            val propagatedContext = PropagatedContext.find().orElse(null)
             result.whenComplete { value: Any?, throwable: Throwable? ->
-                if (throwable == null) {
-                    val res = Result.success(value ?: if (isUnitValueType) Unit else null)
-                    continuation.resumeWith(res)
-                } else {
-                    val exception = if (throwable is CompletionException) {
-                        throwable.cause ?: throwable
+                val resume = {
+                    if (throwable == null) {
+                        val res = Result.success(value ?: if (isUnitValueType) Unit else null)
+                        continuation.resumeWith(res)
                     } else {
-                        throwable
+                        val exception = if (throwable is CompletionException) {
+                            throwable.cause ?: throwable
+                        } else {
+                            throwable
+                        }
+                        continuation.resumeWithException(exception)
                     }
-                    continuation.resumeWithException(exception)
+                }
+                if (propagatedContext == null) {
+                    resume()
+                } else {
+                    propagatedContext.propagate().use { resume() }
                 }
             }
         }
