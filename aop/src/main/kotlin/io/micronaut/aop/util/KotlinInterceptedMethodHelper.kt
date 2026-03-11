@@ -53,7 +53,7 @@ internal object KotlinInterceptedMethodHelper {
                 if (propagatedContext == null) {
                     resume()
                 } else {
-                    propagatedContext.propagate().use { resume() }
+                    propagatedContext.propagate { resume() }
                 }
             }
         }
