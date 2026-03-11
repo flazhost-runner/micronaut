@@ -29,7 +29,8 @@ import org.slf4j.MDC
 class SuspendController(
     @Named(TaskExecutors.IO) private val executor: ExecutorService,
     private val suspendService: SuspendService,
-    private val suspendRequestScopedService: SuspendRequestScopedService
+    private val suspendRequestScopedService: SuspendRequestScopedService,
+    private val suspendClient: SuspendClient
 ) {
 
     private val coroutineDispatcher: CoroutineDispatcher
@@ -141,6 +142,14 @@ class SuspendController(
     @Get("/requestContext")
     suspend fun requestContext(): String {
         return suspendService.requestContext()
+    }
+
+    @Get("/keepRequestScopeAfterClientCall")
+    suspend fun keepRequestScopeAfterClientCall(): String {
+        val before = "${suspendRequestScopedService.requestId},${Thread.currentThread().id}"
+        suspendClient.simple()
+        val after = "${suspendRequestScopedService.requestId},${Thread.currentThread().id}"
+        return "$before,$after"
     }
 
     @Get("/requestContext2")

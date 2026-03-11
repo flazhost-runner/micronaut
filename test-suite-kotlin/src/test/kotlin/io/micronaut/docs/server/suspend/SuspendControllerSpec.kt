@@ -230,6 +230,15 @@ class SuspendControllerSpec : StringSpec() {
             response.status shouldBe HttpStatus.OK
         }
 
+        "test keeping request scope after suspend client call" {
+            val response = client.exchange(GET<Any>("/suspend/keepRequestScopeAfterClientCall"), String::class.java).awaitSingle()
+            val body = response.body.get()
+            val (beforeRequestId, beforeThreadId, afterRequestId, afterThreadId) = body.split(',')
+            beforeRequestId shouldBe afterRequestId
+            beforeThreadId shouldNotBe afterThreadId
+            response.status shouldBe HttpStatus.OK
+        }
+
         "test request context is available" {
             val response = client.exchange(GET<String>("/suspend/requestContext"), String::class.java).awaitSingle()
             val body = response.body.get()
