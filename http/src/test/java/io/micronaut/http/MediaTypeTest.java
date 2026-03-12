@@ -3,7 +3,9 @@ package io.micronaut.http;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.nio.charset.Charset;
 import java.util.List;
+import java.util.stream.Stream;
 
 import static io.micronaut.http.MediaType.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -90,4 +92,68 @@ class MediaTypeTest {
             IMAGE_WEBP_TYPE,
             IMAGE_WMF_TYPE);
     }
+    @ParameterizedTest
+    @MethodSource
+    void parsesCharsetFromStandardizedContentTypeFormats(String contentType, String expectedCharsetName) {
+        MediaType mediaType = MediaType.of(contentType);
+
+        assertEquals(Charset.forName(expectedCharsetName), mediaType.getCharset().orElseThrow());
+    }
+
+    private static Stream<org.junit.jupiter.params.provider.Arguments> parsesCharsetFromStandardizedContentTypeFormats() {
+        return Stream.of(
+            org.junit.jupiter.params.provider.Arguments.of("text/plain;charset=utf-8", "utf-8"),
+            org.junit.jupiter.params.provider.Arguments.of("text/plain; charset=utf-8", "utf-8"),
+            org.junit.jupiter.params.provider.Arguments.of("text/plain; foo=bar; charset=utf-8", "utf-8"),
+            org.junit.jupiter.params.provider.Arguments.of("text/plain; charset=\"utf-8\"", "utf-8"),
+            org.junit.jupiter.params.provider.Arguments.of("text/plain; foo=bar ; charset=\"utf-8\"", "utf-8"),
+            org.junit.jupiter.params.provider.Arguments.of("text/plain; charset=\"UTF-8\"", "UTF-8"),
+            org.junit.jupiter.params.provider.Arguments.of("text/plain; charset=\"utf\\-8\"", "utf-8")
+        );
+    }
+
+
+    @ParameterizedTest
+    @MethodSource
+    void rejectsQuotedCharsetValuesThatAreNotValidCharsets(String contentType) {
+        MediaType mediaType = MediaType.of(contentType);
+
+        assertThrows(IllegalArgumentException.class, mediaType::getCharset);
+    }
+
+    private static Stream<String> rejectsQuotedCharsetValuesThatAreNotValidCharsets() {
+        return Stream.of(
+            "text/plain; charset=\"utf-8;version=2\""
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource
+    void parsesQuotedCharsetParameterValues(String contentType, String expectedParameterValue) {
+        MediaType mediaType = MediaType.of(contentType);
+
+        assertEquals(expectedParameterValue, mediaType.getParametersMap().get(MediaType.CHARSET_PARAMETER));
+    }
+
+    private static Stream<org.junit.jupiter.params.provider.Arguments> parsesQuotedCharsetParameterValues() {
+        return Stream.of(
+            org.junit.jupiter.params.provider.Arguments.of("text/plain; charset=\"utf-8\"", "utf-8"),
+            org.junit.jupiter.params.provider.Arguments.of("text/plain; charset=\"utf-8;version=2\"", "utf-8;version=2")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource
+    void parsesQuotedNonCharsetParameterValues(String contentType, String parameterName, String expectedParameterValue) {
+        MediaType mediaType = MediaType.of(contentType);
+
+        assertEquals(expectedParameterValue, mediaType.getParametersMap().get(parameterName));
+    }
+
+    private static Stream<org.junit.jupiter.params.provider.Arguments> parsesQuotedNonCharsetParameterValues() {
+        return Stream.of(
+            org.junit.jupiter.params.provider.Arguments.of("text/plain; foo=\"a;b\"; charset=utf-8", "foo", "a;b")
+        );
+    }
+
 }
