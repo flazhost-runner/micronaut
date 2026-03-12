@@ -20,7 +20,6 @@ import io.micronaut.core.annotation.Internal
 import io.micronaut.core.propagation.PropagatedContext
 import java.util.concurrent.CompletionException
 import java.util.concurrent.CompletionStage
-import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 
 /**
@@ -37,24 +36,26 @@ internal object KotlinInterceptedMethodHelper {
         suspendCoroutine { continuation ->
             val propagatedContext = PropagatedContext.find().orElse(null)
             result.whenComplete { value: Any?, throwable: Throwable? ->
-                val resume = {
-                    if (throwable == null) {
-                        val res = Result.success(value ?: if (isUnitValueType) Unit else null)
-                        continuation.resumeWith(res)
-                    } else {
-                        val exception = if (throwable is CompletionException) {
-                            throwable.cause ?: throwable
-                        } else {
-                            throwable
-                        }
-                        continuation.resumeWithException(exception)
-                    }
-                }
+                val resumedResult = toCoroutineResult(value, throwable, isUnitValueType)
                 if (propagatedContext == null) {
-                    resume()
+                    continuation.resumeWith(resumedResult)
                 } else {
-                    propagatedContext.propagate { resume() }
+                    propagatedContext.propagate { continuation.resumeWith(resumedResult) }
                 }
             }
+        }
+
+    private fun toCoroutineResult(value: Any?, throwable: Throwable?, isUnitValueType: Boolean): Result<Any?> =
+        if (throwable == null) {
+            Result.success(value ?: if (isUnitValueType) Unit else null)
+        } else {
+            Result.failure(unwrapCompletionException(throwable))
+        }
+
+    private fun unwrapCompletionException(throwable: Throwable): Throwable =
+        if (throwable is CompletionException) {
+            throwable.cause ?: throwable
+        } else {
+            throwable
         }
 }
