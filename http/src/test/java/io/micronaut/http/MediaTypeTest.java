@@ -4,6 +4,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.nio.charset.Charset;
+import java.util.Map;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -11,6 +12,75 @@ import static io.micronaut.http.MediaType.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class MediaTypeTest {
+    @ParameterizedTest
+    @MethodSource
+    void noParameterFastPathMatchesSlowPathForValidMediaTypes(String contentType) {
+        SlowPathExpectation expected = slowPathExpectation(contentType);
+
+        MediaType mediaType = new MediaType(contentType);
+
+        assertEquals(expected.name(), mediaType.getName());
+        assertEquals(expected.type(), mediaType.getType());
+        assertEquals(expected.subtype(), mediaType.getSubtype());
+        assertEquals(expected.extension(), mediaType.getExtension());
+        assertEquals(expected.stringRepresentation(), mediaType.toString());
+        assertEquals(Map.of(), mediaType.getParametersMap());
+        assertEquals(0, mediaType.getQualityAsNumber().compareTo(expected.quality()));
+        assertTrue(mediaType.getCharset().isEmpty());
+    }
+
+    private static Stream<String> noParameterFastPathMatchesSlowPathForValidMediaTypes() {
+        return Stream.of(
+            "application/json",
+            " text/plain ",
+            "application/hal+json",
+            "APPLICATION/JSON",
+            "application/vnd.example+yaml"
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource
+    void noParameterFastPathMatchesSlowPathForInvalidMediaTypes(String contentType) {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> new MediaType(contentType));
+
+        assertEquals(slowPathFailureMessage(contentType), exception.getMessage());
+    }
+
+    private static Stream<String> noParameterFastPathMatchesSlowPathForInvalidMediaTypes() {
+        return Stream.of(
+            "applicationjson",
+            "",
+            "   ",
+            "textplain"
+        );
+    }
+
+    private static SlowPathExpectation slowPathExpectation(String contentType) {
+        String normalized = contentType.trim();
+        int slashIndex = normalized.indexOf('/');
+        if (slashIndex < 0) {
+            throw new IllegalArgumentException("Invalid mime type: " + normalized);
+        }
+        String type = normalized.substring(0, slashIndex);
+        String subtype = normalized.substring(slashIndex + 1);
+        int plusIndex = subtype.indexOf('+');
+        String extension = plusIndex > -1 ? subtype.substring(plusIndex + 1) : subtype;
+        return new SlowPathExpectation(normalized, type, subtype, extension, normalized, java.math.BigDecimal.ONE);
+    }
+
+    private static String slowPathFailureMessage(String contentType) {
+        return "Invalid mime type: " + contentType.trim();
+    }
+
+    private record SlowPathExpectation(String name,
+                                       String type,
+                                       String subtype,
+                                       String extension,
+                                       String stringRepresentation,
+                                       java.math.BigDecimal quality) {
+    }
+
     @ParameterizedTest
     @MethodSource
     void isJsonTrue(MediaType mediaType) {

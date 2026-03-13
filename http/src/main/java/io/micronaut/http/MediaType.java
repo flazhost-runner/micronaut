@@ -846,38 +846,48 @@ public class MediaType implements CharSequence {
             throw new IllegalArgumentException("Argument [name] cannot be null");
         }
         name = name.trim();
-        String[] parsedType = new String[1];
-        Map<CharSequence, String> parsedParameters = new LinkedHashMap<>();
-        new ParameterParser() {
-            @Override
-            void visitType(String type) {
-                parsedType[0] = type.trim();
-            }
-
-            @Override
-            boolean visitAttribute(String attribute) {
-                return !attribute.trim().isEmpty();
-            }
-
-            @Override
-            void visitAttributeValue(String attribute, String value) {
-                String normalizedAttribute = attribute.trim();
-                String normalizedValue = value.trim();
-                if ("q".equals(normalizedAttribute)) {
-                    qualityNumberField = new BigDecimal(unquoteParameterValue(normalizedValue));
-                }
-                parsedParameters.put(normalizedAttribute, normalizedValue);
-            }
-        }.run(name);
-        String withoutArgs = parsedType[0];
-        if (parsedParameters.isEmpty()) {
+        String withoutArgs;
+        if (name.indexOf(SEMICOLON) == -1) {
+            withoutArgs = name;
             if (params == null) {
                 this.parameters = Collections.emptyMap();
             } else {
                 this.parameters = (Map) params;
             }
         } else {
-            this.parameters = parsedParameters;
+            String[] parsedType = new String[1];
+            Map<CharSequence, String> parsedParameters = new LinkedHashMap<>();
+            new ParameterParser() {
+                @Override
+                void visitType(String type) {
+                    parsedType[0] = type.trim();
+                }
+
+                @Override
+                boolean visitAttribute(String attribute) {
+                    return !attribute.trim().isEmpty();
+                }
+
+                @Override
+                void visitAttributeValue(String attribute, String value) {
+                    String normalizedAttribute = attribute.trim();
+                    String normalizedValue = value.trim();
+                    if ("q".equals(normalizedAttribute)) {
+                        qualityNumberField = new BigDecimal(unquoteParameterValue(normalizedValue));
+                    }
+                    parsedParameters.put(normalizedAttribute, normalizedValue);
+                }
+            }.run(name);
+            withoutArgs = parsedType[0];
+            if (parsedParameters.isEmpty()) {
+                if (params == null) {
+                    this.parameters = Collections.emptyMap();
+                } else {
+                    this.parameters = (Map) params;
+                }
+            } else {
+                this.parameters = parsedParameters;
+            }
         }
         this.name = withoutArgs;
         this.lowerName = withoutArgs.toLowerCase(Locale.ROOT);
@@ -1130,14 +1140,11 @@ public class MediaType implements CharSequence {
 
         final void run(String headerValue) {
             int typeEnd = headerValue.indexOf(';');
-            String type;
             if (typeEnd == -1) {
-                type = headerValue;
-                typeEnd = headerValue.length();
-            } else {
-                type = headerValue.substring(0, typeEnd);
+                visitType(headerValue);
+                return;
             }
-            visitType(type);
+            visitType(headerValue.substring(0, typeEnd));
             for (int parameterStart = typeEnd + 1; parameterStart < headerValue.length(); ) {
                 int attributeEnd = headerValue.indexOf('=', parameterStart);
                 if (attributeEnd == -1) {
