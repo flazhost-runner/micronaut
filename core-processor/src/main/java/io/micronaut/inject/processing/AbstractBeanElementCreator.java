@@ -94,8 +94,8 @@ abstract class AbstractBeanElementCreator implements BeanDefinitionCreator {
         for (io.micronaut.core.annotation.AnnotationValue<Requires> annotation : annotationMetadata.getAnnotationValuesByType(Requires.class)) {
             annotation.stringValue(RequiresCondition.MEMBER_BEAN_PROPERTY)
                 .ifPresent(beanProperty -> {
-                    annotation.stringValue(RequiresCondition.MEMBER_BEAN)
-                        .flatMap(className -> visitorContext.getClassElement(className, visitorContext.getElementAnnotationMetadataFactory().readOnly()))
+                    annotation.annotationClassValue(RequiresCondition.MEMBER_BEAN)
+                        .flatMap(classValue -> visitorContext.getClassElement(classValue.getName(), visitorContext.getElementAnnotationMetadataFactory().readOnly()))
                         .ifPresent(classElement -> {
                             String requiredValue = annotation.stringValue().orElse(null);
                             String notEqualsValue = annotation.stringValue(RequiresCondition.MEMBER_NOT_EQUALS).orElse(null);

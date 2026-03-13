@@ -666,6 +666,91 @@ class AccessorStyleBean {
         context.close()
     }
 
+    void "test requires bean property on factory method works regardless of annotation order"() {
+        given:
+        ApplicationContext context = buildContext('test.SomeFactory', '''
+package test;
+import io.micronaut.context.annotation.*;
+import jakarta.inject.Singleton;
+
+@ConfigurationProperties("config")
+class Config {
+    private boolean enabled;
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
+}
+
+@Factory
+class SomeFactory {
+    @Singleton
+    @Requires(bean = Config.class, beanProperty = "enabled", value = "true")
+    @Requires(bean = Config.class, beanProperty = "enabled", notEquals = "false")
+    Object eventLoops() {
+        return new Object();
+    }
+}
+''')
+        def type = context.classLoader.loadClass('java.lang.Object')
+
+        when:
+        context.environment.addPropertySource(PropertySource.of("test", ['config.enabled': 'true']))
+        context.getBean(type)
+
+        then:
+        noExceptionThrown()
+
+        cleanup:
+        context.close()
+    }
+
+    void "test requires bean property on factory method works regardless of annotation order - reverse"() {
+        given:
+        ApplicationContext context = buildContext('test.SomeFactory', '''
+package test;
+import io.micronaut.context.annotation.*;
+import jakarta.inject.Singleton;
+
+@ConfigurationProperties("config")
+class Config {
+    private boolean enabled;
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
+}
+
+@Factory
+class SomeFactory {
+    @Requires(bean = Config.class, beanProperty = "enabled", value = "true")
+    @Requires(bean = Config.class, beanProperty = "enabled", notEquals = "false")
+    Object eventLoops() {
+        return new Object();
+    }
+}
+''')
+        def type = context.classLoader.loadClass('java.lang.Object')
+
+        when:
+        context.environment.addPropertySource(PropertySource.of("test", ['config.enabled': 'true']))
+        context.getBean(type)
+
+        then:
+        noExceptionThrown()
+
+        cleanup:
+        context.close()
+    }
+
     void "test requires record properties"() {
         given:
         ApplicationContext context = buildContext('test.RecordDependantBean', '''

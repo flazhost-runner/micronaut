@@ -4042,12 +4042,11 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
 
     @Nullable
     private StatementDef invokeCheckIfShouldLoadIfNecessary(VariableDef.This aThis, List<VariableDef.MethodParameter> parameters) {
-        AnnotationValue<Requires> requiresAnnotation = annotationMetadata.getAnnotation(Requires.class);
-        if (requiresAnnotation != null
-            && requiresAnnotation.stringValue(RequiresCondition.MEMBER_BEAN).isPresent()
-            && requiresAnnotation.stringValue(RequiresCondition.MEMBER_BEAN_PROPERTY).isPresent()) {
-
-
+        boolean hasBeanPropertyRequires = annotationMetadata.getAnnotationValuesByType(Requires.class)
+            .stream()
+            .anyMatch(requiresAnnotation -> requiresAnnotation.annotationClassValue(RequiresCondition.MEMBER_BEAN).isPresent()
+                && requiresAnnotation.stringValue(RequiresCondition.MEMBER_BEAN_PROPERTY).isPresent());
+        if (hasBeanPropertyRequires) {
             MethodDef checkIfShouldLoad = buildCheckIfShouldLoadMethod();
 
             classDefBuilder.addMethod(
