@@ -13,7 +13,7 @@ import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.runtime.server.EmbeddedServer
 import io.micronaut.scheduling.annotation.ExecuteOn
-import io.reactivex.Flowable
+import io.reactivex.rxjava3.core.Flowable
 import jakarta.inject.Inject
 import org.reactivestreams.Publisher
 import org.slf4j.Logger

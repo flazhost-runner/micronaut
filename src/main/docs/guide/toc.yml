@@ -304,9 +304,7 @@ configurations:
   reactiveConfigs:
     title: Configurations for Reactive Programming
     reactor: Reactor Support
-    rxjava3: RxJava 3 Support
-    rxjava2: RxJava 2 Support
-    rxjava1: RxJava 1 Support
+    rxjava3: RxJava 3 support
   dataAccess:
     title: Configurations for Data Access
     sqlSupport: Configuring a SQL Data Source
