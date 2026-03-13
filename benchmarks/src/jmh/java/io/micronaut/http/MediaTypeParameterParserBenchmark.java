@@ -105,6 +105,10 @@ public class MediaTypeParameterParserBenchmark {
 
     private static ParsedMediaType parseWithNewImplementation(String name) {
         name = name.trim();
+        if (name.indexOf(';') == -1) {
+            return new ParsedMediaType(name, Collections.emptyMap());
+        }
+
         String[] parsedType = new String[1];
         Map<CharSequence, String> parsedParameters = new LinkedHashMap<>();
         new ParameterParser() {
@@ -143,14 +147,11 @@ public class MediaTypeParameterParserBenchmark {
 
         final void run(String headerValue) {
             int typeEnd = headerValue.indexOf(';');
-            String type;
             if (typeEnd == -1) {
-                type = headerValue;
-                typeEnd = headerValue.length();
-            } else {
-                type = headerValue.substring(0, typeEnd);
+                visitType(headerValue);
+                return;
             }
-            visitType(type);
+            visitType(headerValue.substring(0, typeEnd));
             for (int parameterStart = typeEnd + 1; parameterStart < headerValue.length(); ) {
                 int attributeEnd = headerValue.indexOf('=', parameterStart);
                 if (attributeEnd == -1) {
