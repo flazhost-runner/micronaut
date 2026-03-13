@@ -26,7 +26,7 @@ import io.micronaut.http.filter.HttpServerFilter
 import io.micronaut.http.filter.ServerFilterChain
 import io.micronaut.runtime.server.EmbeddedServer
 import io.micronaut.scheduling.annotation.ExecuteOn
-import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.core.Flowable
 import jakarta.inject.Inject
 import org.reactivestreams.Publisher
 import org.slf4j.Logger
