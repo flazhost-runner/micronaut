@@ -40,7 +40,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -1127,80 +1126,6 @@ public class MediaType implements CharSequence {
         return Optional.of(Charset.forName(unquoteParameterValue(charset)));
     }
 
-    /**
-     * Adapted from Netty's {@code ParmParser}:
-     * https://github.com/netty-contrib/codec-multipart/blob/1.0/multipart-core/src/main/java/io/netty/contrib/multipart/ParmParser.java
-     */
-    private abstract static class ParameterParser {
-        abstract void visitType(String type);
-
-        abstract boolean visitAttribute(String attribute);
-
-        abstract void visitAttributeValue(String attribute, String value);
-
-        final void run(String headerValue) {
-            int typeEnd = headerValue.indexOf(';');
-            if (typeEnd == -1) {
-                visitType(headerValue);
-                return;
-            }
-            visitType(headerValue.substring(0, typeEnd));
-            for (int parameterStart = typeEnd + 1; parameterStart < headerValue.length(); ) {
-                int attributeEnd = headerValue.indexOf('=', parameterStart);
-                if (attributeEnd == -1) {
-                    break;
-                }
-                while (parameterStart < headerValue.length() && Character.isWhitespace(headerValue.charAt(parameterStart))) {
-                    parameterStart++;
-                }
-                String attribute = headerValue.substring(parameterStart, attributeEnd);
-                boolean needParameterValue = visitAttribute(attribute);
-
-                String parameterValue = null;
-                int parameterValueEnd = attributeEnd + 1;
-                if (parameterValueEnd < headerValue.length() && headerValue.charAt(parameterValueEnd) == '"') {
-                    StringBuilder valueBuilder = needParameterValue ? new StringBuilder() : null;
-                    boolean quoted = false;
-                    while (parameterValueEnd < headerValue.length()) {
-                        char c = headerValue.charAt(parameterValueEnd++);
-                        if (c == '"') {
-                            quoted = !quoted;
-                        } else {
-                            if (!quoted && c == ';') {
-                                parameterValueEnd--;
-                                break;
-                            } else if (quoted && c == '\\' && parameterValueEnd < headerValue.length()) {
-                                if (needParameterValue) {
-                                    valueBuilder.append(headerValue.charAt(parameterValueEnd));
-                                }
-                                parameterValueEnd++;
-                            } else {
-                                if (needParameterValue) {
-                                    valueBuilder.append(c);
-                                }
-                            }
-                        }
-                    }
-                    if (needParameterValue) {
-                        parameterValue = valueBuilder.toString();
-                    }
-                } else {
-                    parameterValueEnd = headerValue.indexOf(';', parameterValueEnd);
-                    if (parameterValueEnd == -1) {
-                        parameterValueEnd = headerValue.length();
-                    }
-                    if (needParameterValue) {
-                        parameterValue = headerValue.substring(attributeEnd + 1, parameterValueEnd);
-                    }
-                }
-                if (parameterValue != null) {
-                    visitAttributeValue(attribute, parameterValue);
-                }
-                parameterStart = parameterValueEnd + 1;
-            }
-        }
-    }
-
     private static String unquoteParameterValue(String value) {
         if (value.length() >= 2 && value.charAt(0) == '"' && value.charAt(value.length() - 1) == '"') {
             StringBuilder unescaped = new StringBuilder(value.length() - 2);
@@ -1518,5 +1443,78 @@ public class MediaType implements CharSequence {
         }
 
         return Collections.emptyMap();
+    }
+
+    /**
+     * Adapted from Netty's {@code ParmParser}.
+     *
+     * Source: https://github.com/netty-contrib/codec-multipart/blob/1.0/multipart-core/src/main/java/io/netty/contrib/multipart/ParmParser.java
+     */
+    private abstract static class ParameterParser {
+        abstract void visitType(String type);
+
+        abstract boolean visitAttribute(String attribute);
+
+        abstract void visitAttributeValue(String attribute, String value);
+
+        final void run(String headerValue) {
+            int typeEnd = headerValue.indexOf(';');
+            if (typeEnd == -1) {
+                visitType(headerValue);
+                return;
+            }
+            visitType(headerValue.substring(0, typeEnd));
+            for (int parameterStart = typeEnd + 1; parameterStart < headerValue.length(); ) {
+                int attributeEnd = headerValue.indexOf('=', parameterStart);
+                if (attributeEnd == -1) {
+                    break;
+                }
+                while (parameterStart < headerValue.length() && Character.isWhitespace(headerValue.charAt(parameterStart))) {
+                    parameterStart++;
+                }
+                String attribute = headerValue.substring(parameterStart, attributeEnd);
+                boolean needParameterValue = visitAttribute(attribute);
+
+                String parameterValue = null;
+                int parameterValueEnd = attributeEnd + 1;
+                if (parameterValueEnd < headerValue.length() && headerValue.charAt(parameterValueEnd) == '"') {
+                    StringBuilder valueBuilder = needParameterValue ? new StringBuilder() : null;
+                    boolean quoted = false;
+                    while (parameterValueEnd < headerValue.length()) {
+                        char c = headerValue.charAt(parameterValueEnd++);
+                        if (c == '"') {
+                            quoted = !quoted;
+                        } else {
+                            if (!quoted && c == ';') {
+                                parameterValueEnd--;
+                                break;
+                            } else if (quoted && c == '\\' && parameterValueEnd < headerValue.length()) {
+                                if (needParameterValue) {
+                                    valueBuilder.append(headerValue.charAt(parameterValueEnd));
+                                }
+                                parameterValueEnd++;
+                            } else if (needParameterValue) {
+                                valueBuilder.append(c);
+                            }
+                        }
+                    }
+                    if (needParameterValue) {
+                        parameterValue = valueBuilder.toString();
+                    }
+                } else {
+                    parameterValueEnd = headerValue.indexOf(';', parameterValueEnd);
+                    if (parameterValueEnd == -1) {
+                        parameterValueEnd = headerValue.length();
+                    }
+                    if (needParameterValue) {
+                        parameterValue = headerValue.substring(attributeEnd + 1, parameterValueEnd);
+                    }
+                }
+                if (parameterValue != null) {
+                    visitAttributeValue(attribute, parameterValue);
+                }
+                parameterStart = parameterValueEnd + 1;
+            }
+        }
     }
 }
