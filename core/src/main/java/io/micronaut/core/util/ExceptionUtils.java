@@ -39,17 +39,4 @@ public final class ExceptionUtils {
         throw (T) t;
     }
 
-    /**
-     * Throws a given {@link Exception} without requiring the caller to handle it explicitly,
-     * bypassing checked exception restrictions at compile time.
-     *
-     * @param <T> the type of the throwable being thrown
-     * @param <R> the return type of the method
-     * @param t the throwable instance to be thrown
-     * @return this method does not return normally, as it always throws the supplied throwable
-     * @throws T the throwable passed as the argument
-     */
-    public static <T extends Exception, R> R sneakyThrow(Exception t) throws T {
-        throw (T) t;
-    }
 }
