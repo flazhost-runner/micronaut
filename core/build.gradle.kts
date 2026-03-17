@@ -3,7 +3,6 @@ import me.champeau.gradle.japicmp.JapicmpTask
 
 plugins {
     id("io.micronaut.build.internal.convention-core-library")
-    id("io.micronaut.build.internal.convention-nullaway")
 }
 
 micronautBuild {
@@ -16,7 +15,7 @@ dependencies {
     api(libs.managed.jspecify)
     compileOnly(libs.managed.jakarta.annotation.api)
     compileOnly(libs.jetbrains.annotations)
-    compileOnly(libs.graal)
+    compileOnly(libs.managed.graalvm.nativeimage)
     compileOnly(libs.managed.kotlin.stdlib)
     compileOnly(libs.managed.netty.common)
 }

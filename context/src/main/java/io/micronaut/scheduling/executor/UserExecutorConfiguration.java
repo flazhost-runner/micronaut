@@ -39,6 +39,7 @@ public class UserExecutorConfiguration implements ExecutorConfiguration {
      */
     public static final int AVAILABLE_PROCESSORS = Runtime.getRuntime().availableProcessors();
 
+    @Nullable
     protected String name;
     // needs to be protected to allow for nThreads to be set in config
     @SuppressWarnings("WeakerAccess")
@@ -47,6 +48,7 @@ public class UserExecutorConfiguration implements ExecutorConfiguration {
     private Integer parallelism;
     private Integer corePoolSize;
     private boolean virtual;
+    @Nullable
     private Class<? extends ThreadFactory> threadFactoryClass;
 
     /**
@@ -54,7 +56,7 @@ public class UserExecutorConfiguration implements ExecutorConfiguration {
      *
      * @param name The name
      */
-    private UserExecutorConfiguration(@Parameter String name) {
+    private UserExecutorConfiguration(@Nullable @Parameter String name) {
         this(name, null, null, null, null, false, null);
     }
 
@@ -87,6 +89,7 @@ public class UserExecutorConfiguration implements ExecutorConfiguration {
     }
 
     @Override
+    @Nullable
     public String getName() {
         return name;
     }

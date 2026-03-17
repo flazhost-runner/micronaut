@@ -31,6 +31,7 @@ import io.micronaut.core.annotation.Internal;
 import org.jspecify.annotations.Nullable;
 import io.micronaut.core.expressions.EvaluatedExpressionReference;
 import io.micronaut.core.io.service.SoftServiceLoader;
+import io.micronaut.core.io.service.ServiceDefinition;
 import io.micronaut.core.naming.NameUtils;
 import io.micronaut.core.util.CollectionUtils;
 import io.micronaut.core.util.StringUtils;
@@ -50,10 +51,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static io.micronaut.expressions.EvaluatedExpressionConstants.EXPRESSION_PATTERN;
@@ -69,10 +72,12 @@ import static io.micronaut.expressions.EvaluatedExpressionConstants.EXPRESSION_P
 @Internal
 public abstract class AbstractAnnotationMetadataBuilder<T, A> {
 
+
     /**
      * Names of annotations that should produce deprecation warnings.
      * The key in the map is the deprecated annotation the value the replacement.
      */
+    @Nullable
     protected static final AnnotatedElementValidator ELEMENT_VALIDATOR;
     private static final Map<String, String> DEPRECATED_ANNOTATION_NAMES = Collections.emptyMap();
     private static final Map<String, List<AnnotationMapper<?>>> ANNOTATION_MAPPERS = new HashMap<>(10);
@@ -83,8 +88,9 @@ public abstract class AbstractAnnotationMetadataBuilder<T, A> {
     private static final Map<String, Map<CharSequence, Object>> ANNOTATION_DEFAULTS = new HashMap<>(20);
 
     static {
-        for (AnnotationMapper<?> mapper : SoftServiceLoader.load(AnnotationMapper.class, AbstractAnnotationMetadataBuilder.class.getClassLoader())
-                .disableFork().collectAll()) {
+        ClassLoader classLoader = resolveServiceClassLoader();
+
+        for (AnnotationMapper<?> mapper : loadServices(AnnotationMapper.class, classLoader)) {
             try {
                 String name = null;
                 if (mapper instanceof TypedAnnotationMapper<?> typedAnnotationMapper) {
@@ -100,8 +106,7 @@ public abstract class AbstractAnnotationMetadataBuilder<T, A> {
             }
         }
 
-        for (AnnotationTransformer<?> transformer : SoftServiceLoader.load(AnnotationTransformer.class, AbstractAnnotationMetadataBuilder.class.getClassLoader())
-                .disableFork().collectAll()) {
+        for (AnnotationTransformer<?> transformer : loadServices(AnnotationTransformer.class, classLoader)) {
             try {
                 String name = null;
                 if (transformer instanceof TypedAnnotationTransformer<?> typedAnnotationTransformer) {
@@ -117,8 +122,7 @@ public abstract class AbstractAnnotationMetadataBuilder<T, A> {
             }
         }
 
-        for (AnnotationRemapper mapper : SoftServiceLoader.load(AnnotationRemapper.class, AbstractAnnotationMetadataBuilder.class.getClassLoader())
-                .disableFork().collectAll()) {
+        for (AnnotationRemapper mapper : loadServices(AnnotationRemapper.class, classLoader)) {
             try {
                 String name = mapper.getPackageName();
                 if (name.equals(AnnotationRemapper.ALL_PACKAGES)) {
@@ -130,7 +134,7 @@ public abstract class AbstractAnnotationMetadataBuilder<T, A> {
                 // mapper, missing dependencies, continue
             }
         }
-        ELEMENT_VALIDATOR = SoftServiceLoader.load(AnnotatedElementValidator.class).firstAvailable().orElse(null);
+        ELEMENT_VALIDATOR = loadFirstService(AnnotatedElementValidator.class, classLoader).orElse(null);
     }
 
     private boolean validating = true;
@@ -143,6 +147,62 @@ public abstract class AbstractAnnotationMetadataBuilder<T, A> {
 
     }
 
+    private static ClassLoader resolveServiceClassLoader() {
+        if (Boolean.getBoolean(VisitorContext.MICRONAUT_PROCESSING_USE_CONTEXT_CLASSLOADER)) {
+            ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+            if (contextClassLoader != null) {
+                return contextClassLoader;
+            }
+        }
+        return AbstractAnnotationMetadataBuilder.class.getClassLoader();
+    }
+
+    private static <S> List<S> loadServices(Class<S> serviceType, ClassLoader classLoader) {
+        List<S> services = SoftServiceLoader.load(serviceType, classLoader)
+            .disableFork()
+            .collectAll();
+        if (!services.isEmpty()) {
+            return services;
+        }
+        services = new ArrayList<>();
+        Iterator<ServiceLoader.Provider<S>> it = ServiceLoader.load(serviceType, classLoader).stream().iterator();
+        while (it.hasNext()) {
+            try {
+                services.add(it.next().get());
+            } catch (Throwable e) {
+                if (e instanceof VirtualMachineError virtualMachineError) {
+                    throw virtualMachineError;
+                }
+            }
+        }
+        return services;
+    }
+
+    private static <S> Optional<S> loadFirstService(Class<S> serviceType, ClassLoader classLoader) {
+        for (ServiceDefinition<S> definition : SoftServiceLoader.load(serviceType, classLoader).disableFork()) {
+            try {
+                if (definition.isPresent()) {
+                    return Optional.of(definition.load());
+                }
+            } catch (Throwable e) {
+                if (e instanceof VirtualMachineError virtualMachineError) {
+                    throw virtualMachineError;
+                }
+            }
+        }
+        Iterator<ServiceLoader.Provider<S>> it = ServiceLoader.load(serviceType, classLoader).stream().iterator();
+        while (it.hasNext()) {
+            try {
+                return Optional.of(it.next().get());
+            } catch (Throwable e) {
+                if (e instanceof VirtualMachineError virtualMachineError) {
+                    throw virtualMachineError;
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
     @SuppressWarnings("java:S1872")
     private AnnotationMetadata metadataForError(RuntimeException e) {
         if ("org.eclipse.jdt.internal.compiler.problem.AbortCompilation".equals(e.getClass().getName())) {
@@ -151,6 +211,26 @@ public abstract class AbstractAnnotationMetadataBuilder<T, A> {
         } else {
             throw e;
         }
+    }
+
+    /**
+     * Builds an annotation value for the given annotation type name.
+     *
+     * @param annotationName The annotation name
+     * @return The built annotation value, if the annotation type can be resolved
+     */
+    public final Optional<io.micronaut.core.annotation.AnnotationValue<?>> buildAnnotation(String annotationName) {
+        return getAnnotationMirror(annotationName).map(annotationType -> {
+            RetentionPolicy retentionPolicy = getRetentionPolicy(annotationType);
+
+            Map<CharSequence, Object> defaultValues = getCachedAnnotationDefaults(annotationName, annotationType);
+            AnnotationValue<Annotation> annotationValue = new AnnotationValue<>(annotationName, Map.of(), defaultValues, retentionPolicy);
+            List<AnnotationValue<?>> stereotypes =
+                extractStereotypes(new ProcessingContext(getVisitorContext()), new ProcessedAnnotation(annotationType, annotationValue))
+                    .stream().map(pa -> pa.annotationValue)
+                    .collect(Collectors.toUnmodifiableList());
+            return new AnnotationValue<>(annotationName, Map.of(), defaultValues, retentionPolicy, stereotypes);
+        });
     }
 
     /**
@@ -591,8 +671,10 @@ public abstract class AbstractAnnotationMetadataBuilder<T, A> {
         resolvedDefaults.put(annotationTypeName, defaults);
         Map<? extends T, ?> nativeDefaultValues = readAnnotationDefaultValues(annotationTypeName, annotationElement);
         Map<CharSequence, Object> annotationDefaults = getAnnotationDefaults(annotationElement, annotationTypeName, nativeDefaultValues, resolvedDefaults);
-        defaults.putAll(annotationDefaults);
-        return annotationDefaults;
+        if (annotationDefaults != null) {
+            defaults.putAll(annotationDefaults);
+        }
+        return defaults;
     }
 
     /**
@@ -663,6 +745,7 @@ public abstract class AbstractAnnotationMetadataBuilder<T, A> {
      * @param <K>            The annotation type
      * @return The mappers
      */
+    @Nullable
     protected <K extends Annotation> List<AnnotationMapper<K>> getAnnotationMappers(String annotationName) {
         return (List) ANNOTATION_MAPPERS.get(annotationName);
     }
@@ -674,6 +757,7 @@ public abstract class AbstractAnnotationMetadataBuilder<T, A> {
      * @param <K>            The annotation type
      * @return The transformers
      */
+    @Nullable
     protected <K extends Annotation> List<AnnotationTransformer<K>> getAnnotationTransformers(String annotationName) {
         return (List) ANNOTATION_TRANSFORMERS.get(annotationName);
     }
@@ -685,9 +769,10 @@ public abstract class AbstractAnnotationMetadataBuilder<T, A> {
      */
     protected abstract VisitorContext getVisitorContext();
 
+    @Nullable
     private Map<CharSequence, Object> getAnnotationDefaults(T originatingElement,
                                                             String annotationName,
-                                                            Map<? extends T, ?> elementDefaultValues,
+                                                            @Nullable Map<? extends T, ?> elementDefaultValues,
                                                             Map<String, Map<CharSequence, Object>> resolvedDefaults) {
         if (elementDefaultValues == null) {
             return null;
@@ -1240,7 +1325,7 @@ public abstract class AbstractAnnotationMetadataBuilder<T, A> {
             }
         }
         // The container should be this annotation value name
-        return findRepeatableContainerNameForType(repeatableAnnotationName) != null;
+        return repeatableAnnotationName != null && findRepeatableContainerNameForType(repeatableAnnotationName) != null;
     }
 
     private ProcessedAnnotation processAliases(ProcessedAnnotation processedAnnotation,
@@ -1425,7 +1510,7 @@ public abstract class AbstractAnnotationMetadataBuilder<T, A> {
         ).toList();
     }
 
-    private <K> List<K> eliminateProcessed(ProcessingContext context, List<K> visitors) {
+    private <K> List<K> eliminateProcessed(ProcessingContext context, @Nullable List<K> visitors) {
         if (visitors == null) {
             return Collections.emptyList();
         }
@@ -1771,7 +1856,7 @@ public abstract class AbstractAnnotationMetadataBuilder<T, A> {
             return new ProcessedAnnotation(annotationType, annotationValue);
         }
 
-        public ProcessedAnnotation withAnnotationType(T annotationType) {
+        public ProcessedAnnotation withAnnotationType(@Nullable T annotationType) {
             return new ProcessedAnnotation(annotationType, annotationValue);
         }
 

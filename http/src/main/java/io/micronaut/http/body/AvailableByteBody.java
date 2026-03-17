@@ -35,7 +35,7 @@ import java.util.OptionalLong;
  * @since 4.5.0
  */
 @Experimental
-public interface AvailableByteBody extends ByteBody {
+public sealed interface AvailableByteBody extends ByteBody permits CloseableAvailableByteBody {
     /**
      * For immediate buffers, backpressure is not relevant, so the backpressure modes passed to
      * {@link #split(SplitBackpressureMode)} are ignored. You can use this method always.
@@ -43,6 +43,7 @@ public interface AvailableByteBody extends ByteBody {
      * @see ByteBody#split()
      * @return A body with the same content as this one
      */
+    @Override
     CloseableAvailableByteBody split();
 
     /**
