@@ -4696,12 +4696,16 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
             .instantiate(
                 ANNOTATION_REFERENCE_CONSTRUCTOR,
 
-                ClassTypeDef.of(Argument.class)
-                    .invokeStatic(
-                        ARGUMENT_OF_METHOD,
-
-                        ExpressionDef.constant(TypeDef.erasure(referencedType))
-                    )
+                ArgumentExpUtils.pushCreateArgument(
+                    referencedType.getAnnotationMetadata(),
+                    ClassElement.of(beanFullClassName),
+                    beanDefinitionTypeDef,
+                    referencedType.getName(),
+                    referencedType.getType(),
+                    referencedType.getAnnotationMetadata(),
+                    referencedType.getType().getTypeArguments(),
+                    loadClassValueExpressionFn
+                )
             );
     }
 
