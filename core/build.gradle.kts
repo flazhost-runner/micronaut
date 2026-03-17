@@ -21,11 +21,6 @@ dependencies {
     testImplementation(libs.junit.jupiter.params)
 }
 
-tasks.withType<JavaExec> {
-    jvmArgs = listOf("--enable-preview")
-}
-
-
 spotless {
     java {
         targetExclude(
