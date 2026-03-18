@@ -16,6 +16,7 @@
 package io.micronaut.http.netty.websocket;
 
 import io.micronaut.buffer.netty.NettyByteBufferFactory;
+import io.micronaut.core.annotation.Internal;
 import io.micronaut.core.convert.ConversionService;
 import io.micronaut.core.reflect.ClassUtils;
 import io.micronaut.core.type.Argument;
@@ -30,6 +31,7 @@ import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
+import jakarta.inject.Singleton;
 
 import java.nio.ByteBuffer;
 import java.util.Objects;
@@ -40,13 +42,15 @@ import java.util.Objects;
  * @author sdelamo
  * @since 1.0
  */
-final class WebSocketMessageEncoder {
+@Singleton
+@Internal
+public final class WebSocketMessageEncoder {
 
     private final MessageBodyHandlerRegistry handlerRegistry;
     private final ConversionService conversionService;
 
-    WebSocketMessageEncoder(MessageBodyHandlerRegistry handlerRegistry,
-                            ConversionService conversionService) {
+    public WebSocketMessageEncoder(MessageBodyHandlerRegistry handlerRegistry,
+                                   ConversionService conversionService) {
         this.handlerRegistry = Objects.requireNonNull(handlerRegistry, "handlerRegistry");
         this.conversionService = Objects.requireNonNull(conversionService, "conversionService");
     }
