@@ -22,6 +22,7 @@ import io.micronaut.core.type.Argument;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpStatus;
+import io.micronaut.http.client.FallbackAsyncHttpClient;
 import io.micronaut.http.client.exceptions.HttpClientResponseException;
 import io.micronaut.http.hateoas.JsonError;
 import org.reactivestreams.Publisher;
@@ -54,7 +55,7 @@ public interface HttpClient extends Closeable, LifeCycle<HttpClient> {
      * @since 4.5
      */
     default AsyncHttpClient toAsync() {
-        return new DefaultAsyncHttpClient(this);
+        return new FallbackAsyncHttpClient(this);
     }
 
     /**

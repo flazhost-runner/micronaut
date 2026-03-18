@@ -69,7 +69,6 @@ import io.micronaut.http.client.DefaultHttpClientConfiguration;
 import io.micronaut.http.client.HttpClient;
 import io.micronaut.http.client.HttpClientConfiguration;
 import io.micronaut.http.client.HttpClientResponseBodyHandler;
-import io.micronaut.http.client.DefaultAsyncHttpClient;
 import io.micronaut.http.client.HttpVersionSelection;
 import io.micronaut.http.client.LoadBalancer;
 import io.micronaut.http.client.ProxyHttpClient;
@@ -592,7 +591,7 @@ public class DefaultHttpClient implements
 
     @Override
     public AsyncHttpClient toAsync() {
-        return new DefaultAsyncHttpClient(this, this::decorate);
+        return new DefaultAsyncHttpClient(this);
     }
 
     @Override
@@ -888,8 +887,29 @@ public class DefaultHttpClient implements
     }
 
     private <I, O, E> Mono<HttpResponse<O>> exchange(io.micronaut.http.HttpRequest<I> request, @Nullable Argument<O> bodyType, Argument<E> errorType, @Nullable BlockHint blockHint) {
-        setupConversionService(request);
         PropagatedContext propagatedContext = PropagatedContext.getOrEmpty();
+        return toMono(exchangeFlow(request, bodyType, errorType, blockHint, propagatedContext), propagatedContext);
+    }
+
+    /**
+     * Perform an exchange returning an {@link ExecutionFlow}.
+     *
+     * @param request The request
+     * @param bodyType The expected body type
+     * @param errorType The error type
+     * @param blockHint Optional block hint
+     * @param propagatedContext The propagated context
+     * @param <I> Request body type
+     * @param <O> Response body type
+     * @param <E> Error body type
+     * @return The execution flow for the response
+     */
+    protected final <I, O, E> ExecutionFlow<HttpResponse<O>> exchangeFlow(io.micronaut.http.HttpRequest<I> request,
+                                                                          @Nullable Argument<O> bodyType,
+                                                                          Argument<E> errorType,
+                                                                          @Nullable BlockHint blockHint,
+                                                                          PropagatedContext propagatedContext) {
+        setupConversionService(request);
         // if a connection is available immediately, we can use its executor for the timeout
         // instead of a random executor for the whole group
         AtomicReference<ScheduledExecutorService> scheduler = new AtomicReference<>(connectionManager.getGroup());
@@ -922,10 +942,17 @@ public class DefaultHttpClient implements
                             return ExecutionFlow.error(ReadTimeoutException.TIMEOUT_EXCEPTION);
                         }
                         return ExecutionFlow.error(throwable);
-                    });
+                });
             }
         }
-        return toMono(mono, propagatedContext);
+        return mono;
+    }
+
+    protected final <I, O, E> ExecutionFlow<HttpResponse<O>> exchangeFlow(io.micronaut.http.HttpRequest<I> request,
+                                                                          @Nullable Argument<O> bodyType,
+                                                                          Argument<E> errorType) {
+        PropagatedContext propagatedContext = PropagatedContext.getOrEmpty();
+        return exchangeFlow(request, bodyType, errorType, null, propagatedContext);
     }
 
     private <O, E> ExecutionFlow<FullNettyClientHttpResponse<O>> handleExchangeResponse(@Nullable Argument<O> bodyType, Argument<E> errorType, NettyClientByteBodyResponse resp, CloseableAvailableByteBody av) {
@@ -2017,7 +2044,7 @@ public class DefaultHttpClient implements
         return io.micronaut.http.HttpRequest.SCHEME_HTTPS.equalsIgnoreCase(scheme) || SCHEME_WSS.equalsIgnoreCase(scheme);
     }
 
-    private <E extends HttpClientException> E decorate(E exc) {
+    final <E extends HttpClientException> E decorate(E exc) {
         return HttpClientExceptionUtils.populateServiceId(exc, informationalServiceId, configuration);
     }
 

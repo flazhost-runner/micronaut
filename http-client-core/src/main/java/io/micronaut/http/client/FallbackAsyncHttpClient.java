@@ -35,14 +35,15 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.UnaryOperator;
 
 /**
- * Default {@link AsyncHttpClient} implementation delegating to a reactive {@link HttpClient}.
+ * Fallback {@link AsyncHttpClient} implementation that adapts a reactive {@link HttpClient}
+ * to the {@link CompletionStage}-based API.
  *
  * @author Denis Stepanov
  * @since 4.5
  */
 @Internal
-public final class DefaultAsyncHttpClient implements AsyncHttpClient {
-    private static final Logger LOG = LoggerFactory.getLogger(DefaultAsyncHttpClient.class);
+public final class FallbackAsyncHttpClient implements AsyncHttpClient {
+    private static final Logger LOG = LoggerFactory.getLogger(FallbackAsyncHttpClient.class);
 
     private final HttpClient delegate;
     private final UnaryOperator<HttpClientResponseException> exceptionDecorator;
@@ -52,7 +53,7 @@ public final class DefaultAsyncHttpClient implements AsyncHttpClient {
      *
      * @param delegate The reactive HTTP client
      */
-    public DefaultAsyncHttpClient(HttpClient delegate) {
+    public FallbackAsyncHttpClient(HttpClient delegate) {
         this(delegate, UnaryOperator.identity());
     }
 
@@ -62,7 +63,7 @@ public final class DefaultAsyncHttpClient implements AsyncHttpClient {
      * @param delegate           The reactive HTTP client
      * @param exceptionDecorator The decorator applied to {@link HttpClientResponseException}s
      */
-    public DefaultAsyncHttpClient(HttpClient delegate, UnaryOperator<HttpClientResponseException> exceptionDecorator) {
+    public FallbackAsyncHttpClient(HttpClient delegate, UnaryOperator<HttpClientResponseException> exceptionDecorator) {
         this.delegate = Objects.requireNonNull(delegate, "delegate");
         this.exceptionDecorator = Objects.requireNonNull(exceptionDecorator, "exceptionDecorator");
     }
