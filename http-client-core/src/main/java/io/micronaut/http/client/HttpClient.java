@@ -29,7 +29,7 @@ import reactor.core.publisher.Flux;
 
 import java.io.Closeable;
 import java.net.URL;
-import java.util.Optional;
+import java.util.function.UnaryOperator;
 
 /**
  * A non-blocking HTTP client interface designed around the Micronaut API and Reactive Streams.
@@ -48,6 +48,14 @@ public interface HttpClient extends Closeable, LifeCycle<HttpClient> {
      * @return A blocking HTTP client suitable for testing and non-production scenarios.
      */
     BlockingHttpClient toBlocking();
+
+    /**
+     * @return An asynchronous HTTP client using {@link java.util.concurrent.CompletionStage}-based APIs.
+     * @since 4.5
+     */
+    default AsyncHttpClient toAsync() {
+        return new DefaultAsyncHttpClient(this);
+    }
 
     /**
      * <p>Perform an HTTP request for the given request object emitting the full HTTP response from returned
@@ -159,24 +167,7 @@ public interface HttpClient extends Closeable, LifeCycle<HttpClient> {
             // exchange() returns a HttpResponse<Void>, we can't map the Void body properly, so just drop it and complete
             return (Publisher<O>) exchange.ignoreElements();
         }
-        return exchange.map(response -> {
-            if (bodyType.getType() == HttpStatus.class) {
-                return (O) response.getStatus();
-            } else {
-                Optional<O> body = response.getBody();
-                if (!body.isPresent() && response.getBody(byte[].class).isPresent()) {
-                    throw new HttpClientResponseException(
-                    "Failed to decode the body for the given content type [%s]".formatted(response.getContentType().orElse(null)),
-                            response
-                    );
-                } else {
-                    return body.orElseThrow(() -> new HttpClientResponseException(
-                            "Empty body",
-                            response
-                    ));
-                }
-            }
-        });
+        return exchange.map(response -> HttpClientResponseBodyHandler.requireBody(response, bodyType, UnaryOperator.identity()));
     }
 
     /**

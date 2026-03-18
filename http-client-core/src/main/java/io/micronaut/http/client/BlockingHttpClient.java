@@ -20,12 +20,11 @@ import io.micronaut.core.annotation.Blocking;
 import io.micronaut.core.type.Argument;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
-import io.micronaut.http.HttpStatus;
 import io.micronaut.http.client.exceptions.HttpClientResponseException;
 import org.jspecify.annotations.Nullable;
 
 import java.io.Closeable;
-import java.util.Optional;
+import java.util.function.UnaryOperator;
 
 /**
  * A blocking HTTP client interface that features a subset of the operations provided by {@link HttpClient} and
@@ -136,26 +135,11 @@ public interface BlockingHttpClient extends Closeable, LifeCycle<BlockingHttpCli
      * @param <E>      The error type
      * @return A result of the given type or null the URI returns a 404
      * @throws HttpClientResponseException when an error status is returned
-     */
+    */
     @SuppressWarnings("unchecked")
     default <I, O, E> O retrieve(HttpRequest<I> request, Argument<O> bodyType, Argument<E> errorType) {
         HttpResponse<O> response = exchange(request, bodyType, errorType);
-        if (HttpStatus.class.isAssignableFrom(bodyType.getType())) {
-            return (O) response.getStatus();
-        } else {
-            Optional<O> body = response.getBody();
-            if (!body.isPresent() && response.getBody(Argument.of(byte[].class)).isPresent()) {
-                throw new HttpClientResponseException(
-                "Failed to decode the body for the given content type [%s]".formatted(response.getContentType().orElse(null)),
-                        response
-                );
-            } else {
-                return body.orElseThrow(() -> new HttpClientResponseException(
-                        "Empty body",
-                        response
-                ));
-            }
-        }
+        return HttpClientResponseBodyHandler.requireBody(response, bodyType, UnaryOperator.identity());
     }
 
     /**

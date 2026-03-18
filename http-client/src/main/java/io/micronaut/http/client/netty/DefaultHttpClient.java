@@ -62,11 +62,14 @@ import io.micronaut.http.body.MessageBodyHandlerRegistry;
 import io.micronaut.http.body.MessageBodyReader;
 import io.micronaut.http.body.WritableBodyWriter;
 import io.micronaut.http.body.stream.BodySizeLimits;
+import io.micronaut.http.client.AsyncHttpClient;
 import io.micronaut.http.client.BlockingHttpClient;
 import io.micronaut.http.client.ClientAttributes;
 import io.micronaut.http.client.DefaultHttpClientConfiguration;
 import io.micronaut.http.client.HttpClient;
 import io.micronaut.http.client.HttpClientConfiguration;
+import io.micronaut.http.client.HttpClientResponseBodyHandler;
+import io.micronaut.http.client.DefaultAsyncHttpClient;
 import io.micronaut.http.client.HttpVersionSelection;
 import io.micronaut.http.client.LoadBalancer;
 import io.micronaut.http.client.ProxyHttpClient;
@@ -588,6 +591,11 @@ public class DefaultHttpClient implements
     }
 
     @Override
+    public AsyncHttpClient toAsync() {
+        return new DefaultAsyncHttpClient(this, this::decorate);
+    }
+
+    @Override
     public BlockingHttpClient toBlocking() {
         return new BlockingHttpClient() {
 
@@ -618,22 +626,7 @@ public class DefaultHttpClient implements
                 // mostly copied from super method, but with customizeException
 
                 HttpResponse<O> response = exchange(request, bodyType, errorType);
-                if (HttpStatus.class.isAssignableFrom(bodyType.getType())) {
-                    return (O) response.getStatus();
-                } else {
-                    Optional<O> body = response.getBody();
-                    if (body.isEmpty() && response.getBody(Argument.of(byte[].class)).isPresent()) {
-                        throw decorate(new HttpClientResponseException(
-                        "Failed to decode the body for the given content type [%s]".formatted(response.getContentType().orElse(null)),
-                            response
-                        ));
-                    } else {
-                        return body.orElseThrow(() -> decorate(new HttpClientResponseException(
-                            "Empty body",
-                            response
-                        )));
-                    }
-                }
+                return HttpClientResponseBodyHandler.requireBody(response, bodyType, DefaultHttpClient.this::decorate);
             }
 
             @Override
@@ -1000,24 +993,7 @@ public class DefaultHttpClient implements
             // exchange() returns a HttpResponse<Void>, we can't map the Void body properly, so just drop it and complete
             return (Publisher<O>) exchange.ignoreElements();
         }
-        return exchange.map(response -> {
-            if (bodyType.getType() == HttpStatus.class) {
-                return (O) response.getStatus();
-            } else {
-                Optional<O> body = response.getBody();
-                if (body.isEmpty() && response.getBody(byte[].class).isPresent()) {
-                    throw decorate(new HttpClientResponseException(
-                    "Failed to decode the body for the given content type [%s]".formatted(response.getContentType().orElse(null)),
-                        response
-                    ));
-                } else {
-                    return body.orElseThrow(() -> decorate(new HttpClientResponseException(
-                        "Empty body",
-                        response
-                    )));
-                }
-            }
-        });
+        return exchange.map(response -> HttpClientResponseBodyHandler.requireBody(response, bodyType, this::decorate));
     }
 
     @Override
