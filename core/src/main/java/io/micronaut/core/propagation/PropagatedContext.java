@@ -133,6 +133,7 @@ public interface PropagatedContext {
     /**
      * Is this propagated context bound? If yes the propagation is not needed.
      * @return true if bound
+     * @since 5.0
      */
     boolean isBound();
 
@@ -140,6 +141,7 @@ public interface PropagatedContext {
      * Checks whether the context is empty.
      *
      * @return true if the context contains no elements, otherwise false
+     * @since 5.0
      */
     boolean isEmpty();
 
@@ -172,8 +174,7 @@ public interface PropagatedContext {
      * @param newElement the element that will replace it
      * @return the new context
      */
-    PropagatedContext replace(PropagatedContextElement oldElement,
- PropagatedContextElement newElement);
+    PropagatedContext replace(PropagatedContextElement oldElement, PropagatedContextElement newElement);
 
     /**
      * Finds the first element of the given type, if any exist.
@@ -215,7 +216,9 @@ public interface PropagatedContext {
      * object must be closed to undo the propagation.
      *
      * @return auto-closeable block to be used in try-resource block.
+     * @deprecated The method is only allowed for thread-local propagation.
      */
+    @Deprecated(since = "5.0")
     Scope propagate();
 
     /**
@@ -260,6 +263,7 @@ public interface PropagatedContext {
      * @param <V>      The supplier return type
      * @return the result of calling {@link Callable#call()}.
      * @throws Exception if an exception occurs
+     * @since 5.0
      */
     <V> V propagateCall(Callable<V> callable) throws Exception;
 
@@ -267,6 +271,7 @@ public interface PropagatedContext {
      * Executes the given runnable with this context in scope, restoring the previous context when execution completes.
      *
      * @param runnable The runnable
+     * @since 5.0
      */
     void propagate(Runnable runnable);
 
