@@ -21,9 +21,6 @@ import io.micronaut.core.io.buffer.ByteBuffer;
 import io.micronaut.core.type.Argument;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
-import io.micronaut.http.HttpStatus;
-import io.micronaut.http.client.FallbackAsyncHttpClient;
-import io.micronaut.http.client.exceptions.HttpClientResponseException;
 import io.micronaut.http.hateoas.JsonError;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
@@ -46,11 +43,15 @@ public interface HttpClient extends Closeable, LifeCycle<HttpClient> {
     Argument<JsonError> DEFAULT_ERROR_TYPE = Argument.of(JsonError.class);
 
     /**
+     * Creates a blocking HTTP client suitable for testing and non-production scenarios.
+     *
      * @return A blocking HTTP client suitable for testing and non-production scenarios.
      */
     BlockingHttpClient toBlocking();
 
     /**
+     * Creates an asynchronous HTTP client using {@link java.util.concurrent.CompletionStage}-based APIs.
+     *
      * @return An asynchronous HTTP client using {@link java.util.concurrent.CompletionStage}-based APIs.
      * @since 4.5
      */
