@@ -48,7 +48,14 @@ public final class ReactivePropagation {
         if (actual instanceof CorePublisher<T> corePublisher) {
             return propagate(propagatedContext, corePublisher);
         }
-        return subscriber -> propagatedContext.propagate(() -> actual.subscribe(propagate(propagatedContext, subscriber)));
+        return subscriber -> {
+            Subscriber<? super T> wrappedSubscriber = propagate(propagatedContext, subscriber);
+            if (propagatedContext.isBound()) {
+                actual.subscribe(wrappedSubscriber);
+            } else {
+                propagatedContext.propagate(() -> actual.subscribe(wrappedSubscriber));
+            }
+        };
     }
 
     /**
@@ -64,10 +71,12 @@ public final class ReactivePropagation {
         return new CorePublisher<>() {
             @Override
             public void subscribe(CoreSubscriber<? super T> subscriber) {
+                @SuppressWarnings("unchecked")
+                CoreSubscriber<? super T> wrappedSubscriber = (CoreSubscriber<? super T>) propagate(propagatedContext, subscriber);
                 if (propagatedContext.isBound()) {
-                    actual.subscribe(subscriber);
+                    actual.subscribe(wrappedSubscriber);
                 } else {
-                    propagatedContext.propagate(() -> actual.subscribe(propagate(propagatedContext, subscriber)));
+                    propagatedContext.propagate(() -> actual.subscribe(wrappedSubscriber));
                 }
             }
 
@@ -77,10 +86,11 @@ public final class ReactivePropagation {
                     subscribe(coreSubscriber);
                     return;
                 }
+                Subscriber<? super T> wrappedSubscriber = propagate(propagatedContext, subscriber);
                 if (propagatedContext.isBound()) {
-                    actual.subscribe(subscriber);
+                    actual.subscribe(wrappedSubscriber);
                 } else {
-                    propagatedContext.propagate(() -> actual.subscribe(propagate(propagatedContext, subscriber)));
+                    propagatedContext.propagate(() -> actual.subscribe(wrappedSubscriber));
                 }
             }
         };
