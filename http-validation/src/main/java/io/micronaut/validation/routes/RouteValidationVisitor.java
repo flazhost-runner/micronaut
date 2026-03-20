@@ -75,7 +75,13 @@ public class RouteValidationVisitor implements TypeElementVisitor<Object, Object
             return;
         }
 
-        AnnotationValue<?> mappingAnnotation = element.getAnnotation(METHOD_MAPPING_ANN);
+        AnnotationValue<?> mappingAnnotation = element.getDeclaredAnnotation(METHOD_MAPPING_ANN);
+        if (mappingAnnotation == null && element.getAnnotationMetadata().hasStereotype(METHOD_MAPPING_ANN)) {
+            mappingAnnotation = element.getAnnotationMetadata().getAnnotationValuesByStereotype(METHOD_MAPPING_ANN)
+                .stream()
+                .findFirst()
+                .orElse(null);
+        }
         if (mappingAnnotation != null) {
             Set<String> uris = CollectionUtils.setOf(mappingAnnotation.stringValues("uris"));
             mappingAnnotation.stringValue().ifPresent(uris::add);

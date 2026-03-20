@@ -38,8 +38,8 @@ public final class SuspendedReactiveReturnTypeRule implements RouteValidationRul
         if (!method.isSuspend()) {
             return new RouteValidationResult(new String[0]);
         }
-        ClassElement returnType = method.getGenericReturnType();
-        if (returnType.isAssignable(Publisher.class) || returnType.isAssignable(CompletionStage.class)) {
+        ClassElement returnType = method.getReturnType();
+        if (returnType.isAssignable(Publisher.class) || returnType.isAssignable(CompletionStage.class) || returnType.getName().equals("kotlinx.coroutines.flow.Flow")) {
             return new RouteValidationResult(new String[]{MESSAGE.formatted(returnType.getName())});
         }
         return new RouteValidationResult(new String[0]);
