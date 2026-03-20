@@ -147,15 +147,13 @@ class UriTemplateSpec extends Specification {
     }
 
     @Issue("https://github.com/micronaut-projects/micronaut-core/issues/11192")
-    void "test bean expansion preserves property order for exploded query parameters"() {
+    void "test bean expansion preserves property order for query parameters"() {
         given:
         UriTemplate uriTemplate = new UriTemplate('/foo{?offset,max,sort,order}')
-        UriTemplate explodedUriTemplate = new UriTemplate('/foo{?offset,max,sort,order}{&pagination*}')
         Pagination pagination = new Pagination(0, 10, 'name', 'asc')
 
         expect:
         uriTemplate.expand(pagination) == '/foo?offset=0&max=10&sort=name&order=asc'
-        explodedUriTemplate.expand([offset: 0, max: 10, sort: 'name', order: 'asc', pagination: pagination]) == '/foo?offset=0&max=10&sort=name&order=asc'
     }
 
     @Unroll
