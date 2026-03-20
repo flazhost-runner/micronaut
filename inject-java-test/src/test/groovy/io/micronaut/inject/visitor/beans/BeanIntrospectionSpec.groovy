@@ -5455,6 +5455,48 @@ class MyConfig {
         beanIntrospection.propertyNames as List<String> == ["deleted", "updated", "name"]
     }
 
+    @Issue("https://github.com/micronaut-projects/micronaut-core/issues/10889")
+    void "test abstract introspected class does not try to instantiate abstract type"() {
+        when:
+        BeanIntrospection beanIntrospection = buildBeanIntrospection('test.AbstractBean', '''\
+package test;
+
+import io.micronaut.core.annotation.Introspected;
+
+@Introspected
+abstract class AbstractBean {
+    private final String name;
+
+    protected AbstractBean(String name) {
+        this.name = name;
+    }
+
+    public String getName() {
+        return name;
+    }
+}
+''')
+
+        then:
+        beanIntrospection != null
+        !beanIntrospection.isBuildable()
+        !beanIntrospection.hasConstructor()
+
+        when:
+        beanIntrospection.instantiate()
+
+        then:
+        def e = thrown(InstantiationException)
+        e.message == 'No default constructor exists'
+
+        when:
+        beanIntrospection.instantiate(false, 'test')
+
+        then:
+        def e2 = thrown(InstantiationException)
+        e2.message.contains('defines no accessible constructor')
+    }
+
     void "test records with is in the property name"() {
         given:
         BeanIntrospection introspection = buildBeanIntrospection('test.Foo', '''\
@@ -5983,4 +6025,3 @@ class AbcPerson {
         }
     }
 }
-
