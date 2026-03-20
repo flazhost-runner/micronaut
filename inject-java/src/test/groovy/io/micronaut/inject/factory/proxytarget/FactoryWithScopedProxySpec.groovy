@@ -53,7 +53,7 @@ class TestFactory {
 class Test {
     Test(String name) {}
     Test() {
-        this("foo")
+        this("foo");
     }
 }
 ''')
