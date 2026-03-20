@@ -92,6 +92,7 @@ public class DefaultRouteInfo<R> implements RouteInfo<R> {
         this.annotationMetadata = annotationMetadata;
         this.returnType = returnType;
         this.bodyType = resolveBodyType(returnType);
+        validateReturnType(returnType);
         var argBodyType = (Argument<R>) bodyType;
         this.messageBodyWriter = messageBodyHandlerRegistry.findWriter(argBodyType, producesMediaTypes)
             .map(w -> w.createSpecific(argBodyType))
@@ -177,6 +178,16 @@ public class DefaultRouteInfo<R> implements RouteInfo<R> {
             return appendAnnotations(returnType, unwrappedType);
         }
         return returnType.asArgument();
+    }
+
+    private static void validateReturnType(ReturnType<?> returnType) {
+        if (!returnType.isSuspended()) {
+            return;
+        }
+        Argument<?> suspendedResultType = returnType.asArgument();
+        if (suspendedResultType.isAsyncOrReactive()) {
+            throw new IllegalArgumentException("Unsupported suspended controller return type [" + suspendedResultType.getTypeString(false) + "]. Suspend functions must not return reactive or async types.");
+        }
     }
 
     private static Argument<?> appendAnnotations(ReturnType<?> returnType, Argument<?> unwrappedType) {
