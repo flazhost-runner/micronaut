@@ -550,8 +550,7 @@ final class BeanIntrospectionWriter implements OriginatingElements, ClassOutputW
 
     private byte[] generateIntrospectionClass() {
         boolean isEnum = beanClassElement.isEnum();
-        boolean hasStaticCreator = constructor != null && constructor.isStatic();
-        boolean disallowDirectInstantiation = (beanClassElement.isAbstract() || beanClassElement.isInterface()) && !hasStaticCreator;
+        boolean isAbstractClass = beanClassElement.isAbstract() && !beanClassElement.isInterface();
 
         Map<String, MethodDef> loadTypeMethods = new LinkedHashMap<>();
 
@@ -788,12 +787,12 @@ final class BeanIntrospectionWriter implements OriginatingElements, ClassOutputW
 
         boolean hasBuilder = annotationMetadata != null &&
             (annotationMetadata.isPresent(Introspected.class, "builder") || annotationMetadata.hasDeclaredAnnotation("lombok.Builder"));
-        if (!disallowDirectInstantiation && (defaultConstructor != null || constructor != null)) {
+        if (!isAbstractClass && (defaultConstructor != null || constructor != null)) {
             classDefBuilder.addMethod(
                 getBooleanMethod(HAS_CONSTRUCTOR_METHOD, true)
             );
         }
-        if (!disallowDirectInstantiation && defaultConstructor != null) {
+        if (!isAbstractClass && defaultConstructor != null) {
             classDefBuilder.addMethod(
                 getInstantiateMethod(defaultConstructor, INSTANTIATE_METHOD)
             );
@@ -808,7 +807,7 @@ final class BeanIntrospectionWriter implements OriginatingElements, ClassOutputW
             }
         }
 
-        if (!disallowDirectInstantiation && constructor != null) {
+        if (!isAbstractClass && constructor != null) {
             if (defaultConstructor == null) {
                 if (ArrayUtils.isEmpty(constructor.getParameters())) {
                     classDefBuilder.addMethod(
