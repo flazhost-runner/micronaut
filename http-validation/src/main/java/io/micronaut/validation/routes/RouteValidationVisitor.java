@@ -29,6 +29,7 @@ import io.micronaut.validation.routes.rules.ClientTypesRule;
 import io.micronaut.validation.routes.rules.MissingParameterRule;
 import io.micronaut.validation.routes.rules.NullableParameterRule;
 import io.micronaut.validation.routes.rules.RequestBeanParameterRule;
+import io.micronaut.validation.routes.rules.SuspendedReactiveReturnTypeRule;
 import io.micronaut.validation.routes.rules.RouteValidationRule;
 import org.jspecify.annotations.NullUnmarked;
 
@@ -116,6 +117,7 @@ public class RouteValidationVisitor implements TypeElementVisitor<Object, Object
         rules.add(new NullableParameterRule());
         rules.add(new RequestBeanParameterRule());
         rules.add(new ClientTypesRule());
+        rules.add(new SuspendedReactiveReturnTypeRule());
     }
 
     /**
