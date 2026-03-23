@@ -722,12 +722,17 @@ public abstract class AbstractInitializableBeanIntrospection<B> implements Unsaf
         public <A> Builder<B> convert(int index, ArgumentConversionContext<A> conversionContext, @Nullable Object value, ConversionService conversionService) {
             Argument<A> argument = conversionContext.getArgument();
             if (value != null) {
-                if (!argument.isInstance(value)) {
+                if (!argument.isInstance(value) || requiresGenericConversion(argument, value)) {
                     value = conversionService.convertRequired(value, conversionContext);
                 }
                 params[index] = value;
             }
             return this;
+        }
+
+        private static boolean requiresGenericConversion(Argument<?> argument, Object value) {
+            return argument.getTypeParameters().length > 0 &&
+                (value instanceof Iterable<?> || value instanceof Map<?, ?> || value.getClass().isArray());
         }
 
         @Override

@@ -349,6 +349,11 @@ final class MapperIntroduction implements MethodInterceptor<Object, Object> {
         }
     }
 
+    private static boolean requiresGenericConversion(Argument<?> argument, Object value) {
+        return argument.getTypeParameters().length > 0 &&
+            (value instanceof Iterable<?> || value instanceof Map<?, ?> || value.getClass().isArray());
+    }
+
     private static MapStrategy buildMapStrategy(
         Mapper.ConflictStrategy conflictStrategy,
         Map<String, Function<Object, BiConsumer<Object, MappingBuilder<Object>>>> customMappers,
@@ -494,7 +499,9 @@ final class MapperIntroduction implements MethodInterceptor<Object, Object> {
                     if (i > -1) {
                         Argument<Object> argument = arguments[i];
                         Object value = beanProperty.get(input);
-                        if (value == null || argument.isInstance(value)) {
+                        if (value == null) {
+                            builder.with(i, argument, null, propertyName, input);
+                        } else if (argument.isInstance(value) && !requiresGenericConversion(argument, value)) {
                             builder.with(i, argument, value, propertyName, input);
                         } else if (conflictStrategy == Mapper.ConflictStrategy.CONVERT) {
                             ArgumentConversionContext<Object> conversionContext = ConversionContext.of(argument);

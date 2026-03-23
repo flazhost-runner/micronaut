@@ -8,6 +8,7 @@ import io.micronaut.docs.ioc.mappers.ChristmasTypes.PresentPackaging;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -108,4 +109,21 @@ class MappersSpec {
             // end::additional[]
         }
     }
+    @Test
+    void testListElementConversionInMapper() {
+        try (ApplicationContext context = ApplicationContext.run()) {
+            ListContainerMapper mapper = context.getBean(ListContainerMapper.class);
+            ItemB item = new ItemB("x");
+            ContainerB input = new ContainerB("test", item, List.of(item));
+
+            ContainerA result = mapper.toA(input);
+
+            assertEquals("test", result.name());
+            assertEquals("x", result.inner().value());
+            assertEquals(1, result.items().size());
+            assertEquals(ItemA.class, result.items().get(0).getClass());
+            assertEquals("x", result.items().get(0).value());
+        }
+    }
+
 }
