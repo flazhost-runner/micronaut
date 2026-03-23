@@ -796,6 +796,42 @@ class Test {
         prop.isReadOnly()
     }
 
+
+    @Issue("https://github.com/micronaut-projects/micronaut-core/issues/10512")
+    void "test annotation metadata is retained for optional getter backed by annotated field"() {
+        given:
+        BeanIntrospection introspection = buildBeanIntrospection('test.Foo', '''
+package test;
+
+import io.micronaut.core.annotation.Introspected;
+import jakarta.validation.constraints.Min;
+import java.util.Optional;
+
+@Introspected
+class Foo {
+    @Min(10)
+    private Long value;
+
+    public Optional<Long> getValue() {
+        return Optional.ofNullable(value);
+    }
+}
+''')
+
+        when:
+        BeanProperty<?, ?> property = introspection.getRequiredProperty("value", Optional)
+        def genericTypeArg = property.asArgument().getFirstTypeVariable().get()
+
+        then:
+        property.type == Optional
+        property.isReadOnly()
+        !property.annotationMetadata.hasAnnotation(Min)
+        !property.annotationMetadata.hasStereotype(Constraint)
+        genericTypeArg.annotationMetadata.hasAnnotation(Min)
+        genericTypeArg.annotationMetadata.hasStereotype(Constraint)
+        genericTypeArg.annotationMetadata.intValue(Min).getAsInt() == 10
+    }
+
     @Issue("https://github.com/micronaut-projects/micronaut-core/issues/8657")
     void "test executable method on abstract class with introspection"() {
         when:
