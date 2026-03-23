@@ -17,6 +17,8 @@ package io.micronaut.inject.qualifiers.replaces
 
 import io.micronaut.annotation.processing.test.AbstractTypeElementSpec
 import io.micronaut.context.ApplicationContext
+import io.micronaut.context.annotation.Prototype
+import io.micronaut.inject.qualifiers.Qualifiers
 import spock.lang.Specification
 import io.micronaut.context.env.PropertySource
 /**
@@ -184,6 +186,69 @@ class A2ConfigProperties extends A1ConfigProperties {
         context.getBeansOfType(G).contains(context.getBean(G1QualifierReplacement))
         context.getBeansOfType(G).contains(context.getBean(G2QualifierReplacement))
         context.getBeansOfType(G).contains(context.getBean(G3Qualifier))
+
+        cleanup:
+        context.close()
+    }
+
+    void "test that unqualified replacement does not remove named bean"() {
+        given:
+        ApplicationContext context = buildContext('''
+package test;
+
+import io.micronaut.context.annotation.Factory;
+import io.micronaut.context.annotation.Prototype;
+import io.micronaut.context.annotation.Replaces;
+import jakarta.inject.Named;
+import jakarta.inject.Singleton;
+
+@Factory
+class CountDownLatchFactory {
+
+    @Singleton
+    TestBean defaultBean() {
+        return new DefaultTestBean();
+    }
+
+    @Prototype
+    @Named("blah")
+    TestBean namedBean() {
+        return new NamedTestBean();
+    }
+}
+
+interface TestBean {
+    String value();
+}
+
+class DefaultTestBean implements TestBean {
+    @Override
+    public String value() {
+        return "default";
+    }
+}
+
+class NamedTestBean implements TestBean {
+    @Override
+    public String value() {
+        return "named";
+    }
+}
+
+@Singleton
+@Replaces(TestBean.class)
+class ReplacementTestBean implements TestBean {
+    @Override
+    public String value() {
+        return "replacement";
+    }
+}
+''')
+
+        expect:
+        context.getBean(context.classLoader.loadClass('test.TestBean'), Qualifiers.byName('blah')).value() == 'named'
+        context.getBeansOfType(context.classLoader.loadClass('test.TestBean'))*.value().toSet() == ['replacement', 'named'] as Set
+        context.getBeansOfType(context.classLoader.loadClass('test.TestBean')).any { it.class.simpleName == 'ReplacementTestBean' }
 
         cleanup:
         context.close()

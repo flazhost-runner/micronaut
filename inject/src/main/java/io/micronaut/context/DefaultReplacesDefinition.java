@@ -108,6 +108,9 @@ public record DefaultReplacesDefinition<T>(Class<T> beanType,
         }
 
         if (beanTypeToReplace != null) {
+            if (beanDefinition.getDeclaredQualifier() != null) {
+                return false;
+            }
             final boolean isTypeMatches = checkIfTypeMatches(beanDefinition, beanTypeToReplace);
             if (isTypeMatches && DefaultBeanContext.LOG.isDebugEnabled()) {
                 DefaultBeanContext.LOG.debug("Bean [{}] replaces existing bean of type [{}]", beanType, beanTypeToReplace);
