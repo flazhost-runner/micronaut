@@ -35,6 +35,7 @@ import io.micronaut.core.beans.BeanProperty;
 import io.micronaut.core.beans.exceptions.IntrospectionException;
 import io.micronaut.core.convert.ArgumentConversionContext;
 import io.micronaut.core.convert.ConversionContext;
+import io.micronaut.core.convert.DefaultMutableConversionService;
 import io.micronaut.core.convert.ConversionService;
 import io.micronaut.core.convert.format.Format;
 import io.micronaut.core.expressions.EvaluatedExpression;
@@ -349,11 +350,6 @@ final class MapperIntroduction implements MethodInterceptor<Object, Object> {
         }
     }
 
-    private static boolean requiresGenericConversion(Argument<?> argument, Object value) {
-        return argument.getTypeParameters().length > 0 &&
-            (value instanceof Iterable<?> || value instanceof Map<?, ?> || value.getClass().isArray());
-    }
-
     private static MapStrategy buildMapStrategy(
         Mapper.ConflictStrategy conflictStrategy,
         Map<String, Function<Object, BiConsumer<Object, MappingBuilder<Object>>>> customMappers,
@@ -501,7 +497,7 @@ final class MapperIntroduction implements MethodInterceptor<Object, Object> {
                         Object value = beanProperty.get(input);
                         if (value == null) {
                             builder.with(i, argument, null, propertyName, input);
-                        } else if (argument.isInstance(value) && !requiresGenericConversion(argument, value)) {
+                        } else if (argument.isInstance(value) && !shouldUseCollectionConversion(beanProperty.asArgument(), argument)) {
                             builder.with(i, argument, value, propertyName, input);
                         } else if (conflictStrategy == Mapper.ConflictStrategy.CONVERT) {
                             ArgumentConversionContext<Object> conversionContext = ConversionContext.of(argument);
@@ -512,6 +508,32 @@ final class MapperIntroduction implements MethodInterceptor<Object, Object> {
                     }
                 }
             }
+        }
+
+        private boolean shouldUseCollectionConversion(Argument<?> sourceArgument, Argument<?> targetArgument) {
+            if (!isCollectionLike(sourceArgument) || !isCollectionLike(targetArgument)) {
+                return false;
+            }
+            if (targetArgument.isAssignableFrom(sourceArgument)) {
+                return false;
+            }
+            Argument<?> sourceElement = sourceArgument.getFirstTypeVariable().orElse(null);
+            Argument<?> targetElement = targetArgument.getFirstTypeVariable().orElse(null);
+            if (sourceElement == null || targetElement == null) {
+                return false;
+            }
+            if (targetElement.isAssignableFrom(sourceElement)) {
+                return false;
+            }
+            if (conversionService instanceof DefaultMutableConversionService defaultMutableConversionService) {
+                return defaultMutableConversionService.hasExactRegisteredConverter(sourceElement.getType(), targetElement.getType());
+            }
+            return false;
+        }
+
+        private static boolean isCollectionLike(Argument<?> argument) {
+            Class<?> type = argument.getType();
+            return Iterable.class.isAssignableFrom(type) || type.isArray();
         }
 
         private <O> void mapMap(Map<String, Object> input, MapStrategy mapStrategy, MappingBuilder<O> builder) {

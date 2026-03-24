@@ -285,6 +285,16 @@ public class DefaultMutableConversionService implements MutableConversionService
         return customConverters.get(pair);
     }
 
+    /**
+     * @param sourceType The exact source type
+     * @param targetType The exact target type
+     * @return Whether an exact registered converter exists for the pair
+     */
+    @Internal
+    public boolean hasExactRegisteredConverter(Class<?> sourceType, Class<?> targetType) {
+        return findRegisteredConverter(new ConvertiblePair(sourceType, targetType, null)) != null;
+    }
+
     @Override
     public <S, T> void addConverter(Class<S> sourceType, Class<T> targetType, TypeConverter<S, T> typeConverter) {
         addConverterAnalyzeSource(customConverters, sourceType, targetType, typeConverter);
