@@ -16,6 +16,7 @@
 package io.micronaut.context;
 
 import io.micronaut.context.annotation.Replaces;
+import io.micronaut.context.annotation.Secondary;
 import io.micronaut.context.exceptions.ConfigurationException;
 import io.micronaut.core.annotation.AnnotationClassValue;
 import io.micronaut.core.annotation.AnnotationValue;
@@ -108,7 +109,7 @@ public record DefaultReplacesDefinition<T>(Class<T> beanType,
         }
 
         if (beanTypeToReplace != null) {
-            if (beanDefinition.getDeclaredQualifier() != null) {
+            if (beanDefinition.getDeclaredQualifier() != null && !beanDefinition.hasDeclaredStereotype(Secondary.class)) {
                 return false;
             }
             final boolean isTypeMatches = checkIfTypeMatches(beanDefinition, beanTypeToReplace);
