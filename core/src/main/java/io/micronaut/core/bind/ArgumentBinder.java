@@ -82,7 +82,7 @@ public interface ArgumentBinder<T, S> {
         /**
          * An empty but unsatisfied result.
          */
-        BindingResult UNSATISFIED = new BindingResult() {
+        BindingResult BINDING_RESULT_UNSATISFIED = new BindingResult() {
             @Override
             public Optional getValue() {
                 return Optional.empty();
@@ -163,7 +163,7 @@ public interface ArgumentBinder<T, S> {
          * @since 4.0.0
          */
         static <R> BindingResult<R> unsatisfied() {
-            return UNSATISFIED;
+            return BINDING_RESULT_UNSATISFIED;
         }
     }
 }
