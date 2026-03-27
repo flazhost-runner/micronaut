@@ -49,11 +49,7 @@ class DefaultBeanIntrospector implements BeanIntrospector {
     private final ClassLoader classLoader;
 
     DefaultBeanIntrospector() {
-        ClassLoader cl = Thread.currentThread().getContextClassLoader();
-        if (cl == null) {
-            cl = DefaultBeanIntrospector.class.getClassLoader();
-        }
-        this.classLoader = cl;
+        this.classLoader = DefaultBeanIntrospector.class.getClassLoader();
     }
 
     DefaultBeanIntrospector(ClassLoader classLoader) {
