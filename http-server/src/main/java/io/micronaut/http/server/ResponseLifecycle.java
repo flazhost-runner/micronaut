@@ -131,9 +131,9 @@ public abstract class ResponseLifecycle {
         if (nettyRequest.getMethod() == HttpMethod.HEAD && !response.getHeaders().contains(HttpHeaders.CONTENT_LENGTH)) {
             RouteAttributes.getHeadBody(response).ifPresent(headBody -> {
                 if (headBody instanceof byte[] bytes) {
-                    response.header(HttpHeaders.CONTENT_LENGTH, Integer.toString(bytes.length));
+                    response.contentLength(bytes.length);
                 } else if (headBody instanceof CharSequence sequence) {
-                    response.header(HttpHeaders.CONTENT_LENGTH, Integer.toString(sequence.toString().getBytes().length));
+                    response.contentLength(sequence.toString().getBytes(MessageBodyWriter.getCharset(response.getContentType().orElse(null), response.getHeaders())).length);
                 }
             });
         }
