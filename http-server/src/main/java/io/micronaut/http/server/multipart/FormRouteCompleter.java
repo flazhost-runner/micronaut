@@ -194,19 +194,17 @@ public final class FormRouteCompleter {
                             }
                         }
                         String text = immediate.toString(charset);
-                        if (!text.isBlank()) {
-                            Object existing = map.get(entry.getKey());
-                            if (existing == null) {
-                                map.put(entry.getKey(), text);
-                            } else if (existing instanceof List<?>) {
-                                //noinspection unchecked
-                                ((List<? super String>) existing).add(text);
-                            } else {
-                                List<String> list = new ArrayList<>();
-                                list.add((String) existing);
-                                list.add(text);
-                                map.put(entry.getKey(), list);
-                            }
+                        Object existing = map.get(entry.getKey());
+                        if (existing == null) {
+                            map.put(entry.getKey(), text);
+                        } else if (existing instanceof List<?>) {
+                            //noinspection unchecked
+                            ((List<? super String>) existing).add(text);
+                        } else {
+                            List<String> list = new ArrayList<>();
+                            list.add((String) existing);
+                            list.add(text);
+                            map.put(entry.getKey(), list);
                         }
                     } catch (Throwable t) {
                         error = t;
