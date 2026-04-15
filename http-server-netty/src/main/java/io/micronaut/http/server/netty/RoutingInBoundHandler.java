@@ -48,6 +48,7 @@ import io.netty.handler.codec.http.DefaultHttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.util.AttributeKey;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,6 +84,7 @@ public final class RoutingInBoundHandler implements RequestHandler {
     final Supplier<ExecutorService> ioExecutorSupplier;
     final boolean multipartEnabled;
     final MessageBodyHandlerRegistry messageBodyHandlerRegistry;
+    @Nullable
     ExecutorService ioExecutor;
     final ApplicationEventPublisher<HttpRequestTerminatedEvent> terminateEventPublisher;
     final ApplicationEventPublisher<HttpRequestReceivedEvent> receivedPublisher;
@@ -138,7 +140,7 @@ public final class RoutingInBoundHandler implements RequestHandler {
     }
 
     @Override
-    public void responseWritten(Object attachment) {
+    public void responseWritten(@Nullable Object attachment) {
         if (attachment != null) {
             cleanupRequest((NettyHttpRequest<?>) attachment);
         }
@@ -186,9 +188,8 @@ public final class RoutingInBoundHandler implements RequestHandler {
             if (receivedPublisher != ApplicationEventPublisher.NO_OP) {
                 receivedPublisher.publishEvent(new HttpRequestReceivedEvent(errorRequest));
             }
-            try (PropagatedContext.Scope ignore = PropagatedContext.getOrEmpty().plus(new ServerHttpRequestContext(errorRequest)).propagate()) {
-                new NettyRequestLifecycle(this, outboundAccess).handleException(errorRequest, e.getCause() == null ? e : e.getCause());
-            }
+            PropagatedContext.getOrEmpty().plus(new ServerHttpRequestContext(errorRequest))
+                .propagate(() -> new NettyRequestLifecycle(this, outboundAccess).handleException(errorRequest, e.getCause() == null ? e : e.getCause()));
             return;
         }
         if (receivedPublisher != ApplicationEventPublisher.NO_OP) {
@@ -200,14 +201,15 @@ public final class RoutingInBoundHandler implements RequestHandler {
             ctx.channel().attr(key).set(mnRequest);
         }
         outboundAccess.attachment(mnRequest);
-        try (PropagatedContext.Scope ignore = PropagatedContext.getOrEmpty().plus(new ServerHttpRequestContext(mnRequest)).propagate()) {
-            new NettyRequestLifecycle(this, outboundAccess).handleNormal(mnRequest);
-        }
+        PropagatedContext.getOrEmpty().plus(new ServerHttpRequestContext(mnRequest))
+            .propagate(() -> new NettyRequestLifecycle(this, outboundAccess).handleNormal(mnRequest));
     }
 
     public void writeResponse(OutboundAccess outboundAccess,
                               NettyHttpRequest<?> nettyHttpRequest,
+                              @Nullable
                               HttpResponse<?> response,
+                              @Nullable
                               Throwable throwable) {
         if (throwable != null) {
             response = routeExecutor.createDefaultErrorResponse(nettyHttpRequest, throwable);

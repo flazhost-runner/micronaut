@@ -15,8 +15,9 @@
  */
 package io.micronaut.context.env;
 
-import io.micronaut.core.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -77,7 +78,7 @@ public class EnvironmentPropertySource extends MapPropertySource {
         return PropertyConvention.ENVIRONMENT_VARIABLE;
     }
 
-    static Map getEnv(@Nullable List<String> includes, @Nullable List<String> excludes) {
+    static Map<String, String> getEnv(@Nullable List<String> includes, @Nullable List<String> excludes) {
         return getEnv(CachedEnvironment.getenv(), includes, excludes);
     }
 
@@ -91,12 +92,12 @@ public class EnvironmentPropertySource extends MapPropertySource {
             if (includes != null && !includes.contains(envVar)) {
                 continue;
             }
-            
+
             String convertedEnvVar = LIST_CONVERTER_REGEX.matcher(envVar).replaceAll("[$1]");
-            
+
             result.put(convertedEnvVar, entry.getValue());
         }
-        
+
         return result;
     }
 }

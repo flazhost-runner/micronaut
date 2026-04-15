@@ -15,6 +15,7 @@
  */
 package io.micronaut.http.server.netty.binding
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import io.micronaut.context.annotation.Requires
 import io.micronaut.core.annotation.Introspected
 import io.micronaut.core.convert.format.Format
@@ -69,6 +70,8 @@ class ParameterBindingSpec extends AbstractMicronautSpec {
         HttpMethod.GET  | '/parameter/set?values=10,20'                   | "Parameter Value: [10, 20]" | HttpStatus.OK
         HttpMethod.GET  | '/parameter/list?values=10,20'                  | "Parameter Value: [10, 20]" | HttpStatus.OK
         HttpMethod.GET  | '/parameter/list?values=10&values=20'           | "Parameter Value: [10, 20]" | HttpStatus.OK
+        HttpMethod.GET  | '/parameter/string-list?values='                | "Parameter Value: ['']"     | HttpStatus.OK
+        HttpMethod.GET  | '/parameter/string-list?values=,'               | "Parameter Value: ['', '']" | HttpStatus.OK
         HttpMethod.GET  | '/parameter/set?values=10&values=20'            | "Parameter Value: [10, 20]" | HttpStatus.OK
         HttpMethod.GET  | '/parameter/optional-list?values=10&values=20'  | "Parameter Value: [10, 20]" | HttpStatus.OK
         HttpMethod.GET  | '/parameter/optional-date?date=1941-01-05'      | "Parameter Value: 1941"     | HttpStatus.OK
@@ -253,6 +256,12 @@ class ParameterBindingSpec extends AbstractMicronautSpec {
             "Parameter Value: ${values.inspect()}"
         }
 
+        @Get("/string-list")
+        String stringList(List<String> values) {
+            assert values.every() { it instanceof String }
+            "Parameter Value: ${values.inspect()}"
+        }
+
         @Get("/set")
         String set(Set<Integer> values) {
             assert values.every() { it instanceof Integer }
@@ -323,7 +332,9 @@ class ParameterBindingSpec extends AbstractMicronautSpec {
             private String author
             private int age
 
-            Book(String title, Integer age, @Nullable String author) {
+            Book(@JsonProperty("title") String title,
+                 @JsonProperty("age") Integer age,
+                 @JsonProperty("author") @Nullable String author) {
                 this.age = age
                 this.title = title
                 this.author = author

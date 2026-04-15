@@ -19,9 +19,9 @@ import io.micronaut.context.condition.Condition;
 import io.micronaut.context.condition.ConditionContext;
 import io.micronaut.core.annotation.Experimental;
 import io.micronaut.core.annotation.Internal;
-import io.micronaut.core.annotation.NonNull;
 import io.micronaut.core.annotation.TypeHint;
 import io.netty.util.internal.PlatformDependent;
+import org.jspecify.annotations.NullUnmarked;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -39,6 +39,7 @@ import java.util.concurrent.ForkJoinPool;
  */
 @Internal
 @Experimental
+@NullUnmarked
 @TypeHint(
     typeNames = {
         "java.lang.VirtualThread",
@@ -105,7 +106,6 @@ public final class PrivateLoomSupport {
         CARRIER_THREAD = carrierThread;
     }
 
-    @NonNull
     static ForkJoinPool getDefaultScheduler() {
         try {
             return (ForkJoinPool) DEFAULT_SCHEDULER.invokeExact();
