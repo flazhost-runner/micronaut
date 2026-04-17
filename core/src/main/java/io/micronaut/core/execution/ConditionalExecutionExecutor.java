@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 original authors
+ * Copyright 2017-2026 original authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,27 +17,20 @@ package io.micronaut.core.execution;
 
 import io.micronaut.core.annotation.Internal;
 
-import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
 
 /**
- * The completable future execution flow.
+ * Internal executor contract that can determine whether execution can be inlined on the calling thread.
  *
- * @param <T> The value type
- * @author Denis Stepnov
- * @since 4.0.0
+ * @since 5.0.0
  */
 @Internal
-public interface CompletableFutureExecutionFlow<T> extends ExecutionFlow<T> {
+public interface ConditionalExecutionExecutor extends Executor {
 
     /**
-     * Create a completable future flow representing a value.
+     * Returns {@code true} if the current task may execute immediately on the calling thread.
      *
-     * @param value The value
-     * @param <K>   The value type
-     * @return a new flow
+     * @return {@code true} when execution can be inlined
      */
-    static <K> ExecutionFlow<K> just(CompletionStage<K> value) {
-        return (ExecutionFlow<K>) new CompletableFutureExecutionFlowImpl((CompletionStage<Object>) value);
-    }
-
+    boolean canExecuteImmediately();
 }
