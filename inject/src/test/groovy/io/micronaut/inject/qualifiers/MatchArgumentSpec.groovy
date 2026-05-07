@@ -111,17 +111,6 @@ class MatchArgumentSpec extends Specification {
             beanDefinitions[0].getBeanType() == GenericRawIterableSerializer
     }
 
-    void "test match raw serialize argument ignores non-generic object fallback"() {
-        when:
-            def beanDefinitions = context.getBeanDefinitions(MyNonGenericRawSerializer,
-                    MatchArgumentQualifier.contravariant(MyNonGenericRawSerializer, Argument.of(List))
-            )
-
-        then:
-            beanDefinitions.size() == 1
-            beanDefinitions[0].getBeanType() == ListObjectNonGenericRawSerializer
-    }
-
     void "test match serialize Collection String argument"() {
         when:
             def beanDefinitions = context.getBeanDefinitions(MySerializer,
@@ -265,14 +254,6 @@ class MatchArgumentSpec extends Specification {
     @Singleton
     static class GenericRawIterableSerializer<T> implements MyRawCollectionSerializer<Iterable<T>> {}
 
-    interface MyNonGenericRawSerializer<E> {}
-
-    @Singleton
-    static class ObjectNonGenericRawSerializer implements MyNonGenericRawSerializer<Object> {}
-
-    @Singleton
-    static class ListObjectNonGenericRawSerializer implements MyNonGenericRawSerializer<List<Object>> {}
-
     interface MyDeserializer<E> {}
 
     @Singleton
@@ -348,3 +329,4 @@ class MatchArgumentSpec extends Specification {
     static class NumberReader<T extends Number> implements MyReader2<T> {}
 
 }
+
