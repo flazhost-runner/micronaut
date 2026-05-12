@@ -100,6 +100,7 @@ public class DefaultApplicationContextBuilder implements ApplicationContextBuild
     private Predicate<BeanConfiguration> beanConfigurationsPredicate;
     @Nullable
     private Function<BeanContext, CustomScopeRegistry> customScopeRegistryFactory;
+    private BeanResolutionCustomizer beanResolutionCustomizer = BeanResolutionCustomizer.DEFAULT;
     private boolean configImportEnabled = true;
 
     /**
@@ -237,6 +238,11 @@ public class DefaultApplicationContextBuilder implements ApplicationContextBuild
     @Nullable
     public Function<BeanContext, CustomScopeRegistry> customScopeRegistryFactory() {
         return customScopeRegistryFactory;
+    }
+
+    @Override
+    public BeanResolutionCustomizer beanResolutionCustomizer() {
+        return beanResolutionCustomizer;
     }
 
     @Override
@@ -451,6 +457,12 @@ public class DefaultApplicationContextBuilder implements ApplicationContextBuild
     @Override
     public ApplicationContextBuilder beanDefinitionsProvider(BeanDefinitionsProvider provider) {
         this.beanDefinitionsProvider = provider;
+        return this;
+    }
+
+    @Override
+    public ApplicationContextBuilder beanResolutionCustomizer(@Nullable BeanResolutionCustomizer customizer) {
+        this.beanResolutionCustomizer = customizer == null ? BeanResolutionCustomizer.DEFAULT : customizer;
         return this;
     }
 

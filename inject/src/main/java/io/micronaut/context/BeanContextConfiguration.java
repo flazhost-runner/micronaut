@@ -139,6 +139,14 @@ public interface BeanContextConfiguration {
     }
 
     /**
+     * @return The bean resolution customizer.
+     * @since 5.1
+     */
+    default BeanResolutionCustomizer beanResolutionCustomizer() {
+        return BeanResolutionCustomizer.DEFAULT;
+    }
+
+    /**
      * @return The custom scope registry factory.
      * @since 5.1
      */

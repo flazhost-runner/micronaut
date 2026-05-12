@@ -211,6 +211,7 @@ public sealed class DefaultBeanContext implements ConfigurableBeanContext permit
     );
 
     private final CustomScopeRegistry customScopeRegistry;
+    private final BeanResolutionCustomizer beanResolutionCustomizer;
 
     private @Nullable BeanDefinitionValidator beanValidator;
     private @Nullable List<BeanConfiguration> beanConfigurationsList;
@@ -277,6 +278,7 @@ public sealed class DefaultBeanContext implements ConfigurableBeanContext permit
         System.setProperty(ClassUtils.PROPERTY_MICRONAUT_CLASSLOADER_LOGGING, "true");
         this.classLoader = contextConfiguration.getClassLoader();
         this.beanContextConfiguration = contextConfiguration;
+        this.beanResolutionCustomizer = Objects.requireNonNull(contextConfiguration.beanResolutionCustomizer(), "Bean resolution customizer cannot be null");
         this.customScopeRegistry = Objects.requireNonNull(createCustomScopeRegistry(), "Scope registry cannot be null");
         Set<Class<? extends Annotation>> eagerInitAnnotated = contextConfiguration.getEagerInitAnnotated();
         List<String> configuredEagerSingletonAnnotations = new ArrayList<>(eagerInitAnnotated.size());
@@ -313,6 +315,10 @@ public sealed class DefaultBeanContext implements ConfigurableBeanContext permit
     @Internal
     CustomScopeRegistry getCustomScopeRegistry() {
         return customScopeRegistry;
+    }
+
+    BeanResolutionCustomizer getBeanResolutionCustomizer() {
+        return beanResolutionCustomizer;
     }
 
     @Override

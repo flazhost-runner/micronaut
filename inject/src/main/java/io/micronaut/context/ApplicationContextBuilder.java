@@ -358,6 +358,17 @@ public interface ApplicationContextBuilder {
     }
 
     /**
+     * Override the bean resolution customizer.
+     *
+     * @param customizer The bean resolution customizer, or null to use the default
+     * @return This builder
+     * @since 5.1
+     */
+    default ApplicationContextBuilder beanResolutionCustomizer(@Nullable BeanResolutionCustomizer customizer) {
+        return this;
+    }
+
+    /**
      * Override the custom scope registry factory.
      *
      * @param factory The custom scope registry factory, or null to use the default
