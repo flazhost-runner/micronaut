@@ -697,14 +697,27 @@ public abstract class AbstractBeanResolutionContext implements BeanResolutionCon
 
         @Override
         public Path pushBeanCreate(BeanDefinition<?> declaringType, Argument<?> beanType) {
-            if (tracer != null) {
-                tracer.traceBeanCreation(
-                    AbstractBeanResolutionContext.this,
-                    declaringType,
-                    beanType
+            try {
+                if (tracer != null) {
+                    tracer.traceBeanCreation(
+                        AbstractBeanResolutionContext.this,
+                        declaringType,
+                        beanType
+                    );
+                }
+                BeanDefinition<Object> beanDefinition = (BeanDefinition<Object>) declaringType;
+                ConstructorSegment constructorSegment = new ConstructorArgumentSegment(
+                    beanDefinition,
+                    (Qualifier<Object>) getCurrentQualifier(),
+                    CONSTRUCTOR_METHOD_NAME,
+                    (Argument<Object>) beanType,
+                    Argument.ZERO_ARGUMENTS
                 );
+                detectCircularDependency(declaringType, beanType, constructorSegment);
+            } finally {
+                traceResolution();
             }
-            return pushConstructorResolve(declaringType, beanType);
+            return this;
         }
 
         private void traceResolution() {

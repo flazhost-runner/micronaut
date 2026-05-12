@@ -22,6 +22,7 @@ import io.micronaut.context.env.Environment;
 import io.micronaut.context.env.PropertySource;
 import io.micronaut.context.env.PropertySourcesLocator;
 import io.micronaut.context.env.SystemPropertiesPropertySource;
+import io.micronaut.context.scope.CustomScopeRegistry;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import io.micronaut.core.cli.CommandLine;
@@ -44,6 +45,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static io.micronaut.core.util.StringUtils.EMPTY_STRING_ARRAY;
@@ -96,6 +98,8 @@ public class DefaultApplicationContextBuilder implements ApplicationContextBuild
     private Predicate<QualifiedBeanType<?>> beansPredicate;
     @Nullable
     private Predicate<BeanConfiguration> beanConfigurationsPredicate;
+    @Nullable
+    private Function<BeanContext, CustomScopeRegistry> customScopeRegistryFactory;
     private boolean configImportEnabled = true;
 
     /**
@@ -227,6 +231,12 @@ public class DefaultApplicationContextBuilder implements ApplicationContextBuild
     @Nullable
     public Predicate<BeanConfiguration> beanConfiguraionsPredicate() {
         return beanConfigurationsPredicate;
+    }
+
+    @Override
+    @Nullable
+    public Function<BeanContext, CustomScopeRegistry> customScopeRegistryFactory() {
+        return customScopeRegistryFactory;
     }
 
     @Override
@@ -465,6 +475,12 @@ public class DefaultApplicationContextBuilder implements ApplicationContextBuild
     @Override
     public ApplicationContextBuilder beanConfigurationsPredicate(@Nullable Predicate<BeanConfiguration> predicate) {
         this.beanConfigurationsPredicate = predicate;
+        return this;
+    }
+
+    @Override
+    public ApplicationContextBuilder customScopeRegistry(@Nullable Function<BeanContext, CustomScopeRegistry> factory) {
+        this.customScopeRegistryFactory = factory;
         return this;
     }
 

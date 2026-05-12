@@ -19,6 +19,7 @@ import io.micronaut.context.annotation.ConfigurationReader;
 import io.micronaut.core.io.ResourceLoadStrategy;
 import io.micronaut.context.env.PropertySource;
 import io.micronaut.context.env.PropertySourcesLocator;
+import io.micronaut.context.scope.CustomScopeRegistry;
 import io.micronaut.core.io.scan.ClassPathResourceLoader;
 import io.micronaut.core.util.ArgumentUtils;
 import io.micronaut.inject.BeanConfiguration;
@@ -29,6 +30,7 @@ import java.lang.annotation.Annotation;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 
 /**
  * An interface for building an application context.
@@ -352,6 +354,17 @@ public interface ApplicationContextBuilder {
      * @since 5.0
      */
     default ApplicationContextBuilder beanDefinitionsProvider(BeanDefinitionsProvider provider) {
+        return this;
+    }
+
+    /**
+     * Override the custom scope registry factory.
+     *
+     * @param factory The custom scope registry factory, or null to use the default
+     * @return This builder
+     * @since 5.1
+     */
+    default ApplicationContextBuilder customScopeRegistry(@Nullable Function<BeanContext, CustomScopeRegistry> factory) {
         return this;
     }
 

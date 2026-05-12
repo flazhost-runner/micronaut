@@ -136,6 +136,7 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -275,13 +276,13 @@ public sealed class DefaultBeanContext implements ConfigurableBeanContext permit
         // enable classloader logging
         System.setProperty(ClassUtils.PROPERTY_MICRONAUT_CLASSLOADER_LOGGING, "true");
         this.classLoader = contextConfiguration.getClassLoader();
+        this.beanContextConfiguration = contextConfiguration;
         this.customScopeRegistry = Objects.requireNonNull(createCustomScopeRegistry(), "Scope registry cannot be null");
         Set<Class<? extends Annotation>> eagerInitAnnotated = contextConfiguration.getEagerInitAnnotated();
         List<String> configuredEagerSingletonAnnotations = new ArrayList<>(eagerInitAnnotated.size());
         for (Class<? extends Annotation> ann : eagerInitAnnotated) {
             configuredEagerSingletonAnnotations.add(ann.getName());
         }
-        this.beanContextConfiguration = contextConfiguration;
         BeanResolutionTraceConfiguration traceConfiguration = beanContextConfiguration
             .getTraceConfiguration();
         this.traceMode = traceConfiguration.mode();
@@ -299,6 +300,10 @@ public sealed class DefaultBeanContext implements ConfigurableBeanContext permit
      * @since 3.0.0
      */
     protected CustomScopeRegistry createCustomScopeRegistry() {
+        Function<BeanContext, CustomScopeRegistry> factory = beanContextConfiguration.customScopeRegistryFactory();
+        if (factory != null) {
+            return Objects.requireNonNull(factory.apply(this), "Custom scope registry cannot be null");
+        }
         return new DefaultCustomScopeRegistry(this);
     }
 
@@ -2093,7 +2098,7 @@ public sealed class DefaultBeanContext implements ConfigurableBeanContext permit
             } else {
                 throw new BeanInstantiationException(resolutionContext, "Expected InstantiatableBeanDefinition [" + beanDefinition + "]");
             }
-            if (bean == null) {
+            if (bean == null && !isNullableBeanDefinition(beanDefinition)) {
                 throw new BeanInstantiationException(resolutionContext, "InstantiatableBeanDefinition [" + beanDefinition + "] returned null");
             }
             if (bean instanceof Qualified qualified && declaredQualifier != null) {
@@ -2411,10 +2416,17 @@ public sealed class DefaultBeanContext implements ConfigurableBeanContext permit
         } else {
             registration = null;
         }
-        if ((registration == null || registration.bean == null) && throwNoSuchBean) {
+        if (registration == null && throwNoSuchBean) {
+            throw newNoSuchBeanException(resolutionContext, beanType, qualifier, null);
+        }
+        if (registration != null && registration.bean == null && throwNoSuchBean && !isNullableBeanDefinition(registration.beanDefinition)) {
             throw newNoSuchBeanException(resolutionContext, beanType, qualifier, null);
         }
         return registration;
+    }
+
+    private static boolean isNullableBeanDefinition(BeanDefinition<?> beanDefinition) {
+        return beanDefinition.getAnnotationMetadata().hasStereotype(io.micronaut.core.annotation.AnnotationUtil.NULLABLE);
     }
 
     private void assertContextState() {

@@ -16,6 +16,7 @@
 package io.micronaut.context;
 
 import io.micronaut.context.annotation.ConfigurationReader;
+import io.micronaut.context.scope.CustomScopeRegistry;
 import io.micronaut.core.annotation.AnnotationUtil;
 import io.micronaut.inject.BeanConfiguration;
 import org.jspecify.annotations.NullMarked;
@@ -26,6 +27,7 @@ import jakarta.inject.Singleton;
 import java.lang.annotation.Annotation;
 import java.util.Collections;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 /**
@@ -134,5 +136,14 @@ public interface BeanContextConfiguration {
      */
     default BeanDefinitionsProvider getBeanDefinitionsProvider() {
         return new DefaultBeanDefinitionsProvider();
+    }
+
+    /**
+     * @return The custom scope registry factory.
+     * @since 5.1
+     */
+    @Nullable
+    default Function<BeanContext, CustomScopeRegistry> customScopeRegistryFactory() {
+        return null;
     }
 }
