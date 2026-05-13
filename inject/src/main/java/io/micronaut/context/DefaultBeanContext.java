@@ -321,6 +321,12 @@ public sealed class DefaultBeanContext implements ConfigurableBeanContext permit
         return beanResolutionCustomizer;
     }
 
+    @SuppressWarnings("unchecked")
+    private <T> Argument<T> resolveBeanLookupArgument(Argument<T> beanType) {
+        Argument<?> resolvedBeanType = beanResolutionCustomizer.resolveBeanLookupArgument(beanType);
+        return (Argument<T>) Objects.requireNonNull(resolvedBeanType, "Resolved bean lookup argument cannot be null");
+    }
+
     @Override
     public boolean isRunning() {
         return running.get() && !initializing.get();
@@ -786,7 +792,9 @@ public sealed class DefaultBeanContext implements ConfigurableBeanContext permit
         if (result != null) {
             return result;
         }
+        Argument<T> lookupBeanType = resolveBeanLookupArgument(beanType);
         result = singletonScope.containsBean(beanType, qualifier) ||
+            singletonScope.containsBean(lookupBeanType, qualifier) ||
             isCandidatePresent(beanKey.beanType, qualifier);
 
         containsBeanCache.put(beanKey, result);
@@ -2414,11 +2422,15 @@ public sealed class DefaultBeanContext implements ConfigurableBeanContext permit
 
         if (concreteCandidate.isPresent()) {
             BeanDefinition<T> definition = concreteCandidate.get();
+            Argument<T> resolvedBeanType = resolveCandidateBeanType(beanType, definition);
 
             if (definition.isContainerType() && beanClass != definition.getBeanType()) {
                 throw new NonUniqueBeanException(beanClass, Collections.singletonList(definition).iterator());
             }
-            registration = resolveBeanRegistration(resolutionContext, definition, beanType, qualifier);
+            registration = resolveBeanRegistration(resolutionContext, definition, resolvedBeanType, qualifier);
+            if (registration != null && registration.bean == null) {
+                registration = resolveNullBeanRegistration(beanType, resolvedBeanType, registration);
+            }
         } else {
             registration = null;
         }
@@ -2427,6 +2439,28 @@ public sealed class DefaultBeanContext implements ConfigurableBeanContext permit
         }
         if (registration != null && registration.bean == null && throwNoSuchBean && !isNullableBeanDefinition(registration.beanDefinition)) {
             throw newNoSuchBeanException(resolutionContext, beanType, qualifier, null);
+        }
+        return registration;
+    }
+
+    private <T> Argument<T> resolveCandidateBeanType(Argument<T> requestedBeanType, BeanDefinition<T> beanDefinition) {
+        if (beanDefinition.isCandidateBean(requestedBeanType)) {
+            return requestedBeanType;
+        }
+        Argument<T> lookupBeanType = resolveBeanLookupArgument(requestedBeanType);
+        if (!lookupBeanType.equals(requestedBeanType) && beanDefinition.isCandidateBean(lookupBeanType)) {
+            return lookupBeanType;
+        }
+        return requestedBeanType;
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> BeanRegistration<T> resolveNullBeanRegistration(Argument<T> beanType,
+                                                                Argument<T> resolvedBeanType,
+                                                                BeanRegistration<T> registration) {
+        Optional<?> resolvedNullBean = beanResolutionCustomizer.resolveNullBean(beanType, resolvedBeanType, registration.beanDefinition);
+        if (resolvedNullBean.isPresent()) {
+            return BeanRegistration.of(this, registration.identifier, registration.beanDefinition, (T) resolvedNullBean.get());
         }
         return registration;
     }
@@ -2885,7 +2919,16 @@ public sealed class DefaultBeanContext implements ConfigurableBeanContext permit
 
         Predicate<BeanDefinition<T>> predicate = candidate -> !candidate.isAbstract();
         Collection<BeanDefinition<T>> candidates = findBeanCandidates(resolutionContext, beanType, true, predicate);
-        return pickOneBean(beanType, qualifier, throwNonUnique, candidates);
+        Optional<BeanDefinition<T>> beanDefinition = pickOneBean(beanType, qualifier, throwNonUnique, candidates);
+        if (beanDefinition.isPresent()) {
+            return beanDefinition;
+        }
+        Argument<T> lookupBeanType = resolveBeanLookupArgument(beanType);
+        if (!lookupBeanType.equals(beanType)) {
+            candidates = findBeanCandidates(resolutionContext, lookupBeanType, true, predicate);
+            return pickOneBean(lookupBeanType, qualifier, throwNonUnique, candidates);
+        }
+        return Optional.empty();
     }
 
     private <T> Optional<BeanDefinition<T>> findProxyTargetNoCache(@Nullable BeanResolutionContext resolutionContext,
@@ -3034,6 +3077,21 @@ public sealed class DefaultBeanContext implements ConfigurableBeanContext permit
 
     @SuppressWarnings("unchecked")
     private <T> Collection<BeanDefinition<T>> findBeanCandidatesInternal(@Nullable BeanResolutionContext resolutionContext, Argument<T> beanType) {
+        Collection<BeanDefinition<T>> beanDefinitions = findBeanCandidatesCached(resolutionContext, beanType);
+        Argument<T> lookupBeanType = resolveBeanLookupArgument(beanType);
+        if (!lookupBeanType.equals(beanType)) {
+            Collection<BeanDefinition<T>> lookupBeanDefinitions = findBeanCandidatesCached(resolutionContext, lookupBeanType);
+            if (!lookupBeanDefinitions.isEmpty()) {
+                Set<BeanDefinition<T>> merged = new LinkedHashSet<>(beanDefinitions);
+                merged.addAll(lookupBeanDefinitions);
+                return merged;
+            }
+        }
+        return beanDefinitions;
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> Collection<BeanDefinition<T>> findBeanCandidatesCached(@Nullable BeanResolutionContext resolutionContext, Argument<T> beanType) {
         @SuppressWarnings("rawtypes")
         Collection beanDefinitions = beanCandidateCache.get(beanType);
         if (beanDefinitions == null) {

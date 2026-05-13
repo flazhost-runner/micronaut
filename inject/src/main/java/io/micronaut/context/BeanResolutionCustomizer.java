@@ -17,6 +17,9 @@ package io.micronaut.context;
 
 import io.micronaut.core.annotation.Experimental;
 import io.micronaut.core.type.Argument;
+import io.micronaut.inject.BeanDefinition;
+
+import java.util.Optional;
 
 /**
  * Customizes selected bean resolution behavior for integrations.
@@ -40,5 +43,30 @@ public interface BeanResolutionCustomizer {
      */
     default boolean shouldResolveArrayAsBean(Argument<?> injectionPoint) {
         return false;
+    }
+
+    /**
+     * Resolve an additional argument that may be used to find bean candidates if the
+     * requested type does not resolve a bean.
+     *
+     * @param beanType The requested bean type
+     * @return The additional bean type to use for lookup
+     * @since 5.1
+     */
+    default Argument<?> resolveBeanLookupArgument(Argument<?> beanType) {
+        return beanType;
+    }
+
+    /**
+     * Resolve a replacement value for a bean that was found but produced {@code null}.
+     *
+     * @param requestedBeanType The originally requested bean type
+     * @param resolvedBeanType The resolved bean lookup type
+     * @param beanDefinition The bean definition that produced {@code null}
+     * @return A replacement bean value, or empty to preserve the default behavior
+     * @since 5.1
+     */
+    default Optional<?> resolveNullBean(Argument<?> requestedBeanType, Argument<?> resolvedBeanType, BeanDefinition<?> beanDefinition) {
+        return Optional.empty();
     }
 }
