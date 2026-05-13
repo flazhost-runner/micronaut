@@ -93,6 +93,18 @@ public interface VisitorContext extends MutableConvertibleValues<Object>, ClassW
     AbstractAnnotationMetadataBuilder<?, ?> getAnnotationMetadataBuilder();
 
     /**
+     * Resolves the default values declared by the given annotation type.
+     *
+     * @param annotationName The annotation type name
+     * @return The default values, or an empty map if the annotation type cannot be resolved
+     * @since 5.1.0
+     */
+    @Experimental
+    default Map<CharSequence, Object> getAnnotationDefaultValues(String annotationName) {
+        return getAnnotationMetadataBuilder().getAnnotationDefaultValues(annotationName);
+    }
+
+    /**
      * Allows printing informational messages.
      *
      * @param message The message

@@ -787,6 +787,13 @@ public class JavaClassElement extends AbstractTypeAwareJavaElement implements Ar
     }
 
     @Override
+    public boolean isRawType() {
+        return typeArguments != null
+            && typeArguments.isEmpty()
+            && !classElement.getTypeParameters().isEmpty();
+    }
+
+    @Override
     public List<? extends GenericPlaceholderElement> getDeclaredGenericPlaceholders() {
         return classElement.getTypeParameters().stream()
             // we want the *declared* variables, so we don't pass in our genericsInfo.

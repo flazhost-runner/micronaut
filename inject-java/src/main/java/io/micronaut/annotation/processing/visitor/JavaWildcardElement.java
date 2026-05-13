@@ -119,6 +119,16 @@ final class JavaWildcardElement extends JavaClassElement implements WildcardElem
     }
 
     @Override
+    public boolean hasExplicitUpperBound() {
+        return wildcardType.getExtendsBound() != null;
+    }
+
+    @Override
+    public boolean hasExplicitLowerBound() {
+        return wildcardType.getSuperBound() != null;
+    }
+
+    @Override
     public ClassElement withArrayDimensions(int arrayDimensions) {
         if (arrayDimensions != 0) {
             throw new UnsupportedOperationException("Can't create array of wildcard");
