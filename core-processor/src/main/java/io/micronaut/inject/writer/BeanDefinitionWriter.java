@@ -4666,6 +4666,7 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
     }
 
     private ExpressionDef getNewFieldReference(TypedElement declaringType, FieldElement fieldElement) {
+        ClassElement genericField = fieldElement.getGenericField();
         MutableAnnotationMetadata fieldAnnotationMetadata = MutableAnnotationMetadata.of(
             new AnnotationMetadataHierarchy(
                 fieldElement.getType().getTypeAnnotationMetadata(),
@@ -4684,9 +4685,9 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
                     ClassElement.of(beanFullClassName),
                     beanDefinitionTypeDef,
                     fieldElement.getName(),
-                    fieldElement.getGenericType(),
+                    genericField,
                     fieldAnnotationMetadata,
-                    fieldElement.getGenericType().getTypeArguments(),
+                    genericField.getTypeArguments(),
                     loadClassValueExpressionFn
                 )
             );
