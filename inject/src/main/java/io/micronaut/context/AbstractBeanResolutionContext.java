@@ -68,6 +68,10 @@ public abstract class AbstractBeanResolutionContext implements BeanResolutionCon
     @Nullable
     private List<BeanRegistration<?>> dependentBeans;
     @Nullable
+    private List<BeanRegistration<?>> dependentBeansToDestroyAfterResolution;
+    @Nullable
+    private Deque<List<BeanRegistration<?>>> dependentBeansToDestroyAfterResolutionStack;
+    @Nullable
     private BeanRegistration<?> dependentFactory;
     @Nullable
     private final PropertyResolver propertyResolver;
@@ -400,6 +404,13 @@ public abstract class AbstractBeanResolutionContext implements BeanResolutionCon
             // Don't add self
             return;
         }
+        if (context.getBeanResolutionCustomizer().shouldDestroyDependentBeanAfterResolution(this, beanRegistration)) {
+            if (dependentBeansToDestroyAfterResolution == null) {
+                dependentBeansToDestroyAfterResolution = new ArrayList<>(3);
+            }
+            dependentBeansToDestroyAfterResolution.add(beanRegistration);
+            return;
+        }
         if (dependentBeans == null) {
             dependentBeans = new ArrayList<>(3);
         }
@@ -418,12 +429,22 @@ public abstract class AbstractBeanResolutionContext implements BeanResolutionCon
 
     @Override
     public List<BeanRegistration<?>> getAndResetDependentBeans() {
+        destroyDependentBeansAfterResolution();
         if (dependentBeans == null) {
             return Collections.emptyList();
         }
         final List<BeanRegistration<?>> registrations = Collections.unmodifiableList(dependentBeans);
         dependentBeans = null;
         return registrations;
+    }
+
+    private void destroyDependentBeansAfterResolution() {
+        if (dependentBeansToDestroyAfterResolution != null) {
+            for (BeanRegistration<?> beanRegistration : dependentBeansToDestroyAfterResolution) {
+                context.destroyBean(beanRegistration);
+            }
+            dependentBeansToDestroyAfterResolution = null;
+        }
     }
 
     @Override
@@ -452,6 +473,13 @@ public abstract class AbstractBeanResolutionContext implements BeanResolutionCon
     public List<BeanRegistration<?>> popDependentBeans() {
         List<BeanRegistration<?>> result = this.dependentBeans;
         this.dependentBeans = null;
+        if (dependentBeansToDestroyAfterResolutionStack == null) {
+            dependentBeansToDestroyAfterResolutionStack = new ArrayDeque<>(3);
+        }
+        dependentBeansToDestroyAfterResolutionStack.push(
+            dependentBeansToDestroyAfterResolution == null ? Collections.emptyList() : dependentBeansToDestroyAfterResolution
+        );
+        dependentBeansToDestroyAfterResolution = null;
         return result;
     }
 
@@ -461,6 +489,10 @@ public abstract class AbstractBeanResolutionContext implements BeanResolutionCon
             throw new IllegalStateException("Found existing dependent beans!");
         }
         this.dependentBeans = dependentBeans;
+        if (dependentBeansToDestroyAfterResolutionStack != null && !dependentBeansToDestroyAfterResolutionStack.isEmpty()) {
+            List<BeanRegistration<?>> beansToDestroyAfterResolution = dependentBeansToDestroyAfterResolutionStack.pop();
+            dependentBeansToDestroyAfterResolution = beansToDestroyAfterResolution.isEmpty() ? null : beansToDestroyAfterResolution;
+        }
     }
 
     @Override

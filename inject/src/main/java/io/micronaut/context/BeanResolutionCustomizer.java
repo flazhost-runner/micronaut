@@ -82,4 +82,17 @@ public interface BeanResolutionCustomizer {
     default Optional<?> resolveNullBean(Argument<?> requestedBeanType, Argument<?> resolvedBeanType, BeanDefinition<?> beanDefinition) {
         return Optional.empty();
     }
+
+    /**
+     * Returns whether a newly resolved dependent bean should be destroyed after the current bean resolution
+     * completes instead of being tracked as a dependent of the resolved bean.
+     *
+     * @param resolutionContext The current resolution context
+     * @param beanRegistration The dependent bean registration
+     * @return True if the dependent bean should be destroyed after the current resolution completes
+     * @since 5.1
+     */
+    default boolean shouldDestroyDependentBeanAfterResolution(BeanResolutionContext resolutionContext, BeanRegistration<?> beanRegistration) {
+        return false;
+    }
 }
