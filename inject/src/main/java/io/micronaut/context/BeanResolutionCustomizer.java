@@ -18,6 +18,7 @@ package io.micronaut.context;
 import io.micronaut.core.annotation.Experimental;
 import io.micronaut.core.type.Argument;
 import io.micronaut.inject.BeanDefinition;
+import io.micronaut.inject.QualifiedBeanType;
 
 import java.util.Optional;
 
@@ -55,6 +56,18 @@ public interface BeanResolutionCustomizer {
      */
     default Argument<?> resolveBeanLookupArgument(Argument<?> beanType) {
         return beanType;
+    }
+
+    /**
+     * Returns whether the bean type is a candidate for the requested type.
+     *
+     * @param beanType The requested bean type
+     * @param candidate The candidate bean type
+     * @return True if the candidate matches
+     * @since 5.1
+     */
+    default boolean isCandidateBean(Argument<?> beanType, QualifiedBeanType<?> candidate) {
+        return candidate.isCandidateBean(beanType);
     }
 
     /**

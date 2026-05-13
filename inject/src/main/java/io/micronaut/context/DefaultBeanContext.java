@@ -2444,11 +2444,11 @@ public sealed class DefaultBeanContext implements ConfigurableBeanContext permit
     }
 
     private <T> Argument<T> resolveCandidateBeanType(Argument<T> requestedBeanType, BeanDefinition<T> beanDefinition) {
-        if (beanDefinition.isCandidateBean(requestedBeanType)) {
+        if (beanResolutionCustomizer.isCandidateBean(requestedBeanType, beanDefinition)) {
             return requestedBeanType;
         }
         Argument<T> lookupBeanType = resolveBeanLookupArgument(requestedBeanType);
-        if (!lookupBeanType.equals(requestedBeanType) && beanDefinition.isCandidateBean(lookupBeanType)) {
+        if (!lookupBeanType.equals(requestedBeanType) && beanResolutionCustomizer.isCandidateBean(lookupBeanType, beanDefinition)) {
             return lookupBeanType;
         }
         return requestedBeanType;
@@ -2568,7 +2568,7 @@ public sealed class DefaultBeanContext implements ConfigurableBeanContext permit
             beanType,
             false,
             beanDefinitionProvider.getDisabledBeans(this).stream().<BeanDefinition<T>>mapMulti((disabledBean, consumer) -> {
-                if (disabledBean.isCandidateBean(beanType)) {
+                if (beanResolutionCustomizer.isCandidateBean(beanType, disabledBean)) {
                     consumer.accept((BeanDefinition<T>) disabledBean);
                 }
             }).toList()
@@ -2942,7 +2942,7 @@ public sealed class DefaultBeanContext implements ConfigurableBeanContext permit
             beanType,
             true,
             targetProxyBeans.stream().<BeanDefinition<T>>mapMulti((beanDefinition, consumer) -> {
-                if (beanDefinition.isCandidateBean(beanType)) {
+                if (beanResolutionCustomizer.isCandidateBean(beanType, beanDefinition)) {
                     consumer.accept((BeanDefinition<T>) beanDefinition);
                 }
             }).toList()
