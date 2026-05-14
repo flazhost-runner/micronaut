@@ -109,6 +109,11 @@ final class JavaWildcardElement extends JavaClassElement implements WildcardElem
     }
 
     @Override
+    public boolean isRawType() {
+        return false;
+    }
+
+    @Override
     public List<? extends ClassElement> getUpperBounds() {
         return upperBounds;
     }

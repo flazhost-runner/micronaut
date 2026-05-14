@@ -760,7 +760,7 @@ public abstract class AbstractBeanResolutionContext implements BeanResolutionCon
                     (Qualifier<Object>) getCurrentQualifier(),
                     CONSTRUCTOR_METHOD_NAME,
                     (Argument<Object>) beanType,
-                    Argument.ZERO_ARGUMENTS
+                    (Argument<Object>[]) beanDefinition.getConstructor().getArguments()
                 );
                 detectCircularDependency(declaringType, beanType, constructorSegment);
             } finally {
