@@ -189,7 +189,11 @@ public class AopProxyWriter extends ProxyingBeanDefinitionWriter {
 
     private static final Method METHOD_PROCEED = ReflectionUtils.getRequiredInternalMethod(InterceptorChain.class, "proceed");
 
-    private static final Method COPY_BEAN_CONTEXT_METHOD = ReflectionUtils.getRequiredMethod(BeanResolutionContext.class, "copy");
+    private static final Method COPY_BEAN_CONTEXT_FOR_LAZY_PROXY_TARGET_METHOD = ReflectionUtils.getRequiredMethod(
+        BeanResolutionContext.class,
+        "copyForLazyProxyTarget",
+        BeanDefinition.class
+    );
 
     private static final String FIELD_INTERCEPTORS = "$interceptors";
     private static final String FIELD_BEAN_LOCATOR = "$beanLocator";
@@ -693,7 +697,7 @@ public class AopProxyWriter extends ProxyingBeanDefinitionWriter {
                 aThis.field(beanLocatorField).assign(methodParameters.get(beanContextArgumentIndex)),
                 aThis.field(beanResolutionContextField).assign(
                     methodParameters.get(beanResolutionContextArgumentIndex)
-                        .invoke(COPY_BEAN_CONTEXT_METHOD)
+                        .invoke(COPY_BEAN_CONTEXT_FOR_LAZY_PROXY_TARGET_METHOD, aThis.field(proxyBeanDefinitionField))
                 )
             ));
         } else {

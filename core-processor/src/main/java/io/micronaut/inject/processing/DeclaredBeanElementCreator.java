@@ -149,15 +149,16 @@ class DeclaredBeanElementCreator extends AbstractBeanElementCreator {
             if (classElement.isFinal()) {
                 throw new ProcessingException(classElement, "Cannot apply AOP advice to final class. Class must be made non-final to support proxying: " + classElement.getName());
             }
+            AnnotationMetadata aopAnnotationMetadata = isAopProxy || methodElement == null ? classElement.getAnnotationMetadata() : methodElement.getAnnotationMetadata();
             aopProxyVisitor = createAroundAopProxyWriter(
                 classElement,
                 visitor,
-                isAopProxy || methodElement == null ? classElement.getAnnotationMetadata() : methodElement.getAnnotationMetadata(),
+                aopAnnotationMetadata,
                 visitorContext,
                 false
             );
             beanDefinitionWriters.add(aopProxyVisitor);
-            MethodElement constructorElement = classElement.getPrimaryConstructor().orElse(null);
+            MethodElement constructorElement = selectAopProxyConstructor(aopAnnotationMetadata, classElement.getPrimaryConstructor().orElse(null));
             if (constructorElement != null) {
                 aopProxyVisitor.visitBeanDefinitionConstructor(
                     constructorElement,
@@ -173,6 +174,18 @@ class DeclaredBeanElementCreator extends AbstractBeanElementCreator {
             aopProxyVisitor.visitSuperBeanDefinition(visitor.getBeanDefinitionName());
         }
         return aopProxyVisitor;
+    }
+
+    private MethodElement selectAopProxyConstructor(AnnotationMetadata annotationMetadata, @Nullable MethodElement constructorElement) {
+        if (constructorElement != null
+            && constructorElement.hasParameters()
+            && annotationMetadata.booleanValue(AnnotationUtil.ANN_AROUND, "proxyTarget").orElse(false)
+            && annotationMetadata.booleanValue(AnnotationUtil.ANN_AROUND, "lazy").orElse(false)) {
+            return classElement.getDefaultConstructor()
+                .filter(defaultConstructor -> !defaultConstructor.isStatic())
+                .orElse(constructorElement);
+        }
+        return constructorElement;
     }
 
     /**

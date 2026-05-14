@@ -399,6 +399,15 @@ public abstract class AbstractBeanResolutionContext implements BeanResolutionCon
     }
 
     @Override
+    public BeanResolutionContext copyForLazyProxyTarget(BeanDefinition<?> proxyBeanDefinition) {
+        BeanResolutionContext copy = copy();
+        if (!context.getBeanResolutionCustomizer().shouldPreserveLazyProxyTargetResolutionPath(this, proxyBeanDefinition)) {
+            copy.getPath().clear();
+        }
+        return copy;
+    }
+
+    @Override
     public <T> void addDependentBean(BeanRegistration<T> beanRegistration) {
         if (beanRegistration.getBeanDefinition() == rootDefinition) {
             // Don't add self

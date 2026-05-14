@@ -86,6 +86,18 @@ public interface BeanResolutionContext extends ValueResolver<CharSequence>, Auto
     BeanResolutionContext copy();
 
     /**
+     * Copy current context to be used later when resolving a lazy proxy target.
+     *
+     * @param proxyBeanDefinition The proxy bean definition
+     * @return The bean resolution context
+     * @since 5.1
+     */
+    @UsedByGeneratedCode
+    default BeanResolutionContext copyForLazyProxyTarget(BeanDefinition<?> proxyBeanDefinition) {
+        return copy();
+    }
+
+    /**
      * @return The context
      */
     BeanContext getContext();

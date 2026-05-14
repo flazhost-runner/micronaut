@@ -232,6 +232,8 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
     private static final Method INJECT_BEAN_METHOD =
         ReflectionUtils.getRequiredInternalMethod(InjectableBeanDefinition.class, "inject", BeanResolutionContext.class, BeanContext.class, Object.class);
 
+    private static final Method SHOULD_INITIALIZE_BEAN_METHOD = ReflectionUtils.getRequiredInternalMethod(AbstractInitializableBeanDefinition.class, "shouldInitializeBean", BeanResolutionContext.class, BeanContext.class, Object.class);
+
     private static final Method PRE_DESTROY_METHOD = ReflectionUtils.getRequiredInternalMethod(AbstractInitializableBeanDefinition.class, "preDestroy", BeanResolutionContext.class, BeanContext.class, Object.class);
 
     private static final Method GET_BEAN_FOR_CONSTRUCTOR_ARGUMENT = getBeanLookupMethod("getBeanForConstructorArgument", false);
@@ -1703,7 +1705,12 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
             } else {
                 statements.add(instanceVar.returning());
             }
-            return StatementDef.multi(statements);
+            StatementDef initializeBean = StatementDef.multi(statements);
+            if (needsInjectMethod || needsPostConstruct) {
+                return aThis.invoke(SHOULD_INITIALIZE_BEAN_METHOD, methodParameters.get(0), methodParameters.get(1), instanceVar)
+                    .ifTrue(initializeBean, instanceVar.returning());
+            }
+            return initializeBean;
         });
     }
 

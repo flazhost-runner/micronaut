@@ -95,4 +95,31 @@ public interface BeanResolutionCustomizer {
     default boolean shouldDestroyDependentBeanAfterResolution(BeanResolutionContext resolutionContext, BeanRegistration<?> beanRegistration) {
         return false;
     }
+
+    /**
+     * Returns whether a newly constructed bean instance should receive field/method injection and initialization
+     * callbacks.
+     *
+     * @param resolutionContext The current resolution context
+     * @param beanDefinition The bean definition
+     * @param bean The newly constructed bean instance
+     * @return True if the bean instance should be injected and initialized
+     * @since 5.1
+     */
+    default boolean shouldInitializeBean(BeanResolutionContext resolutionContext, BeanDefinition<?> beanDefinition, Object bean) {
+        return true;
+    }
+
+    /**
+     * Returns whether a lazy proxy should preserve the current resolution path when storing the context
+     * that will later be used to resolve the proxy target.
+     *
+     * @param resolutionContext The current resolution context
+     * @param proxyBeanDefinition The proxy bean definition
+     * @return True if the current resolution path should be preserved
+     * @since 5.1
+     */
+    default boolean shouldPreserveLazyProxyTargetResolutionPath(BeanResolutionContext resolutionContext, BeanDefinition<?> proxyBeanDefinition) {
+        return true;
+    }
 }
