@@ -2155,7 +2155,7 @@ public sealed class DefaultBeanContext implements ConfigurableBeanContext permit
                                                   T bean,
                                                   Argument<T> beanType,
                                                   @Nullable Qualifier<T> finalQualifier) {
-        if (!(beanDefinition instanceof AbstractProviderDefinition<?>)) {
+        if (bean != null && !(beanDefinition instanceof AbstractProviderDefinition<?>)) {
             if (!(bean instanceof BeanCreatedEventListener) && CollectionUtils.isNotEmpty(beanCreationEventListeners)) {
                 Class<T> beanClass = beanDefinition.getBeanType();
                 List<ListenersSupplier.ListenerAndOrder<BeanCreatedEventListener>> listeners = new ArrayList<>();
@@ -2171,7 +2171,15 @@ public sealed class DefaultBeanContext implements ConfigurableBeanContext permit
                 }
                 BeanKey<T> beanKey = new BeanKey<>(beanDefinition, finalQualifier);
                 for (ListenersSupplier.ListenerAndOrder<BeanCreatedEventListener> listener : listeners) {
-                    bean = (T) listener.bean.onCreated(new BeanCreatedEvent(this, beanDefinition, beanKey, beanType, bean));
+                    bean = (T) listener.bean.onCreated(new BeanCreatedEvent(
+                        this,
+                        beanDefinition,
+                        beanKey,
+                        beanType,
+                        bean,
+                        resolutionContext.getRootDefinition(),
+                        resolutionContext.getDependentBeans()
+                    ));
                     if (bean == null) {
                         throw new BeanInstantiationException(resolutionContext, "Listener [" + listener + "] returned null from onCreated event");
                     }

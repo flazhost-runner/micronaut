@@ -213,6 +213,15 @@ public interface BeanResolutionContext extends ValueResolver<CharSequence>, Auto
     }
 
     /**
+     * @return The current dependent beans that must be destroyed by an upstream bean.
+     *
+     * @since 5.1
+     */
+    default List<BeanRegistration<?>> getDependentBeans() {
+        return Collections.emptyList();
+    }
+
+    /**
      * The push the current dependent beans that must be destroyed by an upstream bean.
      *
      * @param dependentBeans Dependent beans collection that can be used to add more dependents

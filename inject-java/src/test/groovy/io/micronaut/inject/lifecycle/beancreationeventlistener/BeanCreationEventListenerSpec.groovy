@@ -177,4 +177,37 @@ class BeanCreationEventListenerSpec extends Specification {
         jBeanType.getType() == J.class
         jBeanType.getName() == "someParamName"
     }
+
+    void "test created event exposes root definition and dependent beans"() {
+        given:
+        EventMetadataListener.reset()
+        ApplicationContext context = ApplicationContext.run(["spec.name": "BeanCreatedEventMetadata"])
+
+        when:
+        EventRoot root = context.getBean(EventRoot)
+
+        then:
+        root.dependency != null
+        EventMetadataListener.rootDefinition.beanType == EventRoot
+        EventMetadataListener.dependentTypes == [EventDependency]
+
+        cleanup:
+        context.close()
+    }
+
+    void "test null beans are not sent to created event listeners"() {
+        given:
+        NullEventListener.reset()
+        ApplicationContext context = ApplicationContext.run(["spec.name": "BeanCreatedEventNull"])
+
+        when:
+        NullEventProduct product = context.getBean(NullEventProduct)
+
+        then:
+        product == null
+        !NullEventListener.sawNullBean
+
+        cleanup:
+        context.close()
+    }
 }

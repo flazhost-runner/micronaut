@@ -438,6 +438,14 @@ public abstract class AbstractBeanResolutionContext implements BeanResolutionCon
         return registrations;
     }
 
+    @Override
+    public List<BeanRegistration<?>> getDependentBeans() {
+        if (dependentBeans == null) {
+            return Collections.emptyList();
+        }
+        return Collections.unmodifiableList(dependentBeans);
+    }
+
     private void destroyDependentBeansAfterResolution() {
         if (dependentBeansToDestroyAfterResolution != null) {
             for (BeanRegistration<?> beanRegistration : dependentBeansToDestroyAfterResolution) {
