@@ -21,6 +21,7 @@ import io.micronaut.context.env.PropertySourcesLocator;
 import io.micronaut.context.scope.CustomScopeRegistry;
 import io.micronaut.core.annotation.Internal;
 import io.micronaut.inject.BeanConfiguration;
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import io.micronaut.core.convert.MutableConversionService;
 import io.micronaut.core.io.scan.ClassPathResourceLoader;
@@ -199,7 +200,7 @@ class ApplicationContextConfigurationDelegate implements ApplicationContextConfi
 
     @Override
     @Nullable
-    public Function<BeanContext, CustomScopeRegistry> customScopeRegistryFactory() {
+    public Function<@NonNull BeanContext, @NonNull CustomScopeRegistry> customScopeRegistryFactory() {
         return delegate.customScopeRegistryFactory();
     }
 }

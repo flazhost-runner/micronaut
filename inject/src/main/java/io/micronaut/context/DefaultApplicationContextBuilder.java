@@ -24,6 +24,7 @@ import io.micronaut.context.env.PropertySourcesLocator;
 import io.micronaut.context.env.SystemPropertiesPropertySource;
 import io.micronaut.context.scope.CustomScopeRegistry;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import io.micronaut.core.cli.CommandLine;
 import io.micronaut.core.io.scan.ClassPathResourceLoader;
@@ -236,7 +237,7 @@ public class DefaultApplicationContextBuilder implements ApplicationContextBuild
 
     @Override
     @Nullable
-    public Function<BeanContext, CustomScopeRegistry> customScopeRegistryFactory() {
+    public Function<@NonNull BeanContext, @NonNull CustomScopeRegistry> customScopeRegistryFactory() {
         return customScopeRegistryFactory;
     }
 

@@ -20,6 +20,7 @@ import io.micronaut.context.scope.CustomScopeRegistry;
 import io.micronaut.core.annotation.AnnotationUtil;
 import io.micronaut.inject.BeanConfiguration;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import io.micronaut.inject.QualifiedBeanType;
 import jakarta.inject.Singleton;
@@ -151,7 +152,7 @@ public interface BeanContextConfiguration {
      * @since 5.1
      */
     @Nullable
-    default Function<BeanContext, CustomScopeRegistry> customScopeRegistryFactory() {
+    default Function<@NonNull BeanContext, @NonNull CustomScopeRegistry> customScopeRegistryFactory() {
         return null;
     }
 }
