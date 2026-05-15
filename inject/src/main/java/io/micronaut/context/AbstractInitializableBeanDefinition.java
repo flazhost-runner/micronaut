@@ -2318,9 +2318,10 @@ public abstract class AbstractInitializableBeanDefinition<T> extends AbstractBea
         if (returnType.isArray()
                 && context instanceof DefaultBeanContext defaultBeanContext
                 && defaultBeanContext.getBeanResolutionCustomizer().shouldResolveArrayAsBean(returnType)) {
-            K[] arrayBean = (K[]) resolutionContext.getBean((Argument) returnType, (Qualifier) qualifier);
-            Collection<K> arrayBeanElements = arrayBean == null ? Collections.emptyList() : Arrays.asList(arrayBean);
-            return coerceCollectionToCorrectType(returnType.getType(), arrayBeanElements, resolutionContext, returnType);
+            Optional<K[]> arrayBean = resolutionContext.findBean((Argument) returnType, (Qualifier) qualifier);
+            if (arrayBean.isPresent()) {
+                return coerceCollectionToCorrectType(returnType.getType(), Arrays.asList(arrayBean.get()), resolutionContext, returnType);
+            }
         }
         Collection<K> beansOfType = resolutionContext.getBeansOfType(resolveArgument(context, beanType), qualifier);
         return coerceCollectionToCorrectType(returnType.getType(), beansOfType, resolutionContext, returnType);

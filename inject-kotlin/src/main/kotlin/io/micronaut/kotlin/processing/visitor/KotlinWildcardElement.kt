@@ -65,6 +65,8 @@ internal class KotlinWildcardElement(
         elementAnnotationMetadataFactory.buildGenericTypeAnnotations(this)
     }
 
+    private val typeArgumentVariance: Variance = internalGenericNativeType.declaration.variance
+
     override fun getResolved(): Optional<ClassElement> = Optional.of(upper)
 
     override fun getAnnotationMetadataToWrite() = resolvedGenericTypeAnnotationMetadata
@@ -118,9 +120,9 @@ internal class KotlinWildcardElement(
         return list
     }
 
-    override fun hasExplicitUpperBound() = internalGenericNativeType.declaration.variance == Variance.COVARIANT
+    override fun hasExplicitUpperBound() = typeArgumentVariance == Variance.COVARIANT
 
-    override fun hasExplicitLowerBound() = internalGenericNativeType.declaration.variance == Variance.CONTRAVARIANT
+    override fun hasExplicitLowerBound() = typeArgumentVariance == Variance.CONTRAVARIANT
 
     private fun toKotlinClassElement(element: ClassElement?): KotlinClassElement? {
         return when {

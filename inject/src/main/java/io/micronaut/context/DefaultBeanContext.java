@@ -795,7 +795,8 @@ public sealed class DefaultBeanContext implements ConfigurableBeanContext permit
         Argument<T> lookupBeanType = resolveBeanLookupArgument(beanType);
         result = singletonScope.containsBean(beanType, qualifier) ||
             singletonScope.containsBean(lookupBeanType, qualifier) ||
-            isCandidatePresent(beanKey.beanType, qualifier);
+            isCandidatePresent(beanKey.beanType, qualifier) ||
+            (!lookupBeanType.equals(beanType) && isCandidatePresent(lookupBeanType, qualifier));
 
         containsBeanCache.put(beanKey, result);
         return result;
@@ -2171,7 +2172,7 @@ public sealed class DefaultBeanContext implements ConfigurableBeanContext permit
                 }
                 BeanKey<T> beanKey = new BeanKey<>(beanDefinition, finalQualifier);
                 for (ListenersSupplier.ListenerAndOrder<BeanCreatedEventListener> listener : listeners) {
-                    bean = (T) listener.bean.onCreated(new BeanCreatedEvent(
+                    bean = (T) listener.bean.onCreated(new BeanCreatedEvent<T>(
                         this,
                         beanDefinition,
                         beanKey,
@@ -2436,7 +2437,7 @@ public sealed class DefaultBeanContext implements ConfigurableBeanContext permit
                 throw new NonUniqueBeanException(beanClass, Collections.singletonList(definition).iterator());
             }
             registration = resolveBeanRegistration(resolutionContext, definition, resolvedBeanType, qualifier);
-            if (registration != null && registration.bean == null) {
+            if (registration.bean == null) {
                 registration = resolveNullBeanRegistration(beanType, resolvedBeanType, registration);
             }
         } else {

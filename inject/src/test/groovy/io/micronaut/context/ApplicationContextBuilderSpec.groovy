@@ -3,8 +3,11 @@ package io.micronaut.context
 import io.micronaut.context.env.PropertySource
 import io.micronaut.context.exceptions.BeanContextException
 import io.micronaut.context.exceptions.NoSuchBeanException
+import io.micronaut.context.scope.CustomScopeRegistry
 import io.micronaut.runtime.ApplicationConfiguration
 import spock.lang.Specification
+
+import java.util.function.Function
 
 class ApplicationContextBuilderSpec extends Specification {
 
@@ -88,6 +91,34 @@ class ApplicationContextBuilderSpec extends Specification {
         config.environmentPropertySource
         !config.eagerInitConfiguration
         !config.eagerInitSingletons
+    }
+
+    void "test integration hook configuration"() {
+        given:
+        ApplicationContextBuilder builder = ApplicationContext.builder()
+        ApplicationContextConfiguration config = (ApplicationContextConfiguration) builder
+        BeanResolutionCustomizer customizer = new BeanResolutionCustomizer() {}
+        Function<BeanContext, CustomScopeRegistry> scopeRegistryFactory = { BeanContext ignored -> null } as Function<BeanContext, CustomScopeRegistry>
+
+        expect:
+        config.beanResolutionCustomizer().is(BeanResolutionCustomizer.DEFAULT)
+        config.customScopeRegistryFactory() == null
+
+        when:
+        builder.beanResolutionCustomizer(customizer)
+            .customScopeRegistry(scopeRegistryFactory)
+
+        then:
+        config.beanResolutionCustomizer().is(customizer)
+        config.customScopeRegistryFactory().is(scopeRegistryFactory)
+
+        when:
+        builder.beanResolutionCustomizer(null)
+            .customScopeRegistry(null)
+
+        then:
+        config.beanResolutionCustomizer().is(BeanResolutionCustomizer.DEFAULT)
+        config.customScopeRegistryFactory() == null
     }
 
     void "test enable cloud environment deduce"() {

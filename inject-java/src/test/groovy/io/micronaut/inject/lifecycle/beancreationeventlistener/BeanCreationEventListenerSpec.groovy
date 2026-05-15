@@ -17,8 +17,10 @@ package io.micronaut.inject.lifecycle.beancreationeventlistener
 
 import io.micronaut.context.ApplicationContext
 import io.micronaut.context.BeanContext
+import io.micronaut.context.event.BeanCreatedEvent
 import io.micronaut.context.exceptions.CircularDependencyException
 import io.micronaut.core.type.Argument
+import io.micronaut.inject.BeanIdentifier
 import io.micronaut.inject.lifecycle.beancreationeventlistener.circular.Bar
 import io.micronaut.inject.lifecycle.beancreationeventlistener.circular.Foo
 import spock.lang.Specification
@@ -190,6 +192,31 @@ class BeanCreationEventListenerSpec extends Specification {
         root.dependency != null
         EventMetadataListener.rootDefinition.beanType == EventRoot
         EventMetadataListener.dependentTypes == [EventDependency]
+
+        cleanup:
+        context.close()
+    }
+
+    void "test created event accepts absent root definition and dependent beans"() {
+        given:
+        ApplicationContext context = ApplicationContext.run(["spec.name": "BeanCreatedEventMetadata"])
+        def definition = context.getBeanDefinition(EventRoot)
+        EventRoot root = context.getBean(EventRoot)
+
+        when:
+        def event = new BeanCreatedEvent(
+            context,
+            definition,
+            BeanIdentifier.of("eventRoot"),
+            definition.asArgument(),
+            root,
+            null,
+            null
+        )
+
+        then:
+        event.rootBeanDefinition == null
+        event.dependentBeans.isEmpty()
 
         cleanup:
         context.close()

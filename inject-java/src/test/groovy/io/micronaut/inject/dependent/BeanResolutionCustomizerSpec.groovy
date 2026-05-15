@@ -5,6 +5,7 @@ import io.micronaut.context.ApplicationContextBuilder
 import io.micronaut.context.BeanRegistration
 import io.micronaut.context.BeanResolutionContext
 import io.micronaut.context.BeanResolutionCustomizer
+import io.micronaut.core.type.Argument
 
 class BeanResolutionCustomizerSpec extends AbstractTypeElementSpec {
 
@@ -71,9 +72,86 @@ class Owner {
         context.close()
     }
 
+    void "containsBean checks candidate presence for resolved lookup argument"() {
+        given:
+        def context = buildContext('test.LookupBean', '''
+package test;
+
+import jakarta.inject.Singleton;
+
+interface LookupView {
+}
+
+@Singleton
+class LookupBean {
+}
+''')
+        Class<?> lookupView = context.classLoader.loadClass('test.LookupView')
+
+        expect:
+        context.containsBean(lookupView)
+
+        cleanup:
+        context.close()
+    }
+
+    void "array-as-bean lookup falls back to beans of type when exact array bean is absent"() {
+        given:
+        def context = buildContext('test.ArrayConsumer', '''
+package test;
+
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+
+interface ArrayThing {
+}
+
+@Singleton
+class FirstArrayThing implements ArrayThing {
+}
+
+@Singleton
+class SecondArrayThing implements ArrayThing {
+}
+
+@Singleton
+class ArrayConsumer {
+    final ArrayThing[] things;
+
+    @Inject
+    ArrayConsumer(ArrayThing[] things) {
+        this.things = things;
+    }
+}
+''')
+
+        when:
+        def consumer = getBean(context, 'test.ArrayConsumer')
+
+        then:
+        consumer.things.length == 2
+        consumer.things.collect { it.class.simpleName } as Set == ['FirstArrayThing', 'SecondArrayThing'] as Set
+
+        cleanup:
+        context.close()
+    }
+
     @Override
     protected void configureContext(ApplicationContextBuilder contextBuilder) {
         contextBuilder.beanResolutionCustomizer(new BeanResolutionCustomizer() {
+            @Override
+            Argument<?> resolveBeanLookupArgument(Argument<?> beanType) {
+                if (beanType.type.name == 'test.LookupView') {
+                    return Argument.of(Class.forName('test.LookupBean', false, beanType.type.classLoader))
+                }
+                return beanType
+            }
+
+            @Override
+            boolean shouldResolveArrayAsBean(Argument<?> injectionPoint) {
+                return injectionPoint.array && injectionPoint.type.componentType.name == 'test.ArrayThing'
+            }
+
             @Override
             boolean shouldDestroyDependentBeanAfterResolution(BeanResolutionContext resolutionContext, BeanRegistration<?> beanRegistration) {
                 return resolutionContext.path.currentSegment()

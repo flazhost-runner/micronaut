@@ -150,8 +150,7 @@ public interface BeanContextConfiguration {
      * @return The custom scope registry factory.
      * @since 5.1
      */
-    @Nullable
-    default Function<BeanContext, CustomScopeRegistry> customScopeRegistryFactory() {
+    default @Nullable Function<BeanContext, CustomScopeRegistry> customScopeRegistryFactory() {
         return null;
     }
 }
