@@ -121,6 +121,27 @@ class ApplicationContextBuilderSpec extends Specification {
         config.customScopeRegistryFactory() == null
     }
 
+    void "test custom scope registry factory is used"() {
+        given:
+        CustomScopeRegistry registry = null
+        ApplicationContext context = ApplicationContext.builder()
+            .customScopeRegistry({ BeanContext beanContext ->
+                registry = new DefaultCustomScopeRegistry(beanContext)
+                registry
+            } as Function<BeanContext, CustomScopeRegistry>)
+            .build()
+
+        when:
+        context.start()
+
+        then:
+        registry != null
+        context.customScopeRegistry.is(registry)
+
+        cleanup:
+        context.close()
+    }
+
     void "test enable cloud environment deduce"() {
         given:
         ApplicationContextBuilder builder = ApplicationContext.builder()

@@ -95,6 +95,34 @@ class LookupBean {
         context.close()
     }
 
+    void "resolved lookup argument can resolve matching bean"() {
+        given:
+        def context = buildContext('test.LookupBean', '''
+package test;
+
+import jakarta.inject.Singleton;
+
+interface LookupView {
+}
+
+@Singleton
+class LookupBean {
+}
+''')
+        Class<?> lookupView = context.classLoader.loadClass('test.LookupView')
+
+        when:
+        def bean = context.getBean(lookupView)
+        def beans = context.getBeansOfType(lookupView)
+
+        then:
+        bean.class.name == 'test.LookupBean'
+        beans*.class*.name == ['test.LookupBean']
+
+        cleanup:
+        context.close()
+    }
+
     void "array-as-bean lookup falls back to beans of type when exact array bean is absent"() {
         given:
         def context = buildContext('test.ArrayConsumer', '''

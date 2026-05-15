@@ -222,6 +222,36 @@ class BeanCreationEventListenerSpec extends Specification {
         context.close()
     }
 
+    void "test legacy created event constructors expose default metadata"() {
+        given:
+        ApplicationContext context = ApplicationContext.run(["spec.name": "BeanCreatedEventMetadata"])
+        def definition = context.getBeanDefinition(EventRoot)
+        EventRoot root = context.getBean(EventRoot)
+        BeanIdentifier identifier = BeanIdentifier.of("eventRoot")
+        Argument<EventRoot> beanType = definition.asArgument()
+
+        when:
+        def event = new BeanCreatedEvent(context, definition, identifier, root)
+
+        then:
+        event.beanIdentifier.is(identifier)
+        event.beanType == beanType
+        event.rootBeanDefinition == null
+        event.dependentBeans.isEmpty()
+
+        when:
+        event = new BeanCreatedEvent(context, definition, identifier, beanType, root)
+
+        then:
+        event.beanIdentifier.is(identifier)
+        event.beanType.is(beanType)
+        event.rootBeanDefinition == null
+        event.dependentBeans.isEmpty()
+
+        cleanup:
+        context.close()
+    }
+
     void "test null beans are not sent to created event listeners"() {
         given:
         NullEventListener.reset()
