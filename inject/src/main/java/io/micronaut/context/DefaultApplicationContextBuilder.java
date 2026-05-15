@@ -235,7 +235,8 @@ public class DefaultApplicationContextBuilder implements ApplicationContextBuild
     }
 
     @Override
-    public @Nullable Function<BeanContext, CustomScopeRegistry> customScopeRegistryFactory() {
+    @Nullable
+    public Function<BeanContext, CustomScopeRegistry> customScopeRegistryFactory() {
         return customScopeRegistryFactory;
     }
 

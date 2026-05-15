@@ -198,7 +198,8 @@ class ApplicationContextConfigurationDelegate implements ApplicationContextConfi
     }
 
     @Override
-    public @Nullable Function<BeanContext, CustomScopeRegistry> customScopeRegistryFactory() {
+    @Nullable
+    public Function<BeanContext, CustomScopeRegistry> customScopeRegistryFactory() {
         return delegate.customScopeRegistryFactory();
     }
 }
