@@ -3,7 +3,7 @@
   "language": "java",
   "install": [],
   "migrate": [],
-  "start": "PORT=8080 mvn mn:run",
-  "url": "http://localhost:8080",
+  "start": "PORT=${APP_PORT} mvn mn:run",
+  "url": "http://localhost:${APP_PORT}",
   "readyPath": "/"
 }
