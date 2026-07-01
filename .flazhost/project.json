@@ -1,0 +1,9 @@
+{
+  "name": "Micronaut",
+  "language": "java",
+  "install": [],
+  "migrate": [],
+  "start": "PORT=8080 mvn mn:run",
+  "url": "http://localhost:8080",
+  "readyPath": "/"
+}
